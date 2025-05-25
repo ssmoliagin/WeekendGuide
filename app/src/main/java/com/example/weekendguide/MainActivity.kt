@@ -1,5 +1,6 @@
 package com.example.weekendguide
 
+/*
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -22,7 +23,29 @@ import com.google.firebase.storage.ktx.storage
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.tasks.await
+*/
 
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.weekendguide.ui.theme.WeekendGuideTheme
+import com.example.weekendguide.ui.navigation.AppNavigation
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            WeekendGuideTheme {
+                AppNavigation()
+            }
+        }
+    }
+}
+
+
+
+/*
 class MainActivity : ComponentActivity() {
 
     data class Country(
@@ -100,3 +123,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+*/
