@@ -18,6 +18,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "WEB_CLIENT_ID", "\"${project.properties["webClientId"]}\"")
+
     }
 
     buildTypes {
@@ -40,6 +43,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true // ← добавь эту строку
         compose = true
     }
 }
@@ -73,8 +77,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
 
-    // 🔥 Firebase
+    // 🔥 Firebase GoogleAuth
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
 
     // 🧭 Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
@@ -84,5 +89,4 @@ dependencies {
 
     // ⚙️ DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-
 }

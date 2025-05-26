@@ -1,9 +1,10 @@
 package com.example.weekendguide.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.region.SelectRegionScreen
@@ -16,25 +17,48 @@ fun AppNavigation() {
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
-            SplashScreen(onNavigate = { destination ->
+            val splashViewModel: SplashViewModel = viewModel()
+            SplashScreen(viewModel = splashViewModel, onNavigate = { destination ->
                 when (destination) {
-                    SplashViewModel.Destination.Login -> navController.navigate("login")
-                    SplashViewModel.Destination.RegionSelect -> navController.navigate("region")
-                    SplashViewModel.Destination.Main -> navController.navigate("main")
-                    else -> { /* ничего не делать или логировать */ }
+                    SplashViewModel.Destination.Login -> navController.navigate("login") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                    SplashViewModel.Destination.RegionSelect -> navController.navigate("region") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                    SplashViewModel.Destination.Main -> navController.navigate("main") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                    SplashViewModel.Destination.Loading -> { /* Do nothing */ }
                 }
             })
         }
+
         composable("login") {
-            LoginScreen(onNavigate = { route ->
-                navController.navigate(route)
+            LoginScreen(onNavigate = { destination ->
+                when (destination) {
+                    SplashViewModel.Destination.RegionSelect -> navController.navigate("region") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                    SplashViewModel.Destination.Main -> navController.navigate("main") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                    else -> {}
+                }
             })
         }
+
         composable("region") {
-            SelectRegionScreen(onNavigate = { route ->
-                navController.navigate(route)
+            SelectRegionScreen(onNavigate = { destination ->
+                when (destination) {
+                    SplashViewModel.Destination.Main -> navController.navigate("main") {
+                        popUpTo("region") { inclusive = true }
+                    }
+                    else -> {}
+                }
             })
         }
+
         composable("main") {
             MainScreen()
         }

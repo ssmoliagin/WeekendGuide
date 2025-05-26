@@ -9,17 +9,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.weekendguide.viewmodel.SplashViewModel
 
 @Composable
 fun SelectRegionScreen(
-    onNavigate: (String) -> Unit
+    onNavigate: (SplashViewModel.Destination) -> Unit
 ) {
-    val regions = listOf("Region 1", "Region 2", "Region 3") // замените на реальные регионы или загрузите из ViewModel
-
+    val regions = listOf("Region 1", "Region 2", "Region 3")
     var selectedRegion by remember { mutableStateOf<String?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "Выберите ваш регион", style = MaterialTheme.typography.titleLarge)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Выберите ваш регион",
+            style = MaterialTheme.typography.titleLarge
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn {
@@ -27,9 +34,7 @@ fun SelectRegionScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            selectedRegion = region
-                        }
+                        .clickable { selectedRegion = region }
                         .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -48,8 +53,8 @@ fun SelectRegionScreen(
         Button(
             onClick = {
                 selectedRegion?.let {
-                    // сохранить выбранный регион, например, в ViewModel или DataStore
-                    onNavigate("main") // переход на главный экран
+                    // Сохраняем выбранный регион при необходимости
+                    onNavigate(SplashViewModel.Destination.Main)
                 }
             },
             enabled = selectedRegion != null,

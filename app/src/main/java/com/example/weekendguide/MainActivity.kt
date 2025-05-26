@@ -1,4 +1,4 @@
-package com.example.weekendguide
+
 
 /*
 import android.os.Bundle
@@ -24,6 +24,8 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.tasks.await
 */
+
+package com.example.weekendguide
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

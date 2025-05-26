@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class SplashViewModel(app: Application) : AndroidViewModel(app) {
-    private val preferences = UserPreferences(app)
 
+    private val preferences = UserPreferences(app)
     private val _uiState = MutableStateFlow<Destination>(Destination.Loading)
     val uiState: StateFlow<Destination> = _uiState
 
@@ -26,7 +26,7 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
-            delay(1500) // Показ логотипа 1.5 сек
+            delay(1500)
             detectLanguage()
             decideNextScreen()
         }
@@ -37,17 +37,18 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
         if (saved == null) {
             val systemLang = Locale.getDefault().language
             val supported = listOf("en", "de", "ru")
-            val selected = if (supported.contains(systemLang)) systemLang else "en"
+            val selected = if (systemLang in supported) systemLang else "en"
             preferences.saveLanguage(selected)
         }
     }
 
-    private fun decideNextScreen() {
+    private suspend fun decideNextScreen() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
             _uiState.value = Destination.Login
         } else {
-            _uiState.value = Destination.RegionSelect
+            val region = preferences.getSelectedRegion()
+            _uiState.value = if (region != null) Destination.Main else Destination.RegionSelect
         }
     }
 }
