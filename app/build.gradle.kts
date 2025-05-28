@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 
     id("com.google.gms.google-services") // ⬅️ Добавь ЭТО
+    kotlin("plugin.serialization") version "1.9.23" // или актуальную версию Kotlin
 }
 
 android {
@@ -19,7 +20,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "WEB_CLIENT_ID", "\"${project.properties["webClientId"]}\"")
+        buildConfigField("String", "WEB_CLIENT_ID", "\"${project.findProperty("webClientId") ?: ""}\"")
+        buildConfigField("String", "FIREBASE_STORAGE_PATH", "\"${project.findProperty("firebaseStoragePath") ?: ""}\"")
 
     }
 
@@ -89,4 +91,8 @@ dependencies {
 
     // ⚙️ DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }

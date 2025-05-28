@@ -3,61 +3,54 @@ package com.example.weekendguide.data.preferences
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.weekendguide.data.model.Region
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
 class UserPreferences(private val context: Context) {
 
     private object Keys {
-        val LANGUAGE = stringPreferencesKey("language")
-        val SELECTED_REGION = stringPreferencesKey("selected_region")
-        val HOME_REGION = stringPreferencesKey("home_region")
-        val UNLOCKED_REGIONS = stringSetPreferencesKey("unlocked_regions")
+        val LANGUAGE = stringPreferencesKey("language_code")
+        val HOME_REGION = stringPreferencesKey("home_region") // JSON-строка Region
+        val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
     }
 
     suspend fun saveLanguage(language: String) {
-        context.dataStore.edit { prefs -> prefs[Keys.LANGUAGE] = language }
-    }
-
-    suspend fun getLanguage(): String? {
-        return context.dataStore.data.map { it[Keys.LANGUAGE] }.first()
-    }
-
-    suspend fun saveSelectedRegion(regionId: String) {
-        context.dataStore.edit { prefs -> prefs[Keys.SELECTED_REGION] = regionId }
-    }
-
-    suspend fun getSelectedRegion(): String? {
-        return context.dataStore.data.map { it[Keys.SELECTED_REGION] }.first()
-    }
-
-    suspend fun saveHomeRegion(regionId: String) {
-        context.dataStore.edit { prefs -> prefs[Keys.HOME_REGION] = regionId }
-    }
-
-    suspend fun getHomeRegion(): String? {
-        return context.dataStore.data.map { it[Keys.HOME_REGION] }.first()
-    }
-
-    suspend fun addUnlockedRegion(regionId: String) {
         context.dataStore.edit { prefs ->
-            val current = prefs[Keys.UNLOCKED_REGIONS]?.toMutableSet() ?: mutableSetOf()
-            current.add(regionId)
-            prefs[Keys.UNLOCKED_REGIONS] = current
+            prefs[Keys.LANGUAGE] = language
         }
     }
 
-    suspend fun getUnlockedRegions(): Set<String> {
-        return context.dataStore.data.map { it[Keys.UNLOCKED_REGIONS] ?: emptySet() }.first()
+    suspend fun getLanguage(): String {
+        val prefs = context.dataStore.data.first()
+        return prefs[Keys.LANGUAGE] ?: "de"
     }
 
-    suspend fun isRegionUnlocked(regionId: String): Boolean {
-        return getUnlockedRegions().contains(regionId)
+    suspend fun saveHomeRegion(region: Region) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.HOME_REGION] = Json.encodeToString(region)
+        }
     }
 
-    suspend fun clearPreferences() {
-        context.dataStore.edit { it.clear() }
+    suspend fun getHomeRegion(): Region? {
+        val prefs = context.dataStore.data.first()
+        val json = prefs[Keys.HOME_REGION] ?: return null
+        return Json.decodeFromString<Region>(json)
+    }
+
+    suspend fun addPurchasedRegion(regionCode: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.PURCHASED_REGIONS] ?: emptySet()
+            prefs[Keys.PURCHASED_REGIONS] = current + regionCode
+        }
+    }
+
+    suspend fun getPurchasedRegions(): Set<String> {
+        val prefs = context.dataStore.data.first()
+        return prefs[Keys.PURCHASED_REGIONS] ?: emptySet()
     }
 }

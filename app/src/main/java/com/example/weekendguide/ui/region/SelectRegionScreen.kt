@@ -8,59 +8,156 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.weekendguide.viewmodel.SplashViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.viewmodel.RegionViewModel
+import com.example.weekendguide.data.preferences.UserPreferences
+import kotlinx.coroutines.launch
 
 @Composable
 fun SelectRegionScreen(
-    onNavigate: (SplashViewModel.Destination) -> Unit
+    onRegionSelected: () -> Unit,
+    viewModel: RegionViewModel = viewModel()
 ) {
-    val regions = listOf("Region 1", "Region 2", "Region 3")
-    var selectedRegion by remember { mutableStateOf<String?>(null) }
+    val countries by viewModel.countries.collectAsState()
+    val regionsByCountry by viewModel.regionsByCountry.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Выберите ваш регион",
-            style = MaterialTheme.typography.titleLarge
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+    val context = LocalContext.current
+    val userPreferences = remember { UserPreferences(context) }
 
-        LazyColumn {
-            items(regions) { region ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { selectedRegion = region }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+    val coroutineScope = rememberCoroutineScope()
+
+    val language by produceState(initialValue = "en") {
+        value = userPreferences.getLanguage()
+    }
+
+    var selectedCountryCode by remember { mutableStateOf<String?>(null) }
+    var selectedRegion by remember { mutableStateOf<Region?>(null) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            loading -> {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+
+            error != null -> {
+                Text(
+                    text = error ?: "Произошла ошибка",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
+            else -> {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    RadioButton(
-                        selected = region == selectedRegion,
-                        onClick = { selectedRegion = region }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = region)
+                    if (selectedCountryCode == null) {
+                        // Выбор страны
+                        items(countries) { country ->
+                            val countryName = when (language) {
+                                "en" -> country.name_en
+                                "de" -> country.name_de
+                                else -> country.name_ru
+                            }
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedCountryCode = country.countryCode // ← выбираем страну
+                                    }
+                            ) {
+                                Text(
+                                    text = countryName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        // Выбор региона внутри страны
+                        val regions = regionsByCountry[selectedCountryCode] ?: emptyList()
+
+                        item {
+                            TextButton(onClick = { selectedCountryCode = null }) {
+                                Text("← Назад к выбору страны")
+                            }
+                        }
+
+                        if (regions.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "Нет доступных регионов.",
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        } else {
+                            items(regions) { region ->
+                                val name = region.name[language] ?: region.name["en"] ?: "Без названия"
+                                val description = region.description?.get(language) ?: ""
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedRegion = region
+                                            showConfirmDialog = true
+                                        }
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(text = name, style = MaterialTheme.typography.titleMedium)
+                                        if (description.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(text = description, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                selectedRegion?.let {
-                    // Сохраняем выбранный регион при необходимости
-                    onNavigate(SplashViewModel.Destination.Main)
+        // Диалог подтверждения выбора региона
+        if (showConfirmDialog && selectedRegion != null) {
+            AlertDialog(
+                onDismissRequest = { showConfirmDialog = false },
+                title = { Text("Подтверждение") },
+                text = {
+                    val regionName = selectedRegion?.name?.get(language) ?: "этот регион"
+                    Text("Вы действительно хотите выбрать $regionName как основной регион?")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showConfirmDialog = false
+                            coroutineScope.launch {
+                                selectedRegion?.let { region ->
+                                    viewModel.downloadAndCacheRegionPOI(region)
+                                    userPreferences.addPurchasedRegion(region.region_code)
+                                    userPreferences.saveHomeRegion(region)
+                                    onRegionSelected()
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Да")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmDialog = false }) {
+                        Text("Отмена")
+                    }
                 }
-            },
-            enabled = selectedRegion != null,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("Далее")
+            )
         }
     }
 }

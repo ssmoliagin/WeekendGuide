@@ -1,6 +1,31 @@
 
+package com.example.weekendguide
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import com.example.weekendguide.ui.navigation.AppNavigation
+import com.example.weekendguide.ui.theme.WeekendGuideTheme
+import com.google.firebase.FirebaseApp
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        FirebaseApp.initializeApp(this)
+        super.onCreate(savedInstanceState)
+        setContent {
+            WeekendGuideTheme {
+                AppNavigation()
+            }
+        }
+    }
+}
+
 
 /*
+// ПРОВЕРОЧНАЯ ВЕРСИЯ С ПРОСТОЙ ЗАГРУЗКОЙ И ЧТЕНИЕМ ФАЙЛА ИЗ FIREBASE
+//
+package com.example.weekendguide
+
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -23,31 +48,8 @@ import com.google.firebase.storage.ktx.storage
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.tasks.await
-*/
-
-package com.example.weekendguide
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.weekendguide.ui.theme.WeekendGuideTheme
-import com.example.weekendguide.ui.navigation.AppNavigation
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            WeekendGuideTheme {
-                AppNavigation()
-            }
-        }
-    }
-}
 
 
-
-/*
 class MainActivity : ComponentActivity() {
 
     data class Country(
@@ -85,7 +87,7 @@ class MainActivity : ComponentActivity() {
             try {
                 val storage = Firebase.storage
                 val gsRef = storage.getReferenceFromUrl(
-                    "gs://weekendguide-dfc8c.firebasestorage.app/data/places/countries.json"
+                    "gs://weekendguide-dfc8c.firebasestorage.app/data/places/countries.json" // ТОЛЬКО ПОЛНАЯ ССЫЛКА
                 )
                 val bytes = gsRef.getBytes(1024 * 1024).await()
                 val json = String(bytes, Charsets.UTF_8)

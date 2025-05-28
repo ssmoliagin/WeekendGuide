@@ -49,12 +49,9 @@ fun AppNavigation() {
         }
 
         composable("region") {
-            SelectRegionScreen(onNavigate = { destination ->
-                when (destination) {
-                    SplashViewModel.Destination.Main -> navController.navigate("main") {
-                        popUpTo("region") { inclusive = true }
-                    }
-                    else -> {}
+            SelectRegionScreen(onRegionSelected = {
+                navController.navigate("main") {
+                    popUpTo("region") { inclusive = true }
                 }
             })
         }

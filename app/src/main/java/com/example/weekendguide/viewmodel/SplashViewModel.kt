@@ -47,7 +47,7 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
         if (user == null) {
             _uiState.value = Destination.Login
         } else {
-            val region = preferences.getSelectedRegion()
+            val region = preferences.getHomeRegion()
             _uiState.value = if (region != null) Destination.Main else Destination.RegionSelect
         }
     }

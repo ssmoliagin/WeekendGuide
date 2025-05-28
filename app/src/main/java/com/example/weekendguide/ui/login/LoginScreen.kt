@@ -1,5 +1,6 @@
 package com.example.weekendguide.ui.login
 
+import android.Manifest
 import android.app.Activity
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -23,9 +24,8 @@ import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,8 +44,13 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val languages = listOf("ru", "en", "de")
+    var selectedLanguage by remember { mutableStateOf("ru") }
+    var expanded by remember { mutableStateOf(false) }
+
     suspend fun checkRegionAndNavigate() {
-        val region = preferences.getSelectedRegion()
+        preferences.saveLanguage(selectedLanguage)
+        val region = preferences.getHomeRegion()
         if (region != null) {
             onNavigate(SplashViewModel.Destination.Main)
         } else {
@@ -86,7 +91,7 @@ fun LoginScreen(
             .setGoogleIdTokenRequestOptions(
                 BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
                     .setSupported(true)
-                    .setServerClientId(BuildConfig.WEB_CLIENT_ID)
+                    .setServerClientId("400302919360-6minnnn46u0ak2vctfbq622n87lhaev8.apps.googleusercontent.com")//(BuildConfig.WEB_CLIENT_ID)
                     .setFilterByAuthorizedAccounts(false)
                     .build()
             )
@@ -106,7 +111,9 @@ fun LoginScreen(
 
     LaunchedEffect(Unit) {
         auth.currentUser?.let {
-            checkRegionAndNavigate()
+            coroutineScope.launch {
+                checkRegionAndNavigate()
+            }
         }
     }
 
@@ -188,6 +195,30 @@ fun LoginScreen(
                         startGoogleSignIn()
                     }) {
                         Text("Войти через Google")
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Выберите язык интерфейса")
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box {
+                        OutlinedButton(onClick = { expanded = true }) {
+                            Text(selectedLanguage.uppercase())
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            languages.forEach { language ->
+                                DropdownMenuItem(
+                                    text = { Text(language.uppercase()) },
+                                    onClick = {
+                                        selectedLanguage = language
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
 
                     errorMessage?.let {
