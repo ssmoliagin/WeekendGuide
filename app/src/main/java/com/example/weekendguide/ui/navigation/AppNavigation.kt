@@ -10,6 +10,8 @@ import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.region.SelectRegionScreen
 import com.example.weekendguide.ui.main.MainScreen
 import com.example.weekendguide.viewmodel.SplashViewModel
+import com.example.weekendguide.data.model.Region
+
 
 @Composable
 fun AppNavigation() {

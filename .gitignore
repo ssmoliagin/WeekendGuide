@@ -26,3 +26,4 @@ output.json
 *.jks
 google-services.json
 keys/
+Firebase/
