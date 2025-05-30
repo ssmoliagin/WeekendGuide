@@ -2,6 +2,7 @@ package com.example.weekendguide.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
@@ -42,11 +43,6 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
 
     override suspend fun getRegions(countryCode: String): List<Region> = withContext(Dispatchers.IO) {
         val lowerCode = countryCode.lowercase(Locale.ROOT)
-        val userPreferences = UserPreferences(context)
-
-      //  userPreferences.saveSelectCountry(lowerCode) // неработает!!!
-      //  Log.d("УСТАНОВЛЕН КОД СТРАНЫ", "${userPreferences.getSelectCountry()}")
-
         val url = "$path/data/places/$lowerCode/regions.json"
         val file = File(context.cacheDir, "regions_$lowerCode.json")
         try {

@@ -1,7 +1,8 @@
 package com.example.weekendguide.ui.main
 
+import android.app.Application
 import android.content.Context
-import android.util.Log
+import android.location.Location
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,6 +15,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,45 +31,120 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
+import com.example.weekendguide.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 
 @Composable
 fun MainScreen(context: Context = LocalContext.current) {
-    var region by remember { mutableStateOf<Region?>(null) }
-
-    LaunchedEffect(Unit) {
+    val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
+    val region by produceState<Region?>(initialValue = null) {
         val prefs = UserPreferences(context)
-        region = prefs.getHomeRegion()
+        value = prefs.getHomeRegion()
     }
+    val context = LocalContext.current
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                locationViewModel.detectLocationFromGPS()
+            } else {
+                Toast.makeText(context, "Разрешение не предоставлено", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    val userLocation by locationViewModel.location.collectAsState()
+    val currentCity by locationViewModel.currentCity.collectAsState()
 
     region?.let { reg ->
-        val viewModel: POIViewModel = viewModel(
-            factory = POIViewModelFactory(context, reg)
+        val viewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
+        MainContent(
+            viewModel = viewModel,
+            region = reg,
+            userLocation = userLocation,
+            currentCity = currentCity,
+            onRequestLocationChange = {
+                when {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED -> {
+                        locationViewModel.detectLocationFromGPS()
+                    }
+                    else -> {
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    }
+                }
+            },
+            onShowProfile = {
+                val prefs = UserPreferences(context)
+                coroutineScope.launch {
+                    val allPrefs = prefs.getAll()
+                    Toast.makeText(context, allPrefs.toString(), Toast.LENGTH_LONG).show()
+                }
+            }
         )
-        MainContent(viewModel, reg)
     } ?: LoadingScreen()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainContent(viewModel: POIViewModel, region: Region) {
+fun MainContent(
+    viewModel: POIViewModel,
+    region: Region,
+    userLocation: Pair<Double, Double>?,
+    currentCity: String?,
+    onRequestLocationChange: () -> Unit,
+    onShowProfile: () -> Unit
+) {
     val poiList by viewModel.poiList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
     val context = LocalContext.current
     val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
-    var selectedRadius by remember { mutableStateOf("20км") }
+    var selectedRadius by remember { mutableStateOf("200км") }
     var randomPOI by remember { mutableStateOf<POI?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(poiList) {
-        if (poiList.isNotEmpty() && randomPOI == null) {
-            randomPOI = poiList.random()
+    val radiusValue = when (selectedRadius) {
+        "20км" -> 20
+        "50км" -> 50
+        "100км" -> 100
+        "200км" -> 200
+        "∞" -> Int.MAX_VALUE
+        else -> 200
+    }
+
+    val filteredPOIList = remember(poiList, userLocation, selectedRadius) {
+        if (userLocation == null) poiList
+        else poiList.filter { poi ->
+            val result = FloatArray(1)
+            Location.distanceBetween(userLocation.first, userLocation.second, poi.lat, poi.lng, result)
+            val distanceInKm = result[0] / 1000
+            distanceInKm <= radiusValue
         }
     }
 
-   // val otherRegions = remember { viewModel.getRegionsByCountry(region.country_code).filter { it.code != region.country_code }.take(4) }
+    LaunchedEffect(filteredPOIList) {
+        if (filteredPOIList.isNotEmpty() && randomPOI == null) {
+            randomPOI = filteredPOIList.random()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -83,7 +161,7 @@ fun MainContent(viewModel: POIViewModel, region: Region) {
                             tint = Color.White,
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { /* Навигация к профилю */ }
+                                .clickable { onShowProfile() }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
@@ -95,26 +173,30 @@ fun MainContent(viewModel: POIViewModel, region: Region) {
                 NavigationBarItem(
                     selected = true,
                     onClick = { /* Поиск */ },
-                    icon = { Text("Поиск") }
+                    icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = { /* Сохранённое */ },
-                    icon = { Text("Сохранённое") }
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Сохранённое") }
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = {
-                        if (poiList.isNotEmpty()) {
-                            randomPOI = poiList.random()
+                        if (filteredPOIList.isNotEmpty()) {
+                            randomPOI = filteredPOIList.random()
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(0)
+                            }
                         }
                     },
-                    icon = { Text("Случайное") }
+                    icon = { Icon(Icons.Default.Refresh, contentDescription = "Случайное") }
+
                 )
                 NavigationBarItem(
                     selected = false,
                     onClick = { /* Статистика */ },
-                    icon = { Text("Статистика") }
+                    icon = { Icon(Icons.Default.Star, contentDescription = "Статистика") }
                 )
             }
         }
@@ -127,6 +209,7 @@ fun MainContent(viewModel: POIViewModel, region: Region) {
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Блок с фильтрами радиуса
             Row(
                 modifier = Modifier
                     .horizontalScroll(scrollState)
@@ -142,20 +225,23 @@ fun MainContent(viewModel: POIViewModel, region: Region) {
                 }
             }
 
+            // Поле текущего местоположения
             OutlinedTextField(
-                value = "Рядом с вами",
-                onValueChange = { /* Выбор города */ },
+                value = currentCity ?: "Определение местоположения...",
+                onValueChange = { },
+                readOnly = true,
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Местоположение") },
                 trailingIcon = {
-                    IconButton(onClick = { /* Открыть фильтры */ }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Фильтры")
+                    IconButton(onClick = onRequestLocationChange) {
+                        Icon(Icons.Default.LocationOn, contentDescription = "Изменить местоположение")
                     }
                 }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Кнопка Поиск
             Button(
                 onClick = { /* Поиск */ },
                 modifier = Modifier.fillMaxWidth()
@@ -165,63 +251,38 @@ fun MainContent(viewModel: POIViewModel, region: Region) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Основной список
             LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 item {
                     Text("Рекомендованное место", style = MaterialTheme.typography.titleMedium)
                     randomPOI?.let { poi ->
-                        POICard(poi = poi, modifier = Modifier.fillMaxWidth()) // почти на всю ширину
+                        POICard(poi = poi, userLocation = userLocation, modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp))
                     }
                 }
 
-                val types = poiList.map { it.type }.toSet().filter { it.isNotBlank() }
+                val types = filteredPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
                 types.forEach { type ->
                     item {
-                        val typedPOIs = poiList.filter { it.type == type }.shuffled().take(6)
+                        val typedPOIs = filteredPOIList.filter { it.type == type }.shuffled().take(6)
                         Text(type.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.titleMedium)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(typedPOIs) { poi -> POICard(poi) }
-                        }
-                    }
-                }
-/*
-                item {
-                    Text("Наборы точек (POI)", style = MaterialTheme.typography.titleMedium)
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(otherRegions) { regionPreview ->
-                            Box(
-                                modifier = Modifier
-                                    .size(160.dp, 100.dp)
-                                    .background(Color.LightGray)
-                            ) {
-                                Text(regionPreview.name, modifier = Modifier.align(Alignment.Center))
+                            items(typedPOIs) { poi ->
+                                POICard(poi = poi, userLocation = userLocation)
                             }
                         }
                     }
                 }
-*/
-                /*
-                item {
-                    Text("Новости и обновления", style = MaterialTheme.typography.titleMedium)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .background(Color(0xFFE0E0E0))
-                    ) {
-                        Text("Обновление #1", modifier = Modifier.align(Alignment.Center))
-                    }
-                }
-
-                 */
-
-
             }
         }
     }
 }
+
 
 @Composable
 fun LoadingScreen() {
@@ -233,10 +294,19 @@ fun LoadingScreen() {
 @Composable
 fun POICard(
     poi: POI,
+    userLocation: Pair<Double, Double>? = null,
     modifier: Modifier = Modifier
         .width(220.dp)
         .height(180.dp)
 ) {
+    val distanceKm = remember(poi, userLocation) {
+        userLocation?.let { (userLat, userLng) ->
+            val result = FloatArray(1)
+            Location.distanceBetween(userLat, userLng, poi.lat, poi.lng, result)
+            (result[0] / 1000).toInt()
+        }
+    }
+
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -251,7 +321,6 @@ fun POICard(
                         .height(90.dp),
                     contentScale = ContentScale.Crop
                 )
-                Log.d("КАРТИНКА ЕСТЬ? ","${poi.imageUrl}")
             }
 
             Column(modifier = Modifier.padding(8.dp)) {
@@ -268,6 +337,15 @@ fun POICard(
                     maxLines = 2,
                     style = MaterialTheme.typography.bodySmall
                 )
+
+                distanceKm?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Расстояние: $it км",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                }
             }
         }
     }

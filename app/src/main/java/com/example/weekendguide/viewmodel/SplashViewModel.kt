@@ -10,6 +10,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.*
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationManager
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import kotlinx.coroutines.tasks.await
+import com.google.android.gms.location.LocationServices
 
 class SplashViewModel(app: Application) : AndroidViewModel(app) {
 

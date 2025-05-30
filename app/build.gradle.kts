@@ -21,7 +21,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "WEB_CLIENT_ID", "\"${project.findProperty("webClientId") ?: ""}\"")
-        buildConfigField("String", "FIREBASE_STORAGE_PATH", "\"${project.findProperty("firebaseStoragePath") ?: ""}\"")
+        buildConfigField("String", "FIREBASE_STORAGE_PATH", "${project.findProperty("firebaseStoragePath")}")  //        buildConfigField("String", "FIREBASE_STORAGE_PATH", "\"${project.findProperty("firebaseStoragePath") ?: ""}\"")
+
 
     }
 
@@ -97,5 +98,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     implementation("io.coil-kt:coil-compose:2.2.2")
+
+    implementation("com.google.android.gms:play-services-location:21.0.1") // GPS
 
 }

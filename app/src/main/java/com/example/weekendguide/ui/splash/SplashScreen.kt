@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.R
 import com.example.weekendguide.viewmodel.SplashViewModel
 
+
 @Composable
 fun SplashScreen(
     onNavigate: (SplashViewModel.Destination) -> Unit,
