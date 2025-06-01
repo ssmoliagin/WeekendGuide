@@ -30,6 +30,7 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
         object RegionSelect : Destination()
         object Main : Destination()
         object Loading : Destination()
+        object Map : Destination()
     }
 
     init {

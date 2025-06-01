@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         FirebaseApp.initializeApp(this)
         super.onCreate(savedInstanceState)
         setContent {
-            WeekendGuideTheme {
+            WeekendGuideTheme(darkTheme = false)  {
                 AppNavigation()
             }
         }

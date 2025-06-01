@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.util.AppConfig
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
@@ -91,7 +92,7 @@ fun LoginScreen(
             .setGoogleIdTokenRequestOptions(
                 BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
                     .setSupported(true)
-                    .setServerClientId("400302919360-6minnnn46u0ak2vctfbq622n87lhaev8.apps.googleusercontent.com")//(BuildConfig.WEB_CLIENT_ID)
+                    .setServerClientId(AppConfig.WEB_CLIENT_ID)
                     .setFilterByAuthorizedAccounts(false)
                     .build()
             )

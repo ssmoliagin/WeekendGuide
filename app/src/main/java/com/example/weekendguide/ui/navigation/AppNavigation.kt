@@ -31,7 +31,8 @@ fun AppNavigation() {
                     SplashViewModel.Destination.Main -> navController.navigate("main") {
                         popUpTo("splash") { inclusive = true }
                     }
-                    SplashViewModel.Destination.Loading -> { /* Do nothing */ }
+                    SplashViewModel.Destination.Map -> navController.navigate("map")
+                    SplashViewModel.Destination.Loading -> { /* No-op */ }
                 }
             })
         }
@@ -60,6 +61,14 @@ fun AppNavigation() {
 
         composable("main") {
             MainScreen()
+           /*
+            MainScreen(
+                onNavigateToMapScreen = {
+                    navController.navigate("map")
+                }
+            )
+
+            */
         }
     }
 }

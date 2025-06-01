@@ -20,10 +20,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "WEB_CLIENT_ID", "\"${project.findProperty("webClientId") ?: ""}\"")
-        buildConfigField("String", "FIREBASE_STORAGE_PATH", "${project.findProperty("firebaseStoragePath")}")  //        buildConfigField("String", "FIREBASE_STORAGE_PATH", "\"${project.findProperty("firebaseStoragePath") ?: ""}\"")
-
-
     }
 
     buildTypes {
@@ -100,5 +96,11 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.2.2")
 
     implementation("com.google.android.gms:play-services-location:21.0.1") // GPS
+
+// Google Maps Compose
+    implementation("com.google.maps.android:maps-compose:2.11.4")
+
+// Google Maps SDK (если ещё не добавлено)
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
 
 }

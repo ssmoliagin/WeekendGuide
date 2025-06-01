@@ -7,6 +7,7 @@ import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.util.AppConfig
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,7 @@ import java.util.Locale
 
 class DataRepositoryImpl(private val context: Context) : DataRepository {
 
-    private val path = "gs://weekendguide-dfc8c.firebasestorage.app"//BuildConfig.FIREBASE_STORAGE_PATH
+    private val path = AppConfig.FIREBASE_STORAGE_URL
     private val storage = Firebase.storage
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -77,7 +78,6 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             }
         }
     }
-
     override suspend fun getPOIs(regionCode: String): List<POI> = withContext(Dispatchers.IO) {
         val userPreferences = UserPreferences(context)
         val language = userPreferences.getLanguage()

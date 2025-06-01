@@ -3,9 +3,7 @@ package com.example.weekendguide.ui.main
 import android.app.Application
 import android.content.Context
 import android.location.Location
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -43,19 +41,21 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.google.maps.android.compose.GoogleMap
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 
 @Composable
 fun MainScreen(context: Context = LocalContext.current) {
+    var showMap by remember { mutableStateOf(false) }
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val region by produceState<Region?>(initialValue = null) {
         val prefs = UserPreferences(context)
         value = prefs.getHomeRegion()
     }
-    val context = LocalContext.current
-
     val coroutineScope = rememberCoroutineScope()
-
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -66,40 +66,73 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
         }
     )
-
     val userLocation by locationViewModel.location.collectAsState()
     val currentCity by locationViewModel.currentCity.collectAsState()
 
     region?.let { reg ->
         val viewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
-        MainContent(
-            viewModel = viewModel,
-            region = reg,
-            userLocation = userLocation,
-            currentCity = currentCity,
-            onRequestLocationChange = {
-                when {
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED -> {
-                        locationViewModel.detectLocationFromGPS()
-                    }
-                    else -> {
-                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                    }
+        val poiList by viewModel.poiList.collectAsState()
+        val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
+        var selectedRadius by remember { mutableStateOf("200км") }
+
+        val radiusValue = when (selectedRadius) {
+            "20км" -> 20
+            "50км" -> 50
+            "100км" -> 100
+            "200км" -> 200
+            "∞" -> Int.MAX_VALUE
+            else -> 200
+        }
+
+        val filteredPOIList = remember(poiList, userLocation, selectedRadius) {
+            userLocation?.let { (lat, lon) ->
+                poiList.filter { poi ->
+                    val result = FloatArray(1)
+                    Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
+                    val distanceInKm = result[0] / 1000
+                    distanceInKm <= radiusValue
                 }
-            },
-            onShowProfile = {
-                val prefs = UserPreferences(context)
-                coroutineScope.launch {
-                    val allPrefs = prefs.getAll()
-                    Toast.makeText(context, allPrefs.toString(), Toast.LENGTH_LONG).show()
-                }
+            } ?: poiList
+        }
+
+        if (showMap) {
+            MapScreen(poiList = filteredPOIList, userLocation = userLocation) {
+                showMap = false
             }
-        )
+        } else {
+            MainContent(
+                viewModel = viewModel,
+                region = reg,
+                userLocation = userLocation,
+                currentCity = currentCity,
+                onRequestLocationChange = {
+                    when {
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+                            locationViewModel.detectLocationFromGPS()
+                        }
+                        else -> {
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        }
+                    }
+                },
+                onShowProfile = {
+                    val prefs = UserPreferences(context)
+                    coroutineScope.launch {
+                        val allPrefs = prefs.getAll()
+                        Toast.makeText(context, allPrefs.toString(), Toast.LENGTH_LONG).show()
+                    }
+                },
+                onNavigateToMapScreen = {
+                    showMap = true
+                },
+                selectedRadius = selectedRadius,
+                onRadiusChange = { selectedRadius = it },
+                filteredPOIList = filteredPOIList  // <-- добавлено!
+            )
+        }
     } ?: LoadingScreen()
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,17 +142,22 @@ fun MainContent(
     userLocation: Pair<Double, Double>?,
     currentCity: String?,
     onRequestLocationChange: () -> Unit,
-    onShowProfile: () -> Unit
+    onShowProfile: () -> Unit,
+    onNavigateToMapScreen: () -> Unit,
+    //selectedRadius: String,
+    onRadiusChange: (String) -> Unit,
+    selectedRadius: String,
+    filteredPOIList: List<POI> // <-- добавлено!
 ) {
     val poiList by viewModel.poiList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val scrollState = rememberScrollState()
     val listState = rememberLazyListState()
     val context = LocalContext.current
-    val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
-    var selectedRadius by remember { mutableStateOf("200км") }
     var randomPOI by remember { mutableStateOf<POI?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    //var selectedRadius by remember { mutableStateOf("200км") }
+    val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
 
     val radiusValue = when (selectedRadius) {
         "20км" -> 20
@@ -129,7 +167,7 @@ fun MainContent(
         "∞" -> Int.MAX_VALUE
         else -> 200
     }
-
+/*
     val filteredPOIList = remember(poiList, userLocation, selectedRadius) {
         if (userLocation == null) poiList
         else poiList.filter { poi ->
@@ -139,6 +177,8 @@ fun MainContent(
             distanceInKm <= radiusValue
         }
     }
+
+ */
 
     LaunchedEffect(filteredPOIList) {
         if (filteredPOIList.isNotEmpty() && randomPOI == null) {
@@ -219,7 +259,7 @@ fun MainContent(
                 radiusOptions.forEach { radius ->
                     FilterChip(
                         selected = selectedRadius == radius,
-                        onClick = { selectedRadius = radius },
+                        onClick = { onRadiusChange(radius) }, // <-- используй onRadiusChange, а не локальный стейт
                         label = { Text(radius) }
                     )
                 }
@@ -243,10 +283,10 @@ fun MainContent(
 
             // Кнопка Поиск
             Button(
-                onClick = { /* Поиск */ },
+                onClick = onNavigateToMapScreen,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Найти")
+                Text("Показать на карте")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -283,13 +323,6 @@ fun MainContent(
     }
 }
 
-
-@Composable
-fun LoadingScreen() {
-    Box(modifier = Modifier.fillMaxSize()) {
-        CircularProgressIndicator(Modifier.align(Alignment.Center))
-    }
-}
 
 @Composable
 fun POICard(
@@ -348,5 +381,65 @@ fun POICard(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MapScreen(
+    poiList: List<POI>,
+    userLocation: Pair<Double, Double>?,
+    onBack: () -> Unit
+) {
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            userLocation?.let { LatLng(it.first, it.second) } ?: LatLng(51.1657, 10.4515),
+            8f
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Карта", color = Color.White) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        GoogleMap(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            cameraPositionState = cameraPositionState
+        ) {
+            poiList.forEach { poi ->
+                Marker(
+                    state = MarkerState(position = LatLng(poi.lat, poi.lng)),
+                    title = poi.title,
+                    snippet = poi.description
+                )
+            }
+            userLocation?.let {
+                Circle(
+                    center = LatLng(it.first, it.second),
+                    radius = 50.0,
+                    fillColor = Color.Blue.copy(alpha = 0.2f),
+                    strokeColor = Color.Blue
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
     }
 }
