@@ -1,31 +1,83 @@
 package com.example.weekendguide.ui.main
 
+import android.Manifest
+import android.R
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Location
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -33,26 +85,29 @@ import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ViewModelFactory
-import kotlinx.coroutines.launch
-import android.Manifest
-import android.content.pm.PackageManager
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import androidx.compose.foundation.lazy.rememberLazyListState
-import com.google.maps.android.compose.GoogleMap
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.*
-
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.AutocompletePrediction
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.TypeFilter
+import com.google.android.libraries.places.api.net.FetchPlaceRequest
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.maps.android.compose.Circle
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(context: Context = LocalContext.current) {
     var showMap by remember { mutableStateOf(false) }
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
+    val prefs = UserPreferences(context)
+
     val region by produceState<Region?>(initialValue = null) {
-        val prefs = UserPreferences(context)
         value = prefs.getHomeRegion()
     }
     val coroutineScope = rememberCoroutineScope()
@@ -66,8 +121,35 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
         }
     )
+
     val userLocation by locationViewModel.location.collectAsState()
     val currentCity by locationViewModel.currentCity.collectAsState()
+
+    // --- новое поле для ввода города ---
+    var cityQuery by remember { mutableStateOf("") }
+    var predictions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
+
+    val api = Constants.GOOGLE_MAP_API
+    val placesClient = remember {
+        if (!Places.isInitialized()) {
+            Places.initialize(context, api)
+        }
+        Places.createClient(context)
+    }
+
+    fun fetchPredictions(query: String) {
+        val request = FindAutocompletePredictionsRequest.builder()
+            .setQuery(query)
+            .setTypeFilter(TypeFilter.CITIES)
+            .build()
+        placesClient.findAutocompletePredictions(request)
+            .addOnSuccessListener { response ->
+                predictions = response.autocompletePredictions
+            }
+            .addOnFailureListener { exception ->
+                Log.e("MainScreen", "Places API error", exception)
+            }
+    }
 
     region?.let { reg ->
         val viewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
@@ -166,6 +248,8 @@ fun MainContent(
     selectedRadius: String,
     filteredPOIList: List<POI> // <-- добавлено!
 ) {
+    val context = LocalContext.current
+    val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val scrollState = rememberScrollState()
     val listState = rememberLazyListState()
     var randomPOI by remember { mutableStateOf<POI?>(null) }
@@ -259,24 +343,54 @@ fun MainContent(
             }
 
             // Поле текущего местоположения
-            OutlinedTextField(
-                value = currentCity ?: "Определение местоположения...",
-                onValueChange = { },
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Местоположение") },
-                trailingIcon = {
-                    IconButton(onClick = onRequestLocationChange) {
-                        Icon(Icons.Default.LocationOn, contentDescription = "Изменить местоположение")
-                    }
-                }
-            )
+            var showLocationDialog by remember { mutableStateOf(false) }
+            if (showLocationDialog) {
+                LocationSelectorDialog(
+                    onDismiss = { showLocationDialog = false },
+                    onLocationSelected = { city, latLng ->
+                        // Распаковываем lat и lng
+                        val (lat, lng) = latLng
+                        locationViewModel.setManualLocation(city, lat, lng)
+                    },
+                    onRequestGPS = onRequestLocationChange
+                )
+            }
+            // Используем InteractionSource для обработки клика внутри TextField
+           // val interactionSource = remember { MutableInteractionSource() }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                   // .clip(RoundedCornerShape(50)) // овал
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { showLocationDialog = true } // клик снаружи
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Text(
+                    text = currentCity ?: "Определение местоположения...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray
+                )
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "",
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(20.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Кнопка Поиск
             Button(
-                onClick = onNavigateToMapScreen,
+                onClick = {
+                    if (currentCity == null) {
+                        showLocationDialog = true
+                    } else {
+                        onNavigateToMapScreen()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Показать на карте")
@@ -389,6 +503,8 @@ fun MapScreen(
     selectedRadius: String,
     filteredPOIList: List<POI> // <-- добавлено!
 ) {
+    val context = LocalContext.current
+    val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val scrollState = rememberScrollState()
     val listState = rememberLazyListState()
     var randomPOI by remember { mutableStateOf<POI?>(null) }
@@ -443,27 +559,48 @@ fun MapScreen(
                 }
 
                 // Поле местоположения
-                OutlinedTextField(
-                    value = currentCity ?: "Определение местоположения...",
-                    onValueChange = {},
-                    readOnly = true,
+                var showLocationDialog by remember { mutableStateOf(false) }
+                if (showLocationDialog) {
+                    LocationSelectorDialog(
+                        onDismiss = { showLocationDialog = false },
+                        onLocationSelected = { city, latLng ->
+                            // Распаковываем lat и lng
+                            val (lat, lng) = latLng
+                            locationViewModel.setManualLocation(city, lat, lng)
+                        },
+                        onRequestGPS = onRequestLocationChange
+                    )
+                }
+
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    label = { Text("Местоположение") },
-                    trailingIcon = {
-                        IconButton(onClick = onRequestLocationChange) {
-                            Icon(Icons.Default.LocationOn, contentDescription = "Обновить")
-                        }
-                    }
-                )
+                        .clip(RoundedCornerShape(50)) // овал
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { showLocationDialog = true } // клик снаружи
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = currentCity ?: "Определение местоположения...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray
+                    )
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "",
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(20.dp)
+                    )
+                }
+
             }
 
             // Google карта занимает оставшееся пространство
             GoogleMap(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f), // <-- ВАЖНО: карта занимает оставшееся место
+                    .fillMaxWidth(),
+                   // .weight(1f), // <-- ВАЖНО: карта занимает оставшееся место
                 cameraPositionState = cameraPositionState,
                 properties = MapProperties(isMyLocationEnabled = true)
             ) {
@@ -499,4 +636,91 @@ fun LoadingScreen() {
     ) {
         CircularProgressIndicator()
     }
+}
+
+@Composable
+fun LocationSelectorDialog(
+    onDismiss: () -> Unit,
+    onLocationSelected: (String, Pair<Double, Double>) -> Unit,
+    onRequestGPS: () -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val placesClient = remember { Places.createClient(context) }
+    var suggestions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
+
+    LaunchedEffect(query) {
+        if (query.length >= 3) {
+            val request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(query)
+                .build()
+            placesClient.findAutocompletePredictions(request)
+                .addOnSuccessListener { response ->
+                    suggestions = response.autocompletePredictions
+                }
+                .addOnFailureListener { e ->
+                    suggestions = emptyList()
+                    e.printStackTrace()
+                }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Выберите местоположение") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Город") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                LazyColumn {
+                    items(suggestions) { prediction ->
+                        Text(
+                            prediction.getFullText(null).toString(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val placeId = prediction.placeId
+                                    val placeRequest = FetchPlaceRequest.builder(
+                                        placeId,
+                                        listOf(Place.Field.LAT_LNG, Place.Field.NAME)
+                                    ).build()
+
+                                    placesClient.fetchPlace(placeRequest)
+                                        .addOnSuccessListener { result ->
+                                            val place = result.place
+                                            val latLng = place.latLng
+                                            if (latLng != null) {
+                                                onLocationSelected(
+                                                    place.name ?: "",
+                                                    Pair(latLng.latitude, latLng.longitude)
+                                                )
+                                            }
+                                            onDismiss()
+                                        }
+                                }
+                                .padding(8.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        onRequestGPS()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Определить по GPS")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {}
+    )
 }

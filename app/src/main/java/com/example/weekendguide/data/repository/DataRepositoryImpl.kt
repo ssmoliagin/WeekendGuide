@@ -3,11 +3,11 @@ package com.example.weekendguide.data.repository
 import android.content.Context
 import android.util.Log
 import com.example.weekendguide.BuildConfig
+import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
-import com.example.weekendguide.util.AppConfig
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +19,7 @@ import java.util.Locale
 
 class DataRepositoryImpl(private val context: Context) : DataRepository {
 
-    private val path = AppConfig.FIREBASE_STORAGE_URL
+    private val path = Constants.FIREBASE_STORAGE_URL
     private val storage = Firebase.storage
     private val json = Json { ignoreUnknownKeys = true }
 

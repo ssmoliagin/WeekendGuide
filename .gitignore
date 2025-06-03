@@ -27,7 +27,7 @@ output.json
 google-services.json
 keys/
 Firebase/
-util/
-main/AndroidManifest.xml
+Constants.kt
+AndroidManifest.xml
 
 

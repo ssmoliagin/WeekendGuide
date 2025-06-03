@@ -91,4 +91,13 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun setManualLocation(city: String, lat: Double, lng: Double) {
+        viewModelScope.launch {
+            _location.value = lat to lng
+            _currentCity.emit(city)
+            prefs.saveCurrentCity(city)
+            prefs.saveCurrentLocation(lat, lng)
+        }
+    }
+
 }
