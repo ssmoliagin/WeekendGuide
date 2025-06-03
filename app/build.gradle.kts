@@ -103,4 +103,6 @@ dependencies {
 // Google Maps SDK (если ещё не добавлено)
     implementation("com.google.android.gms:play-services-maps:18.2.0")
 
+    implementation("com.google.android.libraries.places:places:3.3.0")
+
 }

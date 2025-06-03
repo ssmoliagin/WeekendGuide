@@ -96,9 +96,27 @@ fun MainScreen(context: Context = LocalContext.current) {
         }
 
         if (showMap) {
-            MapScreen(poiList = filteredPOIList, userLocation = userLocation) {
-                showMap = false
-            }
+            MapScreen(
+                poiList = filteredPOIList,
+                userLocation = userLocation,
+                currentCity = currentCity,
+                onRequestLocationChange = {
+                    when {
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+                            locationViewModel.detectLocationFromGPS()
+                        }
+                        else -> {
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        }
+                    }
+                },
+                selectedRadius = selectedRadius,
+                onRadiusChange = { selectedRadius = it },
+                filteredPOIList = filteredPOIList,  // <-- добавлено!
+                onBack = {
+                    showMap = false
+                }
+            )
         } else {
             MainContent(
                 viewModel = viewModel,
@@ -144,41 +162,16 @@ fun MainContent(
     onRequestLocationChange: () -> Unit,
     onShowProfile: () -> Unit,
     onNavigateToMapScreen: () -> Unit,
-    //selectedRadius: String,
     onRadiusChange: (String) -> Unit,
     selectedRadius: String,
     filteredPOIList: List<POI> // <-- добавлено!
 ) {
-    val poiList by viewModel.poiList.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
     val scrollState = rememberScrollState()
     val listState = rememberLazyListState()
-    val context = LocalContext.current
     var randomPOI by remember { mutableStateOf<POI?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    //var selectedRadius by remember { mutableStateOf("200км") }
     val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
 
-    val radiusValue = when (selectedRadius) {
-        "20км" -> 20
-        "50км" -> 50
-        "100км" -> 100
-        "200км" -> 200
-        "∞" -> Int.MAX_VALUE
-        else -> 200
-    }
-/*
-    val filteredPOIList = remember(poiList, userLocation, selectedRadius) {
-        if (userLocation == null) poiList
-        else poiList.filter { poi ->
-            val result = FloatArray(1)
-            Location.distanceBetween(userLocation.first, userLocation.second, poi.lat, poi.lng, result)
-            val distanceInKm = result[0] / 1000
-            distanceInKm <= radiusValue
-        }
-    }
-
- */
 
     LaunchedEffect(filteredPOIList) {
         if (filteredPOIList.isNotEmpty() && randomPOI == null) {
@@ -389,15 +382,25 @@ fun POICard(
 fun MapScreen(
     poiList: List<POI>,
     userLocation: Pair<Double, Double>?,
-    onBack: () -> Unit
+    currentCity: String?,
+    onRequestLocationChange: () -> Unit,
+    onBack: () -> Unit,
+    onRadiusChange: (String) -> Unit,
+    selectedRadius: String,
+    filteredPOIList: List<POI> // <-- добавлено!
 ) {
+    val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
+    var randomPOI by remember { mutableStateOf<POI?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+    val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
+
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             userLocation?.let { LatLng(it.first, it.second) } ?: LatLng(51.1657, 10.4515),
             8f
         )
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -411,27 +414,81 @@ fun MapScreen(
             )
         }
     ) { padding ->
-        GoogleMap(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            cameraPositionState = cameraPositionState
+
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
         ) {
-            poiList.forEach { poi ->
-                Marker(
-                    state = MarkerState(position = LatLng(poi.lat, poi.lng)),
-                    title = poi.title,
-                    snippet = poi.description
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Фильтры
+                Row(
+                    modifier = Modifier
+                        .horizontalScroll(scrollState)
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    radiusOptions.forEach { radius ->
+                        FilterChip(
+                            selected = selectedRadius == radius,
+                            onClick = { onRadiusChange(radius) },
+                            label = { Text(radius) }
+                        )
+                    }
+                }
+
+                // Поле местоположения
+                OutlinedTextField(
+                    value = currentCity ?: "Определение местоположения...",
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    label = { Text("Местоположение") },
+                    trailingIcon = {
+                        IconButton(onClick = onRequestLocationChange) {
+                            Icon(Icons.Default.LocationOn, contentDescription = "Обновить")
+                        }
+                    }
                 )
             }
-            userLocation?.let {
-                Circle(
-                    center = LatLng(it.first, it.second),
-                    radius = 50.0,
-                    fillColor = Color.Blue.copy(alpha = 0.2f),
-                    strokeColor = Color.Blue
-                )
+
+            // Google карта занимает оставшееся пространство
+            GoogleMap(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f), // <-- ВАЖНО: карта занимает оставшееся место
+                cameraPositionState = cameraPositionState,
+                properties = MapProperties(isMyLocationEnabled = true)
+            ) {
+                poiList.forEach { poi ->
+                    Marker(
+                        state = MarkerState(position = LatLng(poi.lat, poi.lng)),
+                        title = poi.title,
+                        snippet = poi.description
+                    )
+                }
+                userLocation?.let {
+                    Circle(
+                        center = LatLng(it.first, it.second),
+                        radius = 50.0,
+                        fillColor = Color.Blue.copy(alpha = 0.2f),
+                        strokeColor = Color.Blue
+                    )
+                }
             }
         }
     }
+
+
+
+
 }
 
 @Composable
