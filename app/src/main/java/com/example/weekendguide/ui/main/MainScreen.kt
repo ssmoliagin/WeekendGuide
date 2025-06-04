@@ -9,6 +9,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,11 +22,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,32 +39,40 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -70,9 +87,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
@@ -100,9 +119,12 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(context: Context = LocalContext.current) {
     var showMap by remember { mutableStateOf(false) }
+    var showFiltersPanel by remember { mutableStateOf(false) }
+
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val prefs = UserPreferences(context)
 
@@ -153,11 +175,13 @@ fun MainScreen(context: Context = LocalContext.current) {
     region?.let { reg ->
         val viewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
         val poiList by viewModel.poiList.collectAsState()
-        val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
-        var selectedRadius by remember { mutableStateOf("200км") }
+        //val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
 
+        //ФИЛЬТРАЦИЯ
+        var selectedRadius by remember { mutableStateOf("200км") }
         val allTypes = listOf("castle", "nature", "park", "funpark", "museum", "swimming", "hiking", "cycling", "zoo", "city-walk", "festival", "extreme")
         var selectedTypes by remember { mutableStateOf(allTypes) }
+
         val onTypeToggle: (String) -> Unit = { type ->
             selectedTypes = if (type in selectedTypes) {
                 selectedTypes - type
@@ -187,6 +211,7 @@ fun MainScreen(context: Context = LocalContext.current) {
             distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
         }
 
+        //НАВИГАЦИЯ
         if (showMap) {
             MapScreen(
                 poiList = filteredPOIList,
@@ -204,6 +229,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 },
                 selectedRadius = selectedRadius,
                 onRadiusChange = { selectedRadius = it },
+                onOpenFilters = { showFiltersPanel = true }, // ✅
                 filteredPOIList = filteredPOIList,  // <-- добавлено!
                 onBack = {
                     showMap = false
@@ -238,10 +264,27 @@ fun MainScreen(context: Context = LocalContext.current) {
                 selectedRadius = selectedRadius,
                 onRadiusChange = { selectedRadius = it },
                 allTypes = allTypes,
-                onTypeToggle = onTypeToggle, // ✅ добавлено
+                onTypeToggle = onTypeToggle,
                 selectedTypes = selectedTypes,
+                onOpenFilters = { showFiltersPanel = true }, // ✅
                 filteredPOIList = filteredPOIList
             )
+        }
+        // ✅ Панель фильтров как BottomSheet
+        if (showFiltersPanel) {
+            ModalBottomSheet(
+                onDismissRequest = {showFiltersPanel = false},
+                sheetState = rememberModalBottomSheetState()
+            ) {
+                FiltersPanel(
+                    selectedRadius = selectedRadius,
+                    onRadiusChange = { selectedRadius = it },
+                    allTypes = allTypes,
+                    selectedTypes = selectedTypes,
+                    onTypeToggle = onTypeToggle,
+                    onDismiss = { showFiltersPanel = false }
+                )
+            }
         }
     } ?: LoadingScreen()
 }
@@ -262,6 +305,7 @@ fun MainContent(
     selectedRadius: String,
     allTypes: List<String>,
     selectedTypes: List<String>,
+    onOpenFilters: () -> Unit, // ✅ новое
     filteredPOIList: List<POI>
 ) {
     val context = LocalContext.current
@@ -333,6 +377,7 @@ fun MainContent(
                 )
             }
         }
+
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -340,7 +385,17 @@ fun MainContent(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+            /*
             Spacer(modifier = Modifier.height(8.dp))
+//КНОПКА ФИЛЬТР
+            Button(
+                onClick = onOpenFilters,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Фильтры")
+            }
 
             // Блок с фильтрами радиуса
             Row(
@@ -358,26 +413,10 @@ fun MainContent(
                 }
             }
 
-
-             // 🔹 Типы достопримечательностей
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(vertical = 8.dp, horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                allTypes.forEach { type ->
-                    FilterChip(
-                        selected = type in selectedTypes,
-                        onClick = { onTypeToggle(type) }, // ✅ Вызов внешней функции
-                        label = { Text(type) }
-                    )
-                }
-            }
+             */
 
 
-
-            // Поле текущего местоположения
+            // включение диалога выбора локации, перенести в маин
             var showLocationDialog by remember { mutableStateOf(false) }
             if (showLocationDialog) {
                 LocationSelectorDialog(
@@ -391,6 +430,55 @@ fun MainContent(
                 )
             }
 
+
+// Поле текущего местоположения
+
+            Row(
+                modifier = Modifier
+                    .padding(top = 16.dp, start = 5.dp, end = 5.dp)
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .clip(RoundedCornerShape(10))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Кнопка LocationOn
+                IconButton(onClick = {showLocationDialog = true}) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 📍 Центр панели — кликабельное поле
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { showLocationDialog = true },
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = currentCity ?: "Искать рядом с...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+                // ⚙️ Кнопка фильтров
+                IconButton(onClick = onOpenFilters) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Фильтры",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+                //
+
+            /*
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -413,9 +501,13 @@ fun MainContent(
                 )
             }
 
+             */
+
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Кнопка Поиск
+
+
+            // Кнопка Показать на карте
             Button(
                 onClick = {
                     if (currentCity == null) {
@@ -534,6 +626,7 @@ fun MapScreen(
     onBack: () -> Unit,
     onRadiusChange: (String) -> Unit,
     selectedRadius: String,
+    onOpenFilters: () -> Unit, // ✅ новое
     filteredPOIList: List<POI> // <-- добавлено!
 ) {
     val context = LocalContext.current
@@ -543,6 +636,7 @@ fun MapScreen(
     var randomPOI by remember { mutableStateOf<POI?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
+    var showLocationDialog by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
@@ -551,6 +645,7 @@ fun MapScreen(
         )
     }
     Scaffold(
+        /*
         topBar = {
             TopAppBar(
                 title = { Text("Карта", color = Color.White) },
@@ -562,80 +657,19 @@ fun MapScreen(
                 }
             )
         }
+         */
     ) { padding ->
 
-        Column(
+        Box(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
+                .padding(padding)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Фильтры
-                Row(
-                    modifier = Modifier
-                        .horizontalScroll(scrollState)
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    radiusOptions.forEach { radius ->
-                        FilterChip(
-                            selected = selectedRadius == radius,
-                            onClick = { onRadiusChange(radius) },
-                            label = { Text(radius) }
-                        )
-                    }
-                }
-
-                // Поле местоположения
-                var showLocationDialog by remember { mutableStateOf(false) }
-                if (showLocationDialog) {
-                    LocationSelectorDialog(
-                        onDismiss = { showLocationDialog = false },
-                        onLocationSelected = { city, latLng ->
-                            // Распаковываем lat и lng
-                            val (lat, lng) = latLng
-                            locationViewModel.setManualLocation(city, lat, lng)
-                        },
-                        onRequestGPS = onRequestLocationChange
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(50)) // овал
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { showLocationDialog = true } // клик снаружи
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    Text(
-                        text = currentCity ?: "Определение местоположения...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray
-                    )
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "",
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(20.dp)
-                    )
-                }
-
-            }
-
-            // Google карта занимает оставшееся пространство
+            // 📍 КАРТА
             GoogleMap(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                // .weight(1f), // <-- ВАЖНО: карта занимает оставшееся место
+                modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                properties = MapProperties(isMyLocationEnabled = true)
+             //   properties = MapProperties(isMyLocationEnabled = true) // Кнопка где я
             ) {
                 poiList.forEach { poi ->
                     Marker(
@@ -644,6 +678,7 @@ fun MapScreen(
                         snippet = poi.description
                     )
                 }
+
                 userLocation?.let {
                     Circle(
                         center = LatLng(it.first, it.second),
@@ -653,12 +688,78 @@ fun MapScreen(
                     )
                 }
             }
+
+            // 🎯 ПАНЕЛЬ — единая "таблетка" с тремя элементами
+            Row(
+                modifier = Modifier
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 🔙 Кнопка "Назад"
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // 📍 Центр панели — кликабельное поле
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { showLocationDialog = true },
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = currentCity ?: "Определение местоположения...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+
+                // ⚙️ Кнопка фильтров
+                IconButton(onClick = onOpenFilters) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Фильтры",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            // 📍 Диалог выбора местоположения
+            if (showLocationDialog) {
+                LocationSelectorDialog(
+                    onDismiss = { showLocationDialog = false },
+                    onLocationSelected = { city, latLng ->
+                        val (lat, lng) = latLng
+                        locationViewModel.setManualLocation(city, lat, lng)
+                    },
+                    onRequestGPS = onRequestLocationChange
+                )
+            }
         }
     }
 
 
-
-
+    // 📍 Диалог
+    if (showLocationDialog) {
+        LocationSelectorDialog(
+            onDismiss = { showLocationDialog = false },
+            onLocationSelected = { city, latLng ->
+                val (lat, lng) = latLng
+                locationViewModel.setManualLocation(city, lat, lng)
+            },
+            onRequestGPS = onRequestLocationChange
+        )
+    }
 }
 
 @Composable
@@ -757,3 +858,77 @@ fun LocationSelectorDialog(
         dismissButton = {}
     )
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FiltersPanel(
+    selectedRadius: String,
+    onRadiusChange: (String) -> Unit,
+    allTypes: List<String>,
+    selectedTypes: List<String>,
+    onTypeToggle: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val radiusValues = listOf("20", "50", "100", "200", "∞")
+    val radiusSliderPosition = radiusValues.indexOfFirst { it.removeSuffix("км") == selectedRadius.removeSuffix("км") }
+        .coerceAtLeast(0)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Дальность (км)", style = MaterialTheme.typography.titleMedium)
+
+            // 🔘 Слайдер радиуса
+            Slider(
+                value = radiusSliderPosition.toFloat(),
+                onValueChange = {
+                    val selected = radiusValues[it.toInt()]
+                    onRadiusChange(if (selected == "∞") selected else "${selected}км")
+                },
+                steps = radiusValues.size - 2,
+                valueRange = 0f..(radiusValues.size - 1).toFloat()
+            )
+
+            Text(
+                text = "Выбрано: $selectedRadius",
+                modifier = Modifier.padding(bottom = 12.dp),
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            // ✅ Чекбоксы по типам
+            Text("Типы мест", style = MaterialTheme.typography.titleMedium)
+            Column {
+                allTypes.forEach { type ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { onTypeToggle(type) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = type in selectedTypes,
+                            onCheckedChange = { onTypeToggle(type) }
+                        )
+                        Text(type, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+
+            // ❌ Закрыть
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text("Закрыть")
+            }
+        }
+    }
+}
+
