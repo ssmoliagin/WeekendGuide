@@ -1,7 +1,6 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
-import android.R
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
@@ -157,6 +156,16 @@ fun MainScreen(context: Context = LocalContext.current) {
         val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
         var selectedRadius by remember { mutableStateOf("200км") }
 
+        val allTypes = listOf("castle", "nature", "park", "funpark", "museum", "swimming", "hiking", "cycling", "zoo", "city-walk", "festival", "extreme")
+        var selectedTypes by remember { mutableStateOf(allTypes) }
+        val onTypeToggle: (String) -> Unit = { type ->
+            selectedTypes = if (type in selectedTypes) {
+                selectedTypes - type
+            } else {
+                selectedTypes + type
+            }
+        }
+
         val radiusValue = when (selectedRadius) {
             "20км" -> 20
             "50км" -> 50
@@ -166,8 +175,8 @@ fun MainScreen(context: Context = LocalContext.current) {
             else -> 200
         }
 
-        val filteredPOIList = remember(poiList, userLocation, selectedRadius) {
-            userLocation?.let { (lat, lon) ->
+        val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes.toList()) {
+            val distanceFiltered = userLocation?.let { (lat, lon) ->
                 poiList.filter { poi ->
                     val result = FloatArray(1)
                     Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
@@ -175,6 +184,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                     distanceInKm <= radiusValue
                 }
             } ?: poiList
+            distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
         }
 
         if (showMap) {
@@ -227,7 +237,10 @@ fun MainScreen(context: Context = LocalContext.current) {
                 },
                 selectedRadius = selectedRadius,
                 onRadiusChange = { selectedRadius = it },
-                filteredPOIList = filteredPOIList  // <-- добавлено!
+                allTypes = allTypes,
+                onTypeToggle = onTypeToggle, // ✅ добавлено
+                selectedTypes = selectedTypes,
+                filteredPOIList = filteredPOIList
             )
         }
     } ?: LoadingScreen()
@@ -245,8 +258,11 @@ fun MainContent(
     onShowProfile: () -> Unit,
     onNavigateToMapScreen: () -> Unit,
     onRadiusChange: (String) -> Unit,
+    onTypeToggle: (String) -> Unit, // <-- ДОБАВЛЕНО
     selectedRadius: String,
-    filteredPOIList: List<POI> // <-- добавлено!
+    allTypes: List<String>,
+    selectedTypes: List<String>,
+    filteredPOIList: List<POI>
 ) {
     val context = LocalContext.current
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
@@ -342,6 +358,25 @@ fun MainContent(
                 }
             }
 
+
+             // 🔹 Типы достопримечательностей
+            Row(
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                allTypes.forEach { type ->
+                    FilterChip(
+                        selected = type in selectedTypes,
+                        onClick = { onTypeToggle(type) }, // ✅ Вызов внешней функции
+                        label = { Text(type) }
+                    )
+                }
+            }
+
+
+
             // Поле текущего местоположения
             var showLocationDialog by remember { mutableStateOf(false) }
             if (showLocationDialog) {
@@ -355,13 +390,11 @@ fun MainContent(
                     onRequestGPS = onRequestLocationChange
                 )
             }
-            // Используем InteractionSource для обработки клика внутри TextField
-           // val interactionSource = remember { MutableInteractionSource() }
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                   // .clip(RoundedCornerShape(50)) // овал
+                    // .clip(RoundedCornerShape(50)) // овал
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { showLocationDialog = true } // клик снаружи
                     .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -600,7 +633,7 @@ fun MapScreen(
             GoogleMap(
                 modifier = Modifier
                     .fillMaxWidth(),
-                   // .weight(1f), // <-- ВАЖНО: карта занимает оставшееся место
+                // .weight(1f), // <-- ВАЖНО: карта занимает оставшееся место
                 cameraPositionState = cameraPositionState,
                 properties = MapProperties(isMyLocationEnabled = true)
             ) {
