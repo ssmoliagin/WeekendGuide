@@ -9,21 +9,12 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -38,8 +29,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -51,14 +40,13 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -87,11 +75,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
@@ -99,10 +85,12 @@ import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.preferences.UserSettings
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ViewModelFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.libraries.places.api.Places
@@ -111,19 +99,27 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.model.TypeFilter
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(context: Context = LocalContext.current) {
+    //состояние окон
     var showMap by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
+    var showLocationDialog by remember { mutableStateOf(false) }
+    var showProfile by remember { mutableStateOf(false) }
+    var showPOIInMap by remember { mutableStateOf(false) }
+
+    var selectedPOI by remember { mutableStateOf<POI?>(null) }
 
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val prefs = UserPreferences(context)
@@ -131,7 +127,9 @@ fun MainScreen(context: Context = LocalContext.current) {
     val region by produceState<Region?>(initialValue = null) {
         value = prefs.getHomeRegion()
     }
-    val coroutineScope = rememberCoroutineScope()
+
+
+    // --- ОПРЕДЕЛЯЕМ ЛОКАЦИЮ ---
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -146,7 +144,17 @@ fun MainScreen(context: Context = LocalContext.current) {
     val userLocation by locationViewModel.location.collectAsState()
     val currentCity by locationViewModel.currentCity.collectAsState()
 
-    // --- новое поле для ввода города ---
+    var onRequestLocationChange = {
+        when {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+                locationViewModel.detectLocationFromGPS()
+            }
+            else -> {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        }
+    }
+
     var cityQuery by remember { mutableStateOf("") }
     var predictions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
 
@@ -172,10 +180,10 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
     }
 
+    // --- ОСНОВНАЯ ЛОГИКА ---
     region?.let { reg ->
         val viewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
         val poiList by viewModel.poiList.collectAsState()
-        //val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
 
         //ФИЛЬТРАЦИЯ
         var selectedRadius by remember { mutableStateOf("200км") }
@@ -199,6 +207,7 @@ fun MainScreen(context: Context = LocalContext.current) {
             else -> 200
         }
 
+        //определение отфильтрованых пои
         val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes.toList()) {
             val distanceFiltered = userLocation?.let { (lat, lon) ->
                 poiList.filter { poi ->
@@ -211,66 +220,38 @@ fun MainScreen(context: Context = LocalContext.current) {
             distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
         }
 
-        //НАВИГАЦИЯ
+
+        // --- НАВИГАЦИЯ ---
+
+        //основной экран или карта
         if (showMap) {
             MapScreen(
-                poiList = filteredPOIList,
+                userPOIList = filteredPOIList,
                 userLocation = userLocation,
-                currentCity = currentCity,
-                onRequestLocationChange = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
-                            locationViewModel.detectLocationFromGPS()
-                        }
-                        else -> {
-                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                        }
-                    }
-                },
+                userCurrentCity = currentCity,
+
                 selectedRadius = selectedRadius,
-                onRadiusChange = { selectedRadius = it },
-                onOpenFilters = { showFiltersPanel = true }, // ✅
-                filteredPOIList = filteredPOIList,  // <-- добавлено!
-                onBack = {
-                    showMap = false
-                }
+
+                onDismiss = { showMap = false },
+                onOpenLocation = { showLocationDialog = true },
+                onOpenFilters = { showFiltersPanel = true },
+                onSelectPOI = { poi -> selectedPOI = poi },
+                onOpenPOIinMap = {showPOIInMap = true}
             )
         } else {
             MainContent(
-                viewModel = viewModel,
-                region = reg,
+                userPOIList = filteredPOIList,
                 userLocation = userLocation,
-                currentCity = currentCity,
-                onRequestLocationChange = {
-                    when {
-                        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
-                            locationViewModel.detectLocationFromGPS()
-                        }
-                        else -> {
-                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                        }
-                    }
-                },
-                onShowProfile = {
-                    val prefs = UserPreferences(context)
-                    coroutineScope.launch {
-                        val allPrefs = prefs.getAll()
-                        Toast.makeText(context, allPrefs.toString(), Toast.LENGTH_LONG).show()
-                    }
-                },
-                onNavigateToMapScreen = {
-                    showMap = true
-                },
-                selectedRadius = selectedRadius,
-                onRadiusChange = { selectedRadius = it },
-                allTypes = allTypes,
-                onTypeToggle = onTypeToggle,
-                selectedTypes = selectedTypes,
-                onOpenFilters = { showFiltersPanel = true }, // ✅
-                filteredPOIList = filteredPOIList
+                userCurrentCity = currentCity,
+
+                onOpenMapScreen = { showMap = true },
+                onOpenLocation = { showLocationDialog = true },
+                onOpenFilters = { showFiltersPanel = true },
+                onOpenProfile = { showProfile = true }
             )
         }
-        // ✅ Панель фильтров как BottomSheet
+
+        // ✅ Панель Фильтры
         if (showFiltersPanel) {
             ModalBottomSheet(
                 onDismissRequest = {showFiltersPanel = false},
@@ -286,6 +267,49 @@ fun MainScreen(context: Context = LocalContext.current) {
                 )
             }
         }
+
+        // ✅ Панель Выбор локации
+        if (showLocationDialog) {
+            LocationSelectorDialog(
+                onDismiss = { showLocationDialog = false },
+                onLocationSelected = { city, latLng ->
+                    // Распаковываем lat и lng
+                    val (lat, lng) = latLng
+                    locationViewModel.setManualLocation(city, lat, lng)
+                },
+                onRequestGPS = onRequestLocationChange
+            )
+        }
+
+        // ✅ Панель Профиль
+        if(showProfile) {
+            ModalBottomSheet(
+                onDismissRequest = {showProfile = false},
+                sheetState = rememberModalBottomSheetState()
+            ) {
+                ProfilePanel (
+                    onDismiss = { showProfile = false}
+                )
+            }
+        }
+
+        // ✅ POI на Карте
+
+        val sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true
+        )
+        // ✅ POI на Карте
+        val poi = selectedPOI
+        if (showPOIInMap && poi != null) {
+            ModalBottomSheet(
+                onDismissRequest = {showPOIInMap = false},
+                sheetState = rememberModalBottomSheetState()
+            ) {
+                POICard(poi = poi, userLocation = userLocation)
+            }
+        }
+
+
     } ?: LoadingScreen()
 }
 
@@ -293,33 +317,23 @@ fun MainScreen(context: Context = LocalContext.current) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
-    viewModel: POIViewModel,
-    region: Region,
+    userPOIList: List<POI>,
     userLocation: Pair<Double, Double>?,
-    currentCity: String?,
-    onRequestLocationChange: () -> Unit,
-    onShowProfile: () -> Unit,
-    onNavigateToMapScreen: () -> Unit,
-    onRadiusChange: (String) -> Unit,
-    onTypeToggle: (String) -> Unit, // <-- ДОБАВЛЕНО
-    selectedRadius: String,
-    allTypes: List<String>,
-    selectedTypes: List<String>,
-    onOpenFilters: () -> Unit, // ✅ новое
-    filteredPOIList: List<POI>
-) {
-    val context = LocalContext.current
-    val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
-    val scrollState = rememberScrollState()
+    userCurrentCity: String?,
+
+    onOpenMapScreen: () -> Unit,
+    onOpenLocation: () -> Unit,
+    onOpenFilters: () -> Unit,
+    onOpenProfile: () -> Unit
+    ) {
+
     val listState = rememberLazyListState()
     var randomPOI by remember { mutableStateOf<POI?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
 
-
-    LaunchedEffect(filteredPOIList) {
-        if (filteredPOIList.isNotEmpty() && randomPOI == null) {
-            randomPOI = filteredPOIList.random()
+    LaunchedEffect(userPOIList) {
+        if (userPOIList.isNotEmpty() && randomPOI == null) {
+            randomPOI = userPOIList.random()
         }
     }
 
@@ -338,13 +352,15 @@ fun MainContent(
                             tint = Color.White,
                             modifier = Modifier
                                 .size(32.dp)
-                                .clickable { onShowProfile() }
+                                .clickable { onOpenProfile() }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                 }
             )
         },
+
+        //НИЖНЕЕ МЕНЮ
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
@@ -360,8 +376,8 @@ fun MainContent(
                 NavigationBarItem(
                     selected = false,
                     onClick = {
-                        if (filteredPOIList.isNotEmpty()) {
-                            randomPOI = filteredPOIList.random()
+                        if (userPOIList.isNotEmpty()) {
+                            randomPOI = userPOIList.random()
                             coroutineScope.launch {
                                 listState.animateScrollToItem(0)
                             }
@@ -378,6 +394,7 @@ fun MainContent(
             }
         }
 
+        // ОСНОВНОЙ ЭКРАН
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -385,50 +402,8 @@ fun MainContent(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            /*
-            Spacer(modifier = Modifier.height(8.dp))
-//КНОПКА ФИЛЬТР
-            Button(
-                onClick = onOpenFilters,
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Фильтры")
-            }
-
-            // Блок с фильтрами радиуса
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(scrollState)
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                radiusOptions.forEach { radius ->
-                    FilterChip(
-                        selected = selectedRadius == radius,
-                        onClick = { onRadiusChange(radius) }, // <-- используй onRadiusChange, а не локальный стейт
-                        label = { Text(radius) }
-                    )
-                }
-            }
-
-             */
-
-
             // включение диалога выбора локации, перенести в маин
-            var showLocationDialog by remember { mutableStateOf(false) }
-            if (showLocationDialog) {
-                LocationSelectorDialog(
-                    onDismiss = { showLocationDialog = false },
-                    onLocationSelected = { city, latLng ->
-                        // Распаковываем lat и lng
-                        val (lat, lng) = latLng
-                        locationViewModel.setManualLocation(city, lat, lng)
-                    },
-                    onRequestGPS = onRequestLocationChange
-                )
-            }
+
 
 
 // Поле текущего местоположения
@@ -443,7 +418,7 @@ fun MainContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Кнопка LocationOn
-                IconButton(onClick = {showLocationDialog = true}) {
+                IconButton(onClick = {onOpenLocation()}) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = "",
@@ -456,13 +431,13 @@ fun MainContent(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clickable { showLocationDialog = true },
+                        .clickable { onOpenLocation() },
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        text = currentCity ?: "Искать рядом с...",
+                        text = userCurrentCity ?: "Искать рядом с...",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                        color = if (userCurrentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
@@ -476,33 +451,6 @@ fun MainContent(
                 }
             }
 
-                //
-
-            /*
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    // .clip(RoundedCornerShape(50)) // овал
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { showLocationDialog = true } // клик снаружи
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = currentCity ?: "Определение местоположения...",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray
-                )
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "",
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(20.dp)
-                )
-            }
-
-             */
-
             Spacer(modifier = Modifier.height(8.dp))
 
 
@@ -510,10 +458,10 @@ fun MainContent(
             // Кнопка Показать на карте
             Button(
                 onClick = {
-                    if (currentCity == null) {
-                        showLocationDialog = true
+                    if (userCurrentCity == null) {
+                        onOpenLocation()
                     } else {
-                        onNavigateToMapScreen()
+                        onOpenMapScreen()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -538,10 +486,10 @@ fun MainContent(
                     }
                 }
 
-                val types = filteredPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
+                val types = userPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
                 types.forEach { type ->
                     item {
-                        val typedPOIs = filteredPOIList.filter { it.type == type }.shuffled().take(6)
+                        val typedPOIs = userPOIList.filter { it.type == type }.shuffled().take(6)
                         Text(type.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.titleMedium)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(typedPOIs) { poi ->
@@ -619,24 +567,18 @@ fun POICard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
-    poiList: List<POI>,
+    userPOIList: List<POI>,
     userLocation: Pair<Double, Double>?,
-    currentCity: String?,
-    onRequestLocationChange: () -> Unit,
-    onBack: () -> Unit,
-    onRadiusChange: (String) -> Unit,
+    userCurrentCity: String?,
+
     selectedRadius: String,
-    onOpenFilters: () -> Unit, // ✅ новое
-    filteredPOIList: List<POI> // <-- добавлено!
+
+    onDismiss: () -> Unit,
+    onOpenLocation: () -> Unit,
+    onOpenFilters: () -> Unit,
+    onSelectPOI: (POI) -> Unit,
+    onOpenPOIinMap: () -> Unit
 ) {
-    val context = LocalContext.current
-    val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
-    val scrollState = rememberScrollState()
-    val listState = rememberLazyListState()
-    var randomPOI by remember { mutableStateOf<POI?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-    val radiusOptions = listOf("20км", "50км", "100км", "200км", "∞")
-    var showLocationDialog by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
@@ -644,47 +586,57 @@ fun MapScreen(
             8f
         )
     }
-    Scaffold(
-        /*
-        topBar = {
-            TopAppBar(
-                title = { Text("Карта", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
-                    }
-                }
-            )
-        }
-         */
-    ) { padding ->
+
+    val radiusValue = when (selectedRadius) {
+        "20км" -> 20_000.0
+        "50км" -> 50_000.0
+        "100км" -> 100_000.0
+        "200км" -> 200_000.0
+        "∞" -> 0.0
+        else -> 200_000.0
+    }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
         ) {
-            // 📍 КАРТА
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
              //   properties = MapProperties(isMyLocationEnabled = true) // Кнопка где я
             ) {
-                poiList.forEach { poi ->
+
+
+                userPOIList.forEach { poi ->
+                    val icon = when (poi.type) {
+                        "castle" -> BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)
+                        "museum" -> BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                        "park" -> BitmapDescriptorFactory.defaultMarker()
+                        else -> BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                    }
+
                     Marker(
                         state = MarkerState(position = LatLng(poi.lat, poi.lng)),
                         title = poi.title,
-                        snippet = poi.description
+                        //snippet = poi.description,
+                        icon = icon,
+                        onClick = {
+                            onSelectPOI(poi)
+                            onOpenPOIinMap()
+                            true
+                        }
                     )
                 }
+
+
 
                 userLocation?.let {
                     Circle(
                         center = LatLng(it.first, it.second),
-                        radius = 50.0,
-                        fillColor = Color.Blue.copy(alpha = 0.2f),
-                        strokeColor = Color.Blue
+                        radius = radiusValue,
+                        fillColor = Color.Blue.copy(alpha = 0.15f),
+                        strokeColor = Color.Blue,
+                        strokeWidth = 2f
                     )
                 }
             }
@@ -692,7 +644,7 @@ fun MapScreen(
             // 🎯 ПАНЕЛЬ — единая "таблетка" с тремя элементами
             Row(
                 modifier = Modifier
-                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 36.dp, start = 16.dp, end = 16.dp)
                     .fillMaxWidth()
                     .height(56.dp)
                     .clip(RoundedCornerShape(50))
@@ -700,7 +652,7 @@ fun MapScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 🔙 Кнопка "Назад"
-                IconButton(onClick = onBack) {
+                IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Назад",
@@ -713,13 +665,13 @@ fun MapScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clickable { showLocationDialog = true },
+                        .clickable { onOpenLocation() },
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        text = currentCity ?: "Определение местоположения...",
+                        text = userCurrentCity ?: "Определение местоположения...",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (currentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                        color = if (userCurrentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
@@ -733,33 +685,9 @@ fun MapScreen(
                     )
                 }
             }
-
-            // 📍 Диалог выбора местоположения
-            if (showLocationDialog) {
-                LocationSelectorDialog(
-                    onDismiss = { showLocationDialog = false },
-                    onLocationSelected = { city, latLng ->
-                        val (lat, lng) = latLng
-                        locationViewModel.setManualLocation(city, lat, lng)
-                    },
-                    onRequestGPS = onRequestLocationChange
-                )
-            }
         }
-    }
 
 
-    // 📍 Диалог
-    if (showLocationDialog) {
-        LocationSelectorDialog(
-            onDismiss = { showLocationDialog = false },
-            onLocationSelected = { city, latLng ->
-                val (lat, lng) = latLng
-                locationViewModel.setManualLocation(city, lat, lng)
-            },
-            onRequestGPS = onRequestLocationChange
-        )
-    }
 }
 
 @Composable
@@ -772,16 +700,20 @@ fun LoadingScreen() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationSelectorDialog(
     onDismiss: () -> Unit,
     onLocationSelected: (String, Pair<Double, Double>) -> Unit,
     onRequestGPS: () -> Unit
 ) {
-    var query by remember { mutableStateOf("") }
     val context = LocalContext.current
     val placesClient = remember { Places.createClient(context) }
+
+    var query by remember { mutableStateOf("") }
     var suggestions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(query) {
         if (query.length >= 3) {
@@ -799,65 +731,100 @@ fun LocationSelectorDialog(
         }
     }
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("Выберите местоположение") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Город") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                LazyColumn {
-                    items(suggestions) { prediction ->
-                        Text(
-                            prediction.getFullText(null).toString(),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    val placeId = prediction.placeId
-                                    val placeRequest = FetchPlaceRequest.builder(
-                                        placeId,
-                                        listOf(Place.Field.LAT_LNG, Place.Field.NAME)
-                                    ).build()
+        sheetState = sheetState,
+        dragHandle = { Box(modifier = Modifier.padding(top = 12.dp).height(4.dp).width(32.dp).background(Color.LightGray, RoundedCornerShape(2.dp))) }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            Text(
+                text = "Выберите местоположение",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
 
-                                    placesClient.fetchPlace(placeRequest)
-                                        .addOnSuccessListener { result ->
-                                            val place = result.place
-                                            val latLng = place.latLng
-                                            if (latLng != null) {
-                                                onLocationSelected(
-                                                    place.name ?: "",
-                                                    Pair(latLng.latitude, latLng.longitude)
-                                                )
-                                            }
-                                            onDismiss()
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Город или адрес") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 300.dp)
+            ) {
+                items(suggestions) { prediction ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                val placeId = prediction.placeId
+                                val placeRequest = FetchPlaceRequest.builder(
+                                    placeId,
+                                    listOf(Place.Field.LAT_LNG, Place.Field.NAME)
+                                ).build()
+
+                                placesClient.fetchPlace(placeRequest)
+                                    .addOnSuccessListener { result ->
+                                        val place = result.place
+                                        val latLng = place.latLng
+                                        if (latLng != null) {
+                                            onLocationSelected(
+                                                place.name ?: "",
+                                                Pair(latLng.latitude, latLng.longitude)
+                                            )
                                         }
-                                }
-                                .padding(8.dp)
+                                        onDismiss()
+                                    }
+                            },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Text(
+                            text = prediction.getFullText(null).toString(),
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = {
-                        onRequestGPS()
-                        onDismiss()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Определить по GPS")
-                }
             }
-        },
-        confirmButton = {},
-        dismissButton = {}
-    )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    onRequestGPS()
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.LocationOn, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Определить по GPS")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -929,6 +896,94 @@ fun FiltersPanel(
                 Text("Закрыть")
             }
         }
+    }
+}
+
+@Composable
+fun ProfilePanel(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val preferences = remember { UserPreferences(context) }
+    val user = FirebaseAuth.getInstance().currentUser
+
+    var userSettings by remember { mutableStateOf<UserSettings?>(null) }
+
+    LaunchedEffect(Unit) {
+        userSettings = withContext(Dispatchers.IO) {
+            preferences.getAll()
+        }
+    }
+
+    Surface(
+        tonalElevation = 4.dp,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Профиль", style = MaterialTheme.typography.headlineSmall)
+
+            user?.email?.let {
+                ProfileRow(label = "Email", value = it)
+            }
+
+            ProfileRow(
+                label = "Язык интерфейса",
+                value = userSettings?.language ?: "-"
+            )
+
+            ProfileRow(
+                label = "Текущий город",
+                value = userSettings?.currentCity ?: "-"
+            )
+
+            ProfileRow(
+                label = "Координаты",
+                value = userSettings?.currentLocation?.let {
+                    "Lat: %.4f, Lng: %.4f".format(it.first, it.second)
+                } ?: "-"
+            )
+
+            ProfileRow(
+                label = "Домашний регион",
+                value = userSettings?.homeRegion?.region_code ?: "-"
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        FirebaseAuth.getInstance().signOut()
+                     //   context.dataStore.edit { it.clear() }
+                        onDismiss()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Icon(Icons.Default.Close, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Выйти")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileRow(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
