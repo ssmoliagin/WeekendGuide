@@ -5,14 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 class POIViewModel(
     private val dataRepository: DataRepository,
-    private val region: Region
+    private val region: Region,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
@@ -24,6 +25,11 @@ class POIViewModel(
     private val _searchQuery = MutableStateFlow("")
     private val _maxDistance = MutableStateFlow(100)
 
+    // Подписка на избранное из UserPreferences
+    val favoriteIds: StateFlow<Set<String>> = userPreferences.favoriteIdsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    // Отфильтрованные POI по запросу
     val filteredPOIs: StateFlow<List<POI>> = combine(_poiList, _searchQuery, _maxDistance) { pois, query, _ ->
         if (query.isBlank()) pois
         else pois.filter {
@@ -50,12 +56,18 @@ class POIViewModel(
         }
     }
 
-    fun searchPOI(query: String, distance: Int) {
-        _searchQuery.value = query
-        _maxDistance.value = distance
+    fun toggleFavorite(poiId: String) {
+        viewModelScope.launch {
+            userPreferences.toggleFavorite(poiId)
+        }
     }
 
-    fun shuffleRecommendations() {
-        _poiList.value = _poiList.value.shuffled(Random(System.currentTimeMillis()))
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updateMaxDistance(distance: Int) {
+        _maxDistance.value = distance
     }
 }
+

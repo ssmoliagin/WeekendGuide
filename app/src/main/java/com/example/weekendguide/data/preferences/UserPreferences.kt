@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.weekendguide.data.model.Region
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -16,7 +18,8 @@ data class UserSettings(
     val homeRegion: Region?,
     val purchasedRegions: Set<String>,
     val currentCity: String?,
-    val currentLocation: Pair<Double, Double>?
+    val currentLocation: Pair<Double, Double>?,
+    val favoritePoiIds: Set<String>
 )
 
 class UserPreferences(private val context: Context) {
@@ -28,6 +31,7 @@ class UserPreferences(private val context: Context) {
         val CURRENT_CITY = stringPreferencesKey("current_city")
         val LAT = doublePreferencesKey("current_lat")
         val LNG = doublePreferencesKey("current_lng")
+        val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
     }
 
     suspend fun saveLanguage(language: String) {
@@ -87,6 +91,23 @@ class UserPreferences(private val context: Context) {
         return if (lat != null && lng != null) Pair(lat, lng) else null
     }
 
+    // Получить текущее множество избранного
+    suspend fun toggleFavorite(id: String) {
+        context.dataStore.edit { prefs ->
+            val currentFavorites = prefs[Keys.FAVORITES] ?: emptySet()
+            prefs[Keys.FAVORITES] = if (currentFavorites.contains(id)) {
+                currentFavorites - id
+            } else {
+                currentFavorites + id
+            }
+        }
+    }
+
+    val favoriteIdsFlow: Flow<Set<String>> = context.dataStore.data
+        .map { prefs -> prefs[Keys.FAVORITES] ?: emptySet() }
+
+
+
     suspend fun getAll(): UserSettings {
         val prefs = context.dataStore.data.first()
 
@@ -98,13 +119,15 @@ class UserPreferences(private val context: Context) {
         val lat = prefs[Keys.LAT]
         val lng = prefs[Keys.LNG]
         val currentLocation = if (lat != null && lng != null) Pair(lat, lng) else null
+        val favoritePoiIds = prefs[Keys.FAVORITES] ?: emptySet() // <- добавлено
 
         return UserSettings(
             language = language,
             homeRegion = homeRegion,
             purchasedRegions = purchasedRegions,
             currentCity = currentCity,
-            currentLocation = currentLocation
+            currentLocation = currentLocation,
+            favoritePoiIds = favoritePoiIds // <- добавлено
         )
     }
 
