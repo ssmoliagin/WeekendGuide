@@ -1,6 +1,7 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
@@ -33,19 +34,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -109,6 +115,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@SuppressLint("RememberReturnType")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(context: Context = LocalContext.current) {
@@ -118,11 +125,19 @@ fun MainScreen(context: Context = LocalContext.current) {
     var showLocationDialog by remember { mutableStateOf(false) }
     var showProfile by remember { mutableStateOf(false) }
     var showPOIInMap by remember { mutableStateOf(false) }
+    var showListPoi by remember { mutableStateOf(false) }
+    var onSortPOI by remember { mutableStateOf(false) }
+
+    var showSaved by remember { mutableStateOf(false) }// список любимых (ЕЩЕ НЕРЕАЛИЗОВАНО)
+
 
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
 
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val prefs = UserPreferences(context)
+
+    val favoriteIds by prefs.favoriteIdsFlow.collectAsState(initial = emptySet()) // список любимых (ЕЩЕ НЕРЕАЛИЗОВАНО)
+
 
     val region by produceState<Region?>(initialValue = null) {
         value = prefs.getHomeRegion()
@@ -187,6 +202,7 @@ fun MainScreen(context: Context = LocalContext.current) {
 
         //ФИЛЬТРАЦИЯ
         var selectedRadius by remember { mutableStateOf("200км") }
+
         val allTypes = listOf("castle", "nature", "park", "funpark", "museum", "swimming", "hiking", "cycling", "zoo", "city-walk", "festival", "extreme")
         var selectedTypes by remember { mutableStateOf(allTypes) }
 
@@ -220,6 +236,26 @@ fun MainScreen(context: Context = LocalContext.current) {
             distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
         }
 
+        //один тип
+        val onSelectSingleType: (String) -> Unit = { type ->
+            selectedTypes = listOf(type)
+        }
+
+        //сортировка
+// определение итогового списка POI
+        val finalPOIList = remember(filteredPOIList, onSortPOI) {
+            if (onSortPOI) {
+                userLocation?.let { (lat, lon) ->
+                    filteredPOIList.sortedBy { poi ->
+                        val result = FloatArray(1)
+                        Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
+                        result[0]
+                    }
+                } ?: filteredPOIList
+            } else {
+                filteredPOIList
+            }
+        }
 
         // --- НАВИГАЦИЯ ---
 
@@ -236,18 +272,40 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onOpenLocation = { showLocationDialog = true },
                 onOpenFilters = { showFiltersPanel = true },
                 onSelectPOI = { poi -> selectedPOI = poi },
-                onOpenPOIinMap = {showPOIInMap = true}
+                onOpenPOIinMap = {showPOIInMap = true},
+                onOpenListScreen = {showListPoi = true},
             )
-        } else {
+        } else if (showListPoi) {
+            ListPOIScreen(
+                userPOIList = finalPOIList,
+                userLocation = userLocation,
+                userCurrentCity = currentCity,
+
+                selectedRadius = selectedRadius,
+
+                onDismiss = { showListPoi = false },
+                onOpenLocation = { showLocationDialog = true },
+                onOpenFilters = { showFiltersPanel = true },
+                onSelectPOI = { poi -> selectedPOI = poi },
+                onOpenProfile = { showProfile = true },
+                onOpenMapScreen = {showMap = true},
+                onSortPOIButton = {onSortPOI = true}
+            )
+        }
+
+        else {
+            selectedTypes = allTypes
             MainContent(
                 userPOIList = filteredPOIList,
                 userLocation = userLocation,
                 userCurrentCity = currentCity,
 
                 onOpenMapScreen = { showMap = true },
+                onOpenListScreen = {showListPoi = true},
                 onOpenLocation = { showLocationDialog = true },
                 onOpenFilters = { showFiltersPanel = true },
-                onOpenProfile = { showProfile = true }
+                onOpenProfile = { showProfile = true },
+                onSelectSingleType = onSelectSingleType,
             )
         }
 
@@ -260,7 +318,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 FiltersPanel(
                     selectedRadius = selectedRadius,
                     onRadiusChange = { selectedRadius = it },
-                    allTypes = allTypes,
+                    allTypes = poiList.map { it.type }.distinct(),
                     selectedTypes = selectedTypes,
                     onTypeToggle = onTypeToggle,
                     onDismiss = { showFiltersPanel = false }
@@ -294,25 +352,22 @@ fun MainScreen(context: Context = LocalContext.current) {
         }
 
         // ✅ POI на Карте
-
-        val sheetState = rememberModalBottomSheetState(
-            skipPartiallyExpanded = true
-        )
-        // ✅ POI на Карте
         val poi = selectedPOI
         if (showPOIInMap && poi != null) {
             ModalBottomSheet(
                 onDismissRequest = {showPOIInMap = false},
                 sheetState = rememberModalBottomSheetState()
             ) {
-                POICard(poi = poi, userLocation = userLocation)
+                POICard(poi = poi, userLocation = userLocation, userCurrentCity = currentCity,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp))
             }
         }
 
 
     } ?: LoadingScreen()
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -322,10 +377,13 @@ fun MainContent(
     userCurrentCity: String?,
 
     onOpenMapScreen: () -> Unit,
+    onOpenListScreen: () -> Unit,
     onOpenLocation: () -> Unit,
     onOpenFilters: () -> Unit,
-    onOpenProfile: () -> Unit
+    onOpenProfile: () -> Unit,
+    onSelectSingleType: (String) -> Unit
     ) {
+
 
     val listState = rememberLazyListState()
     var randomPOI by remember { mutableStateOf<POI?>(null) }
@@ -370,7 +428,7 @@ fun MainContent(
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { /* Сохранённое */ },
+                    onClick = { onOpenListScreen() },
                     icon = { Icon(Icons.Default.Favorite, contentDescription = "Сохранённое") }
                 )
                 NavigationBarItem(
@@ -480,23 +538,56 @@ fun MainContent(
                 item {
                     Text("Рекомендованное место", style = MaterialTheme.typography.titleMedium)
                     randomPOI?.let { poi ->
-                        POICard(poi = poi, userLocation = userLocation, modifier = Modifier
-                            .fillMaxWidth()
-                            .height(220.dp))
+                        POICard(poi = poi, userLocation = userLocation, userCurrentCity = userCurrentCity,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(320.dp),
+                            modifierImg = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp))
                     }
                 }
 
                 val types = userPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
                 types.forEach { type ->
                     item {
-                        val typedPOIs = userPOIList.filter { it.type == type }.shuffled().take(6)
-                        Text(type.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.titleMedium)
+                        val allTypedPOIs = userPOIList.filter { it.type == type }
+                        val displayedPOIs = allTypedPOIs.shuffled().take(6)
+                        val count = allTypedPOIs.size
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "$count ${type.replaceFirstChar { it.uppercase() }} рядом с ${userCurrentCity ?: "вами"}",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "Показать все",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.clickable {
+                                    onSelectSingleType(type) // фильтруем только по одному типу
+                                    onOpenListScreen()       // и открываем экран со списком
+                                }
+                            )
+                        }
+
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(typedPOIs) { poi ->
-                                POICard(poi = poi, userLocation = userLocation)
+                            items(displayedPOIs) { poi ->
+                                POICard(
+                                    poi = poi,
+                                    userLocation = userLocation,
+                                    userCurrentCity = userCurrentCity
+                                )
                             }
                         }
                     }
+
                 }
             }
         }
@@ -508,9 +599,13 @@ fun MainContent(
 fun POICard(
     poi: POI,
     userLocation: Pair<Double, Double>? = null,
+    userCurrentCity: String? = null,
     modifier: Modifier = Modifier
         .width(220.dp)
-        .height(180.dp)
+        .height(220.dp),
+    modifierImg: Modifier = Modifier
+        .fillMaxWidth()
+        .height(90.dp)
 ) {
     val distanceKm = remember(poi, userLocation) {
         userLocation?.let { (userLat, userLng) ->
@@ -529,9 +624,7 @@ fun POICard(
                 Image(
                     painter = rememberAsyncImagePainter(imageUrl),
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(90.dp),
+                    modifier = modifierImg,
                     contentScale = ContentScale.Crop
                 )
             }
@@ -554,7 +647,7 @@ fun POICard(
                 distanceKm?.let {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Расстояние: $it км",
+                        text = "Расстояние: $it км от $userCurrentCity",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )
@@ -577,7 +670,8 @@ fun MapScreen(
     onOpenLocation: () -> Unit,
     onOpenFilters: () -> Unit,
     onSelectPOI: (POI) -> Unit,
-    onOpenPOIinMap: () -> Unit
+    onOpenPOIinMap: () -> Unit,
+    onOpenListScreen: () -> Unit
 ) {
 
     val cameraPositionState = rememberCameraPositionState {
@@ -644,9 +738,9 @@ fun MapScreen(
             // 🎯 ПАНЕЛЬ — единая "таблетка" с тремя элементами
             Row(
                 modifier = Modifier
-                    .padding(top = 36.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp)
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(50.dp)
                     .clip(RoundedCornerShape(50))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 verticalAlignment = Alignment.CenterVertically
@@ -685,9 +779,33 @@ fun MapScreen(
                     )
                 }
             }
+
+
+// 🔘 Кнопки "Списком"
+            Row(
+                modifier = Modifier
+                    .padding(top = 100.dp, start = 16.dp, end = 16.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AssistChip(
+                    onClick = {
+                        onOpenListScreen()
+                        onDismiss()
+                    },
+                    label = { Text("Списком", maxLines = 1) },
+                    leadingIcon = {
+                        Icon(Icons.Default.List, contentDescription = null)
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = Color.White,
+                        labelColor = Color.Black,
+                        leadingIconContentColor = Color.Black
+                    )
+                )
+            }
         }
-
-
 }
 
 @Composable
@@ -734,7 +852,11 @@ fun LocationSelectorDialog(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { Box(modifier = Modifier.padding(top = 12.dp).height(4.dp).width(32.dp).background(Color.LightGray, RoundedCornerShape(2.dp))) }
+        dragHandle = { Box(modifier = Modifier
+            .padding(top = 12.dp)
+            .height(4.dp)
+            .width(32.dp)
+            .background(Color.LightGray, RoundedCornerShape(2.dp))) }
     ) {
         Column(
             modifier = Modifier
@@ -984,6 +1106,132 @@ private fun ProfileRow(label: String, value: String) {
     Column {
         Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
         Text(value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ListPOIScreen(
+    userPOIList: List<POI>,
+    userLocation: Pair<Double, Double>?,
+    userCurrentCity: String?,
+    selectedRadius: String,
+    onDismiss: () -> Unit,
+    onOpenLocation: () -> Unit,
+    onOpenFilters: () -> Unit,
+    onSelectPOI: (POI) -> Unit,
+    onOpenProfile: () -> Unit,
+    onOpenMapScreen: () -> Unit,
+    onSortPOIButton: () -> Unit
+) {
+    val listState = rememberLazyListState()
+    val poiCount = userPOIList.size
+   // var sortedPOIs by remember { mutableStateOf(userPOIList) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Назад",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+                actions = {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = "Профиль",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable { onOpenProfile() }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            // 🏷 Заголовок
+            Text(
+                text = "$poiCount мест рядом с ${userCurrentCity ?: "вами"}",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            // 🔘 Кнопки сортировки, фильтра и карты
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val buttonModifier = Modifier.weight(1f)
+
+                //Кнопка Сортировка
+                AssistChip(
+                    onClick = {
+                        onSortPOIButton()
+                    },
+                    label = {
+                        Text("Сортировать")
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                    }
+                )
+
+                AssistChip(
+                    onClick = onOpenFilters,
+                    label = { Text("Фильтры", maxLines = 1) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Settings, contentDescription = null)
+                    },
+                    modifier = buttonModifier
+                )
+
+                AssistChip(
+                    onClick = onOpenMapScreen,
+                    label = { Text("Карта", maxLines = 1) },
+                    leadingIcon = {
+                        Icon(Icons.Default.LocationOn, contentDescription = null)
+                    },
+                    modifier = buttonModifier
+                )
+            }
+
+            // 📋 Список POI
+
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(userPOIList) { poi ->
+                    POICard(
+                        poi = poi,
+                        userLocation = userLocation,
+                        userCurrentCity = userCurrentCity,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
+                        modifierImg = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
