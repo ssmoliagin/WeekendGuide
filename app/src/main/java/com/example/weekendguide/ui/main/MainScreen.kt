@@ -1,6 +1,7 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
+import android.R
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
@@ -28,12 +29,15 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
@@ -88,12 +92,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
@@ -134,6 +142,11 @@ fun MainScreen(context: Context = LocalContext.current) {
     var showListPoi by remember { mutableStateOf(false) }
     var onSortPOI by remember { mutableStateOf(false) }
     var showFullPOI by remember { mutableStateOf(false) }
+    var showPOICardTypeMini by remember { mutableStateOf(false) }
+    var showPOICardTypeList by remember { mutableStateOf(false) }
+
+
+
 
     var showOnlyFavorites by remember { mutableStateOf(false) }
 
@@ -317,7 +330,9 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onSortPOIButton = {onSortPOI = true},
 
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
-                onFavoriteClick = onFavoriteClick
+                onFavoriteClick = onFavoriteClick,
+                onShowPOICardTypeList = {showPOICardTypeList},
+                onPOIClick = {showFullPOI = true},
             )
         }
 
@@ -339,7 +354,12 @@ fun MainScreen(context: Context = LocalContext.current) {
                 },
 
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
-                onFavoriteClick = onFavoriteClick
+                onFavoriteClick = onFavoriteClick,
+                onShowPOICardTypeMini = {showPOICardTypeMini},
+                onShowPOICardTypeList = {showPOICardTypeList},
+                onPOIClick = {showFullPOI = true},
+                onSelectPOI = { poi -> selectedPOI = poi },
+
             )
         }
 
@@ -391,7 +411,7 @@ fun MainScreen(context: Context = LocalContext.current) {
 
         // ✅ POI на Карте
         val poi = selectedPOI
-        if (showPOIInMap && poi != null) {
+        if (showPOIInMap && poi != null && !showFullPOI) {
             ModalBottomSheet(
                 onDismissRequest = {showPOIInMap = false},
                 sheetState = rememberModalBottomSheetState()
@@ -400,14 +420,34 @@ fun MainScreen(context: Context = LocalContext.current) {
                     poi = poi,
                     isFavorite = favoriteIds.contains(poi.id),
                     onFavoriteClick = { viewModel.toggleFavorite(poi.id) },
+                    onClick = {showFullPOI = true},
                     userLocation = userLocation,
                     userCurrentCity = currentCity,
-                    cardType = "map")
+                    cardType = "map",
+                    onSelectPOI = { poi -> selectedPOI = poi },
+                )
             }
+        }
+
+        //✅ POI на весь экран
+        if (showFullPOI && poi != null) {
+            POIFullScreen (
+                poi = poi,
+                isFavorite = favoriteIds.contains(poi.id),
+                onFavoriteClick = { viewModel.toggleFavorite(poi.id) },
+                userLocation = userLocation,
+                userCurrentCity = currentCity,
+                onDismiss = {
+                    selectedPOI = null
+                    showFullPOI = false
+                }
+            )
         }
         
     } ?: LoadingScreen()
 }
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -425,7 +465,12 @@ fun MainContent(
     onShowFavoritesList: () -> Unit,
 
     isFavorite: (POI) -> Boolean,
-    onFavoriteClick: (String) -> Unit
+    onFavoriteClick: (String) -> Unit,
+    onShowPOICardTypeMini: () -> Unit,
+    onShowPOICardTypeList: () -> Unit,
+    onPOIClick: () -> Unit,
+    onSelectPOI: (POI) -> Unit,
+
     ) {
     
     val listState = rememberLazyListState()
@@ -583,7 +628,9 @@ fun MainContent(
                             onFavoriteClick = { onFavoriteClick(poi.id) },
                             userLocation = userLocation,
                             userCurrentCity = userCurrentCity,
-                            cardType = "list"
+                            cardType = "list",
+                            onClick = onPOIClick,
+                            onSelectPOI = onSelectPOI
                         )
                     }
                 }
@@ -625,7 +672,9 @@ fun MainContent(
                                     onFavoriteClick = { onFavoriteClick(poi.id) },
                                     userLocation = userLocation,
                                     userCurrentCity = userCurrentCity,
-                                    cardType = "mini"
+                                    cardType = "mini",
+                                    onClick = onPOIClick,
+                                    onSelectPOI = onSelectPOI
                                 )
                             }
                         }
@@ -636,173 +685,6 @@ fun MainContent(
         }
     }
 }
-
-
-@Composable
-fun POICard(
-    poi: POI,
-    isFavorite: Boolean,
-    onFavoriteClick: () -> Unit,
-    userLocation: Pair<Double, Double>? = null,
-    userCurrentCity: String? = null,
-    cardType: String? = null, // "map", "list", "mini"
-) {
-    val cardModifier: Modifier
-    val imageModifier: Modifier
-    val isImageLeft: Boolean
-
-    when (cardType) {
-        "map" -> {
-            cardModifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
-            imageModifier = Modifier
-                .width(180.dp)
-                .fillMaxHeight()
-            isImageLeft = true
-        }
-        "mini" -> {
-            cardModifier = Modifier
-                .width(200.dp)
-                .height(300.dp)
-            imageModifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-            isImageLeft = false
-        }
-        else -> {
-            cardModifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-            imageModifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-            isImageLeft = false
-        }
-    }
-
-    val distanceKm = remember(poi, userLocation) {
-        userLocation?.let { (userLat, userLng) ->
-            val result = FloatArray(1)
-            Location.distanceBetween(userLat, userLng, poi.lat, poi.lng, result)
-            (result[0] / 1000).toInt()
-        }
-    }
-
-    Card(
-        modifier = cardModifier,
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        if (isImageLeft) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = imageModifier
-                ) {
-                    poi.imageUrl?.let { imageUrl ->
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    IconButton(
-                        onClick = onFavoriteClick,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color.Red else Color.Gray
-                        )
-                    }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .fillMaxHeight()
-                        .weight(1f)
-                ) {
-                    Text(
-                        text = poi.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = poi.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1
-                    )
-                    distanceKm?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "$it км от $userCurrentCity",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
-                    }
-                }
-            }
-        } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = imageModifier) {
-                    poi.imageUrl?.let { imageUrl ->
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    IconButton(
-                        onClick = onFavoriteClick,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color.Red else Color.Gray
-                        )
-                    }
-                }
-
-                Column(modifier = Modifier.padding(8.dp)) {
-                    Text(
-                        text = poi.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = poi.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1
-                    )
-                    distanceKm?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "$it км от $userCurrentCity",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -821,7 +703,7 @@ fun MapScreen(
     onOpenListScreen: () -> Unit,
 
     isFavorite: (POI) -> Boolean,
-    onFavoriteClick: (String) -> Unit
+    onFavoriteClick: (String) -> Unit,
 ) {
 
     val cameraPositionState = rememberCameraPositionState {
@@ -1286,7 +1168,9 @@ fun ListPOIScreen(
     onOpenMapScreen: () -> Unit,
     onSortPOIButton: () -> Unit,
     isFavorite: (POI) -> Boolean,
-    onFavoriteClick: (String) -> Unit
+    onFavoriteClick: (String) -> Unit,
+    onShowPOICardTypeList: () -> Unit,
+    onPOIClick: () -> Unit,
 ) {
     val listState = rememberLazyListState()
     val poiCount = userPOIList.size
@@ -1388,8 +1272,371 @@ fun ListPOIScreen(
                         onFavoriteClick = { onFavoriteClick(poi.id) },
                         userLocation = userLocation,
                         userCurrentCity = userCurrentCity,
-                        cardType = "list"
+                        cardType = "list",
+                        onClick = onPOIClick,
+                        onSelectPOI = onSelectPOI
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun POICard(
+    poi: POI,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
+    userLocation: Pair<Double, Double>? = null,
+    userCurrentCity: String? = null,
+    cardType: String? = null, // "map", "list", "mini"
+    onClick: () -> Unit,
+    onSelectPOI: (POI) -> Unit,
+
+    ) {
+    val cardModifier: Modifier
+    val imageModifier: Modifier
+    val isImageLeft: Boolean
+
+    when (cardType) {
+        "map" -> {
+            cardModifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clickable {
+                    onSelectPOI(poi)
+                    onClick()
+                }
+            imageModifier = Modifier
+                .width(180.dp)
+                .fillMaxHeight()
+            isImageLeft = true
+        }
+        "mini" -> {
+            cardModifier = Modifier
+                .width(200.dp)
+                .height(300.dp)
+                .clickable {
+                    onSelectPOI(poi)
+                    onClick()
+                }
+            imageModifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+            isImageLeft = false
+        }
+        else -> {  //"list"
+            cardModifier = Modifier
+                .fillMaxWidth()
+                .height(400.dp)
+                .clickable {
+                    onSelectPOI(poi)
+                    onClick()
+                }
+            imageModifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+            isImageLeft = false
+        }
+    }
+
+    val distanceKm = remember(poi, userLocation) {
+        userLocation?.let { (userLat, userLng) ->
+            val result = FloatArray(1)
+            Location.distanceBetween(userLat, userLng, poi.lat, poi.lng, result)
+            (result[0] / 1000).toInt()
+        }
+    }
+
+    Card(
+        modifier = cardModifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        if (isImageLeft) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = imageModifier
+                ) {
+                    poi.imageUrl?.let { imageUrl ->
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Red else Color.Gray
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxHeight()
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = poi.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = poi.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1
+                    )
+                    distanceKm?.let {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$it км от $userCurrentCity",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = imageModifier) {
+                    poi.imageUrl?.let { imageUrl ->
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Red else Color.Gray
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.padding(8.dp)) {
+                    Text(
+                        text = poi.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = poi.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1
+                    )
+                    distanceKm?.let {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$it км от $userCurrentCity",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun POIFullScreen(
+    poi: POI,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
+    userLocation: Pair<Double, Double>? = null,
+    userCurrentCity: String? = null,
+    onDismiss: () -> Unit,
+) {
+    val distanceKm = remember(poi, userLocation) {
+        userLocation?.let { (userLat, userLng) ->
+            val result = FloatArray(1)
+            Location.distanceBetween(userLat, userLng, poi.lat, poi.lng, result)
+            (result[0] / 1000).toInt()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(poi.title, color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Назад",
+                            tint = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            item {
+                // Image with favorite button
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                ) {
+                    poi.imageUrl?.let { imageUrl ->
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(Color.White.copy(alpha = 0.7f), shape = CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Red else Color.Gray
+                        )
+                    }
+                }
+            }
+
+            item {
+                // Rating
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    repeat(5) { index ->
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = if (index < /*poi.rating?.toIntOrNull() ?:*/ 5) Color(0xFFFFD700) else Color.LightGray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Рейтинг: ${/*poi.rating ?:*/ "5.0"}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            item {
+                // Title & Description
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = poi.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = poi.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        lineHeight = 20.sp
+                    )
+                    distanceKm?.let {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "$it км от $userCurrentCity",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            }
+
+            item {
+                // Map section
+                Text(
+                    text = "На карте:",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                GoogleMap(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(horizontal = 16.dp),
+                    cameraPositionState = rememberCameraPositionState {
+                        position = CameraPosition.fromLatLngZoom(
+                            LatLng(poi.lat, poi.lng),
+                            14f
+                        )
+                    }
+                ) {
+                    Marker(
+                        state = MarkerState(position = LatLng(poi.lat, poi.lng)),
+                        title = poi.title
+                    )
+                }
+            }
+
+            item {
+                // Reviews (placeholder)
+                Text(
+                    text = "Отзывы",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(16.dp)
+                )
+
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    // Пример отзыва
+                    Text("«Отличное место! Очень рекомендую!»", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {},
+                        placeholder = { Text("Оставьте отзыв...") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Button(
+                        onClick = { /* TODO: сохранить отзыв */ },
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .align(Alignment.End)
+                    ) {
+                        Text("Отправить")
+                    }
                 }
             }
         }
