@@ -2,15 +2,17 @@ package com.example.weekendguide.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.region.SelectRegionScreen
 import com.example.weekendguide.ui.main.MainScreen
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.viewmodel.POIViewModel
 
 
 @Composable
@@ -61,14 +63,7 @@ fun AppNavigation() {
 
         composable("main") {
             MainScreen()
-           /*
-            MainScreen(
-                onNavigateToMapScreen = {
-                    navController.navigate("map")
-                }
-            )
-
-            */
         }
+
     }
 }

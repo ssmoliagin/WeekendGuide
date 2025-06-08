@@ -16,6 +16,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -55,12 +57,14 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -129,7 +133,7 @@ fun MainScreen(context: Context = LocalContext.current) {
     var showPOIInMap by remember { mutableStateOf(false) }
     var showListPoi by remember { mutableStateOf(false) }
     var onSortPOI by remember { mutableStateOf(false) }
-    var showPOIs by remember { mutableStateOf(false) }
+    var showFullPOI by remember { mutableStateOf(false) }
 
     var showOnlyFavorites by remember { mutableStateOf(false) }
 
@@ -138,9 +142,6 @@ fun MainScreen(context: Context = LocalContext.current) {
 
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
     val prefs = UserPreferences(context)
-
-   // val favoriteIds by prefs.favoriteIdsFlow.collectAsState(initial = emptySet()) // список любимых (ЕЩЕ НЕРЕАЛИЗОВАНО)
-
 
     val region by produceState<Region?>(initialValue = null) {
         value = prefs.getHomeRegion()
@@ -278,7 +279,7 @@ fun MainScreen(context: Context = LocalContext.current) {
         //основной экран или карта
         if (showMap) {
             MapScreen(
-                userPOIList = filteredPOIList,
+                userPOIList = finalPOIList,
                 userLocation = userLocation,
                 userCurrentCity = currentCity,
 
@@ -354,6 +355,10 @@ fun MainScreen(context: Context = LocalContext.current) {
                     allTypes = poiList.map { it.type }.distinct(),
                     selectedTypes = selectedTypes,
                     onTypeToggle = onTypeToggle,
+                    onSelectAllTypes = { selectedTypes = allTypes },
+                    onClearAllTypes = { selectedTypes = emptyList() },
+                    showOnlyFavorites = showOnlyFavorites,
+                    onToggleShowFavorites = { showOnlyFavorites = !showOnlyFavorites },
                     onDismiss = { showFiltersPanel = false }
                 )
             }
@@ -400,8 +405,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                     cardType = "map")
             }
         }
-
-
+        
     } ?: LoadingScreen()
 }
 
@@ -423,8 +427,7 @@ fun MainContent(
     isFavorite: (POI) -> Boolean,
     onFavoriteClick: (String) -> Unit
     ) {
-
-
+    
     val listState = rememberLazyListState()
     var randomPOI by remember { mutableStateOf<POI?>(null) }
     val coroutineScope = rememberCoroutineScope()
@@ -500,9 +503,6 @@ fun MainContent(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // включение диалога выбора локации, перенести в маин
-
-
 
 // Поле текущего местоположения
 
@@ -663,20 +663,20 @@ fun POICard(
         }
         "mini" -> {
             cardModifier = Modifier
-                .width(220.dp)
-                .height(280.dp)
+                .width(200.dp)
+                .height(300.dp)
             imageModifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp)
+                .height(200.dp)
             isImageLeft = false
         }
         else -> {
             cardModifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(400.dp)
             imageModifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(300.dp)
             isImageLeft = false
         }
     }
@@ -689,15 +689,15 @@ fun POICard(
         }
     }
 
-   // var isFavorite by remember { mutableStateOf(false) }
-
     Card(
         modifier = cardModifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         if (isImageLeft) {
             Row(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = imageModifier) {
+                Box(
+                    modifier = imageModifier
+                ) {
                     poi.imageUrl?.let { imageUrl ->
                         Image(
                             painter = rememberAsyncImagePainter(imageUrl),
@@ -729,7 +729,7 @@ fun POICard(
                 ) {
                     Text(
                         text = poi.title,
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2
                     )
@@ -737,7 +737,7 @@ fun POICard(
                     Text(
                         text = poi.description,
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 3
+                        maxLines = 1
                     )
                     distanceKm?.let {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -778,7 +778,7 @@ fun POICard(
                 Column(modifier = Modifier.padding(8.dp)) {
                     Text(
                         text = poi.title,
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2
                     )
@@ -786,7 +786,7 @@ fun POICard(
                     Text(
                         text = poi.description,
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 3
+                        maxLines = 1
                     )
                     distanceKm?.let {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -1098,7 +1098,7 @@ fun LocationSelectorDialog(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FiltersPanel(
     selectedRadius: String,
@@ -1106,11 +1106,16 @@ fun FiltersPanel(
     allTypes: List<String>,
     selectedTypes: List<String>,
     onTypeToggle: (String) -> Unit,
+    onSelectAllTypes: () -> Unit,
+    onClearAllTypes: () -> Unit,
+    showOnlyFavorites: Boolean,
+    onToggleShowFavorites: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val radiusValues = listOf("20", "50", "100", "200", "∞")
-    val radiusSliderPosition = radiusValues.indexOfFirst { it.removeSuffix("км") == selectedRadius.removeSuffix("км") }
-        .coerceAtLeast(0)
+    val radiusSliderPosition = radiusValues.indexOfFirst {
+        it.removeSuffix("км") == selectedRadius.removeSuffix("км")
+    }.coerceAtLeast(0)
 
     Card(
         modifier = Modifier
@@ -1120,9 +1125,9 @@ fun FiltersPanel(
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // 🔵 Радиус
             Text("Дальность (км)", style = MaterialTheme.typography.titleMedium)
 
-            // 🔘 Слайдер радиуса
             Slider(
                 value = radiusSliderPosition.toFloat(),
                 onValueChange = {
@@ -1139,33 +1144,47 @@ fun FiltersPanel(
                 style = MaterialTheme.typography.bodySmall
             )
 
-            // ✅ Чекбоксы по типам
+            // ⭐ Фильтр по избранным
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 8.dp)
+                    .clickable { onToggleShowFavorites() }
+            ) {
+                Checkbox(
+                    checked = showOnlyFavorites,
+                    onCheckedChange = { onToggleShowFavorites() }
+                )
+                Text("Показывать только избранные", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            // ✅ Типы мест
             Text("Типы мест", style = MaterialTheme.typography.titleMedium)
-            Column {
-                allTypes.forEach { type ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable { onTypeToggle(type) },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = type in selectedTypes,
-                            onCheckedChange = { onTypeToggle(type) }
-                        )
-                        Text(type, style = MaterialTheme.typography.bodyLarge)
-                    }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(vertical = 8.dp)
+            ) {
+                OutlinedButton(onClick = onSelectAllTypes) {
+                    Text("Выбрать все")
+                }
+                OutlinedButton(onClick = onClearAllTypes) {
+                    Text("Убрать все")
                 }
             }
 
-            // ❌ Закрыть
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End)
+            FlowRow(
+          //      mainAxisSpacing = 8.dp,
+           //     crossAxisSpacing = 8.dp,
+                modifier = Modifier.padding(top = 4.dp)
             ) {
-                Text("Закрыть")
+                allTypes.forEach { type ->
+                    FilterChip(
+                        selected = selectedTypes.contains(type),
+                        onClick = { onTypeToggle(type) },
+                        label = { Text(type) }
+                    )
+                }
             }
         }
     }
@@ -1376,4 +1395,5 @@ fun ListPOIScreen(
         }
     }
 }
+
 

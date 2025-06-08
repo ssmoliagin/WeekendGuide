@@ -69,5 +69,9 @@ class POIViewModel(
     fun updateMaxDistance(distance: Int) {
         _maxDistance.value = distance
     }
+
+    fun getPOIById(poiId: String): POI? {
+        return _poiList.value.find { it.id == poiId }
+    }
 }
 
