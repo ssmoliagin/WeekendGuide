@@ -19,7 +19,8 @@ data class UserSettings(
     val purchasedRegions: Set<String>,
     val currentCity: String?,
     val currentLocation: Pair<Double, Double>?,
-    val favoritePoiIds: Set<String>
+    val favoritePoiIds: Set<String>,
+    val visitedPoiIds: Set<String>,
 )
 
 class UserPreferences(private val context: Context) {
@@ -27,11 +28,12 @@ class UserPreferences(private val context: Context) {
     private object Keys {
         val LANGUAGE = stringPreferencesKey("language_code")
         val HOME_REGION = stringPreferencesKey("home_region") // JSON-строка Region
-        val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions") // ПОКА НЕЯСНО ЗАЧЕМ
+        val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
         val CURRENT_CITY = stringPreferencesKey("current_city")
         val LAT = doublePreferencesKey("current_lat")
         val LNG = doublePreferencesKey("current_lng")
         val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
+        val VISITED = stringSetPreferencesKey("visited_poi_ids")
     }
 
     suspend fun saveLanguage(language: String) {
@@ -119,7 +121,8 @@ class UserPreferences(private val context: Context) {
         val lat = prefs[Keys.LAT]
         val lng = prefs[Keys.LNG]
         val currentLocation = if (lat != null && lng != null) Pair(lat, lng) else null
-        val favoritePoiIds = prefs[Keys.FAVORITES] ?: emptySet() // <- добавлено
+        val favoritePoiIds = prefs[Keys.FAVORITES] ?: emptySet()
+        val visitedPoiIds = prefs[Keys.VISITED] ?: emptySet()
 
         return UserSettings(
             language = language,
@@ -127,8 +130,31 @@ class UserPreferences(private val context: Context) {
             purchasedRegions = purchasedRegions,
             currentCity = currentCity,
             currentLocation = currentLocation,
-            favoritePoiIds = favoritePoiIds // <- добавлено
+            favoritePoiIds = favoritePoiIds,
+            visitedPoiIds = visitedPoiIds
         )
+    }
+
+    //посещенные
+    suspend fun toggleVisited(id: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.VISITED] ?: emptySet()
+            prefs[Keys.VISITED] = if (current.contains(id)) {
+                current - id
+            } else {
+                current + id
+            }
+        }
+    }
+
+    val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
+        .map { prefs -> prefs[Keys.VISITED] ?: emptySet() }
+
+    suspend fun markVisited(id: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.VISITED] ?: emptySet()
+            prefs[Keys.VISITED] = current + id
+        }
     }
 
 

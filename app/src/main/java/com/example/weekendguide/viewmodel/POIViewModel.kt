@@ -16,6 +16,42 @@ class POIViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
+    //посещенные
+    private val _visitedPoiIds = MutableStateFlow<Set<String>>(emptySet())
+    val visitedPoiIds: StateFlow<Set<String>> = _visitedPoiIds.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            userPreferences.visitedIdsFlow.collect {
+                _visitedPoiIds.value = it
+            }
+        }
+    }
+
+    fun isPoiVisited(poiId: String): Boolean {
+        return visitedPoiIds.value.contains(poiId)
+    }
+
+    fun markPoiVisited(poiId: String) {
+        viewModelScope.launch {
+            userPreferences.markVisited(poiId)
+        }
+    }
+
+    //ВИКИПЕДИЯ
+
+    private val _wikiDescription = MutableStateFlow<String?>(null)
+    val wikiDescription: StateFlow<String?> = _wikiDescription
+
+    fun loadWikipediaDescription(title: String) {
+        viewModelScope.launch {
+            _wikiDescription.value = dataRepository.fetchWikipediaDescription(title)
+        }
+    }
+
+    //
+
+
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
     val poiList: StateFlow<List<POI>> = _poiList
 
@@ -74,4 +110,5 @@ class POIViewModel(
         return _poiList.value.find { it.id == poiId }
     }
 }
+
 

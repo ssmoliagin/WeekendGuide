@@ -9,4 +9,5 @@ interface DataRepository {
     suspend fun getRegions(countryCode: String): List<Region>
     suspend fun getPOIs(regionCode: String): List<POI>
     suspend fun downloadAndCachePOI(region: Region)
+    suspend fun fetchWikipediaDescription(title: String): String?
 }

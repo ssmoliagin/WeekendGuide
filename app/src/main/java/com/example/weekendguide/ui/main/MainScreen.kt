@@ -40,8 +40,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -51,6 +53,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -126,7 +129,11 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -149,6 +156,9 @@ fun MainScreen(context: Context = LocalContext.current) {
 
 
     var showOnlyFavorites by remember { mutableStateOf(false) }
+    var showOnlyVisited by remember { mutableStateOf(false) } // показываем ТОЛЬКО посещенные
+    var showVisited by remember { mutableStateOf(false) } // показать посещенные, по умолчанию скрываем
+
 
 
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
@@ -222,6 +232,12 @@ fun MainScreen(context: Context = LocalContext.current) {
             viewModel.toggleFavorite(poiId)
         }
 
+        //посещенные пои
+        val visitedPoiIds by viewModel.visitedPoiIds.collectAsState()
+        val onCheckpointClick: (String) -> Unit = { poiId ->
+            viewModel.markPoiVisited(poiId)
+        }
+
 
         //ФИЛЬТРАЦИЯ
         var selectedRadius by remember { mutableStateOf("200км") }
@@ -267,13 +283,30 @@ fun MainScreen(context: Context = LocalContext.current) {
 
     //сортировка
     // определение итогового списка POI
-        val finalPOIList = remember(filteredPOIList, onSortPOI, showOnlyFavorites, favoriteIds) {
-            val baseList = if (showOnlyFavorites) {
-                filteredPOIList.filter { poi -> favoriteIds.contains(poi.id) }
-            } else {
-                filteredPOIList
+        val finalPOIList = remember(
+            filteredPOIList,
+            onSortPOI,
+            showOnlyFavorites,
+            favoriteIds,
+            showVisited,
+            showOnlyVisited,
+            visitedPoiIds
+        ) {
+            var baseList = filteredPOIList
+
+            // 🔹 Только посещённые → фильтруем по visited
+            baseList = when {
+                showOnlyVisited -> baseList.filter { poi -> visitedPoiIds.contains(poi.id) }
+                !showVisited -> baseList.filterNot { poi -> visitedPoiIds.contains(poi.id) }
+                else -> baseList
             }
 
+            // ⭐ Избранные
+            if (showOnlyFavorites) {
+                baseList = baseList.filter { poi -> favoriteIds.contains(poi.id) }
+            }
+
+            // 📍 Сортировка по расстоянию
             if (onSortPOI) {
                 userLocation?.let { (lat, lon) ->
                     baseList.sortedBy { poi ->
@@ -307,6 +340,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onOpenListScreen = {showListPoi = true},
 
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
+                isVisited = { poi -> visitedPoiIds.contains(poi.id) },
                 onFavoriteClick = onFavoriteClick
             )
         } else if (showListPoi) {
@@ -330,6 +364,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onSortPOIButton = {onSortPOI = true},
 
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
+                isVisited = { poi -> visitedPoiIds.contains(poi.id) },
+
                 onFavoriteClick = onFavoriteClick,
                 onShowPOICardTypeList = {showPOICardTypeList},
                 onPOIClick = {showFullPOI = true},
@@ -352,8 +388,14 @@ fun MainScreen(context: Context = LocalContext.current) {
                     showOnlyFavorites = true
                     showListPoi = true
                 },
+                onShowVisitedList = {
+                    showOnlyVisited = true
+                    showListPoi = true
+                },
 
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
+                isVisited = { poi -> visitedPoiIds.contains(poi.id) },
+
                 onFavoriteClick = onFavoriteClick,
                 onShowPOICardTypeMini = {showPOICardTypeMini},
                 onShowPOICardTypeList = {showPOICardTypeList},
@@ -379,6 +421,10 @@ fun MainScreen(context: Context = LocalContext.current) {
                     onClearAllTypes = { selectedTypes = emptyList() },
                     showOnlyFavorites = showOnlyFavorites,
                     onToggleShowFavorites = { showOnlyFavorites = !showOnlyFavorites },
+                    showVisited = showVisited,
+                    onToggleShowVisited = { showVisited = !showVisited },
+                    showOnlyVisited = showOnlyVisited,
+                    onToggleShowOnlyVisited = { showOnlyVisited = !showOnlyVisited },
                     onDismiss = { showFiltersPanel = false }
                 )
             }
@@ -416,6 +462,24 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onDismissRequest = {showPOIInMap = false},
                 sheetState = rememberModalBottomSheetState()
             ) {
+                POIFullScreen (
+                    poi = poi,
+                    isFavorite = favoriteIds.contains(poi.id),
+                    onFavoriteClick = { viewModel.toggleFavorite(poi.id) },
+                    isVisited = visitedPoiIds.contains(poi.id),
+
+                    userLocation = userLocation,
+                    userCurrentCity = currentCity,
+                    onDismiss = {
+                        selectedPOI = null
+                        showFullPOI = false
+                    },
+                    viewModel = viewModel,
+                    onRequestGPS = onRequestLocationChange,
+                    onCheckpointClick = { viewModel.markPoiVisited(poi.id) },
+                )
+
+                /*
                 POICard(
                     poi = poi,
                     isFavorite = favoriteIds.contains(poi.id),
@@ -426,6 +490,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                     cardType = "map",
                     onSelectPOI = { poi -> selectedPOI = poi },
                 )
+
+                 */
             }
         }
 
@@ -435,12 +501,17 @@ fun MainScreen(context: Context = LocalContext.current) {
                 poi = poi,
                 isFavorite = favoriteIds.contains(poi.id),
                 onFavoriteClick = { viewModel.toggleFavorite(poi.id) },
+                isVisited = visitedPoiIds.contains(poi.id),
+
                 userLocation = userLocation,
                 userCurrentCity = currentCity,
                 onDismiss = {
                     selectedPOI = null
                     showFullPOI = false
-                }
+                },
+                viewModel = viewModel,
+                onRequestGPS = onRequestLocationChange,
+                onCheckpointClick = { viewModel.markPoiVisited(poi.id) },
             )
         }
         
@@ -463,8 +534,11 @@ fun MainContent(
     onOpenProfile: () -> Unit,
     onSelectSingleType: (String) -> Unit,
     onShowFavoritesList: () -> Unit,
+    onShowVisitedList: () -> Unit,
 
     isFavorite: (POI) -> Boolean,
+    isVisited: (POI) -> Boolean,
+
     onFavoriteClick: (String) -> Unit,
     onShowPOICardTypeMini: () -> Unit,
     onShowPOICardTypeList: () -> Unit,
@@ -534,7 +608,7 @@ fun MainContent(
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { /* Статистика */ },
+                    onClick = onShowVisitedList, // пока только список посещенных, расширить до статистики
                     icon = { Icon(Icons.Default.Star, contentDescription = "Статистика") }
                 )
             }
@@ -625,6 +699,7 @@ fun MainContent(
                     randomPOI?.let { poi ->
                         POICard(poi = poi,
                             isFavorite = isFavorite(poi),
+                            isVisited = isVisited(poi),
                             onFavoriteClick = { onFavoriteClick(poi.id) },
                             userLocation = userLocation,
                             userCurrentCity = userCurrentCity,
@@ -669,6 +744,7 @@ fun MainContent(
                                 POICard(
                                     poi = poi,
                                     isFavorite = isFavorite(poi),
+                                    isVisited = isVisited(poi),
                                     onFavoriteClick = { onFavoriteClick(poi.id) },
                                     userLocation = userLocation,
                                     userCurrentCity = userCurrentCity,
@@ -703,6 +779,7 @@ fun MapScreen(
     onOpenListScreen: () -> Unit,
 
     isFavorite: (POI) -> Boolean,
+    isVisited: (POI) -> Boolean,
     onFavoriteClick: (String) -> Unit,
 ) {
 
@@ -736,7 +813,7 @@ fun MapScreen(
                 userPOIList.forEach { poi ->
                     val markerColor = when {
                         isFavorite(poi) -> BitmapDescriptorFactory.HUE_YELLOW
-                      //  visitedPOIs.contains(poi.id) -> BitmapDescriptorFactory.HUE_GREEN //для пройденных ЕЩЕ НЕРЕАЛИЗОВАНЫ
+                        isVisited(poi) -> BitmapDescriptorFactory.HUE_GREEN
                         else -> BitmapDescriptorFactory.HUE_RED
                     }
 
@@ -992,6 +1069,10 @@ fun FiltersPanel(
     onClearAllTypes: () -> Unit,
     showOnlyFavorites: Boolean,
     onToggleShowFavorites: () -> Unit,
+    showVisited: Boolean,
+    onToggleShowVisited: () -> Unit,
+    showOnlyVisited: Boolean,
+    onToggleShowOnlyVisited: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val radiusValues = listOf("20", "50", "100", "200", "∞")
@@ -1027,6 +1108,7 @@ fun FiltersPanel(
             )
 
             // ⭐ Фильтр по избранным
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -1038,6 +1120,34 @@ fun FiltersPanel(
                     onCheckedChange = { onToggleShowFavorites() }
                 )
                 Text("Показывать только избранные", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            // ✅ Посещённые
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .clickable { onToggleShowOnlyVisited() }
+            ) {
+                Checkbox(
+                    checked = showOnlyVisited,
+                    onCheckedChange = { onToggleShowOnlyVisited() }
+                )
+                Text("Показывать только посещённые", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .clickable { onToggleShowVisited() }
+            ) {
+                Checkbox(
+                    checked = showVisited,
+                    onCheckedChange = { onToggleShowVisited() }
+                )
+                Text("Показывать посещённые", style = MaterialTheme.typography.bodyLarge)
             }
 
             // ✅ Типы мест
@@ -1121,6 +1231,11 @@ fun ProfilePanel(
                 value = userSettings?.favoritePoiIds?.joinToString(", ") ?: "-"
             )
 
+            ProfileRow(
+                label = "Посещенное",
+                value = userSettings?.visitedPoiIds?.joinToString(", ") ?: "-"
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
@@ -1168,6 +1283,8 @@ fun ListPOIScreen(
     onOpenMapScreen: () -> Unit,
     onSortPOIButton: () -> Unit,
     isFavorite: (POI) -> Boolean,
+    isVisited: (POI) -> Boolean,
+
     onFavoriteClick: (String) -> Unit,
     onShowPOICardTypeList: () -> Unit,
     onPOIClick: () -> Unit,
@@ -1269,6 +1386,7 @@ fun ListPOIScreen(
                     POICard(
                         poi = poi,
                         isFavorite = isFavorite(poi),
+                        isVisited = isVisited(poi),
                         onFavoriteClick = { onFavoriteClick(poi.id) },
                         userLocation = userLocation,
                         userCurrentCity = userCurrentCity,
@@ -1286,6 +1404,8 @@ fun ListPOIScreen(
 fun POICard(
     poi: POI,
     isFavorite: Boolean,
+    isVisited: Boolean,
+
     onFavoriteClick: () -> Unit,
     userLocation: Pair<Double, Double>? = null,
     userCurrentCity: String? = null,
@@ -1366,6 +1486,19 @@ fun POICard(
                         )
                     }
                     IconButton(
+                        onClick = {},
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(4.dp)
+                            .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isVisited) Icons.Default.CheckCircle else Icons.Default.AddCircle,
+                            contentDescription = "Избранное",
+                            tint = if (isVisited) Color.Green else Color.Gray
+                        )
+                    }
+                    IconButton(
                         onClick = onFavoriteClick,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -1420,6 +1553,19 @@ fun POICard(
                         )
                     }
                     IconButton(
+                        onClick = {},
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(4.dp)
+                            .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isVisited) Icons.Default.CheckCircle else Icons.Default.AddCircle,
+                            contentDescription = "Избранное",
+                            tint = if (isVisited) Color.Green else Color.Gray
+                        )
+                    }
+                    IconButton(
                         onClick = onFavoriteClick,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -1466,16 +1612,76 @@ fun POICard(
 fun POIFullScreen(
     poi: POI,
     isFavorite: Boolean,
+    isVisited: Boolean,
+
     onFavoriteClick: () -> Unit,
     userLocation: Pair<Double, Double>? = null,
     userCurrentCity: String? = null,
     onDismiss: () -> Unit,
+    viewModel: POIViewModel,
+    onRequestGPS: () -> Unit,
+    onCheckpointClick: () -> Unit,
 ) {
+
+
+
+
     val distanceKm = remember(poi, userLocation) {
         userLocation?.let { (userLat, userLng) ->
             val result = FloatArray(1)
             Location.distanceBetween(userLat, userLng, poi.lat, poi.lng, result)
             (result[0] / 1000).toInt()
+        }
+    }
+
+
+    val wikiDescription by viewModel.wikiDescription.collectAsState()
+
+    val context = LocalContext.current
+    val locationViewModel: LocationViewModel = viewModel()
+    val coroutineScope = rememberCoroutineScope()
+
+    val location by locationViewModel.location.collectAsState()
+
+
+    LaunchedEffect(poi.title) {
+        viewModel.loadWikipediaDescription(poi.title)
+    }
+
+    fun handleCheckpointClick() {
+        coroutineScope.launch {
+            try {
+                val oldLocation = locationViewModel.location.value
+
+                // Запрашиваем GPS-локацию
+                locationViewModel.detectLocationFromGPS()
+
+                // Ждём, пока локация изменится
+                val newLocation = locationViewModel.location
+                    .filterNotNull()
+                    .dropWhile { it == oldLocation }
+                    .first()
+
+                // Считаем дистанцию
+                val result = FloatArray(1)
+                Location.distanceBetween(
+                    newLocation.first,
+                    newLocation.second,
+                    poi.lat,
+                    poi.lng,
+                    result
+                )
+                val distanceMeters = result[0]
+
+                if (distanceMeters < 1000) {
+                    viewModel.markPoiVisited(poi.id)
+                } else {
+                    Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Ошибка при определении GPS", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
         }
     }
 
@@ -1498,149 +1704,185 @@ fun POIFullScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            item {
-                // Image with favorite button
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                ) {
-                    poi.imageUrl?.let { imageUrl ->
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onFavoriteClick,
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                item {
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .background(Color.White.copy(alpha = 0.7f), shape = CircleShape)
+                            .fillMaxWidth()
+                            .height(300.dp)
                     ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color.Red else Color.Gray
+                        poi.imageUrl?.let { imageUrl ->
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUrl),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+
+                        // Левая верхняя иконка "Посещено" — всегда видна
+
+                        IconButton(
+                            onClick = {handleCheckpointClick()},
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(8.dp)
+                                .background(Color.White.copy(alpha = 0.7f), shape = CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isVisited) Icons.Default.CheckCircle else Icons.Default.AddCircle,
+                                contentDescription = "Избранное",
+                                tint = if (isVisited) Color.Green else Color.Gray
+                            )
+                        }
+
+
+                        // Правая верхняя иконка "Избранное"
+                        IconButton(
+                            onClick = onFavoriteClick,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .background(Color.White.copy(alpha = 0.7f), shape = CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Избранное",
+                                tint = if (isFavorite) Color.Red else Color.Gray
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    // Рейтинг
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        repeat(5) { index ->
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = if (index < 5) Color(0xFFFFD700) else Color.LightGray,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Рейтинг: 5.0",
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
-            }
 
-            item {
-                // Rating
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    repeat(5) { index ->
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = if (index < /*poi.rating?.toIntOrNull() ?:*/ 5) Color(0xFFFFD700) else Color.LightGray,
-                            modifier = Modifier.size(24.dp)
+                item {
+                    // Описание
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = poi.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
                         )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Рейтинг: ${/*poi.rating ?:*/ "5.0"}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            item {
-                // Title & Description
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = poi.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = poi.description,
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 20.sp
-                    )
-                    distanceKm?.let {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "$it км от $userCurrentCity",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.Gray
+                            text = wikiDescription ?: poi.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 20.sp
                         )
+                        distanceKm?.let {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "$it км от $userCurrentCity",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Color.Gray
+                            )
+                        }
                     }
                 }
-            }
 
-            item {
-                // Map section
-                Text(
-                    text = "На карте:",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-                GoogleMap(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .padding(horizontal = 16.dp),
-                    cameraPositionState = rememberCameraPositionState {
-                        position = CameraPosition.fromLatLngZoom(
-                            LatLng(poi.lat, poi.lng),
-                            14f
-                        )
-                    }
-                ) {
-                    Marker(
-                        state = MarkerState(position = LatLng(poi.lat, poi.lng)),
-                        title = poi.title
+                item {
+                    // Карта
+                    Text(
+                        text = "На карте:",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
-                }
-            }
-
-            item {
-                // Reviews (placeholder)
-                Text(
-                    text = "Отзывы",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
-
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    // Пример отзыва
-                    Text("«Отличное место! Очень рекомендую!»", style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
-                        placeholder = { Text("Оставьте отзыв...") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Button(
-                        onClick = { /* TODO: сохранить отзыв */ },
+                    GoogleMap(
                         modifier = Modifier
-                            .padding(vertical = 8.dp)
-                            .align(Alignment.End)
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .padding(horizontal = 16.dp),
+                        cameraPositionState = rememberCameraPositionState {
+                            position = CameraPosition.fromLatLngZoom(
+                                LatLng(poi.lat, poi.lng), 14f
+                            )
+                        }
                     ) {
-                        Text("Отправить")
+                        Marker(
+                            state = MarkerState(position = LatLng(poi.lat, poi.lng)),
+                            title = poi.title
+                        )
                     }
                 }
+
+                item {
+                    // Отзывы
+                    Text(
+                        text = "Отзывы",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        Text("«Отличное место! Очень рекомендую!»", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = "",
+                            onValueChange = {},
+                            placeholder = { Text("Оставьте отзыв...") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Button(
+                            onClick = { /* TODO: сохранить отзыв */ },
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .align(Alignment.End)
+                        ) {
+                            Text("Отправить")
+                        }
+                    }
+                }
+            }
+
+            // Кнопка чекпоинта
+            Button(
+                onClick = { handleCheckpointClick() },
+                enabled = !isVisited,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isVisited) Color.Gray else MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = if (isVisited) "Уже посещено" else "Чекпоинт",
+                    color = Color.White
+                )
             }
         }
     }
 }
+
 
 

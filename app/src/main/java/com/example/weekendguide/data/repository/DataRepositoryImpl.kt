@@ -7,14 +7,19 @@ import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.data.model.WikipediaSummary
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import com.google.gson.Gson
+import com.squareup.okhttp.OkHttpClient
+import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.net.URLEncoder
 import java.util.Locale
 
 class DataRepositoryImpl(private val context: Context) : DataRepository {
@@ -119,5 +124,24 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                     null
                 }
             }
+    }
+
+    override suspend fun fetchWikipediaDescription(title: String): String? {
+        val url = "https://ru.wikipedia.org/api/rest_v1/page/summary/$title"
+        val client = OkHttpClient()
+        val request = Request.Builder().url(url).build()
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val json = response.body()?.string()
+                    val summary = Gson().fromJson(json, WikipediaSummary::class.java)
+                    summary.extract
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+        }
     }
 }
