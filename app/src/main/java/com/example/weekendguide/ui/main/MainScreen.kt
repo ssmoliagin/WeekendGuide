@@ -1,8 +1,6 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
-import android.R
-import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
@@ -31,21 +29,16 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
@@ -54,20 +47,16 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,8 +73,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -101,21 +89,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
@@ -140,7 +122,6 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.filterNotNull
@@ -148,7 +129,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -164,6 +145,9 @@ fun MainScreen(context: Context = LocalContext.current) {
     var showFullPOI by remember { mutableStateOf(false) }
     var showPOICardTypeMini by remember { mutableStateOf(false) }
     var showPOICardTypeList by remember { mutableStateOf(false) }
+
+
+
 
     var showOnlyFavorites by remember { mutableStateOf(false) } //скрытый фильтр ТОЛЬКО избранные
     var showOnlyVisited by remember { mutableStateOf(false) } // скрытый фильтр ТОЛЬКО посещенные
@@ -351,6 +335,32 @@ fun MainScreen(context: Context = LocalContext.current) {
                     val (lat, lng) = latLng
                     locationViewModel.setManualLocation(city, lat, lng)
                 },
+                showLocationDialog = {
+                    LocationDialog(
+                        onShowScreenType = "map",
+                        onLocationSelected = { city, latLng ->
+                            // Распаковываем lat и lng
+                            val (lat, lng) = latLng
+                            locationViewModel.setManualLocation(city, lat, lng)
+                        },
+                        onRequestGPS = onRequestLocationChange,
+                        userCurrentCity = currentCity,
+                        onDismiss = { showMap = false },
+                    )
+                },
+                showFiltersButtons = {
+                    FiltersButtons(
+                        onShowScreenType = "map",
+                        userCurrentCity = currentCity,
+                        onRequestGPS = onRequestLocationChange,
+                        selectedRadius = selectedRadius,
+                        onRadiusChange = { selectedRadius = it },
+                        onOpenMapScreen = { showMap = true },
+                        onOpenListScreen = {showListPoi = true},
+                        onOpenFilters = { showFiltersPanel = true },
+                        onDismiss = { showMap = false },
+                    )
+                }
             )
         } else if (showListPoi) {
             ListPOIScreen(
@@ -375,6 +385,28 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onFavoriteClick = onFavoriteClick,
                 onShowPOICardTypeList = {showPOICardTypeList},
                 onPOIClick = {showFullPOI = true},
+                showTopAppBar = { TopAppBar(
+                    topBarTitle = "${finalPOIList.size} мест рядом с $currentCity",
+                    onDismiss = {
+                        selectedTypes = allTypes
+                        showOnlyFavorites = false
+                        showOnlyVisited = false
+                        showListPoi = false
+                    },
+                ) },
+                showFiltersButtons = {
+                    FiltersButtons(
+                        onShowScreenType = "list",
+                        userCurrentCity = currentCity,
+                        onRequestGPS = onRequestLocationChange,
+                        selectedRadius = selectedRadius,
+                        onRadiusChange = { selectedRadius = it },
+                        onOpenMapScreen = { showMap = true },
+                        onOpenListScreen = {showListPoi = true},
+                        onOpenFilters = { showFiltersPanel = true },
+                        onDismiss = { showMap = false },
+                    )
+                },
             )
         }
 
@@ -413,10 +445,50 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onRequestGPS = onRequestLocationChange,
                 selectedRadius = selectedRadius,
                 onRadiusChange = { selectedRadius = it },
+                showNavigationBar = {
+                    NavigationBar(
+                        onShowFavoritesList = {
+                        showOnlyFavorites = true
+                        showListPoi = true
+                    },
+                        onOpenProfile = { showProfile = true },
 
-
-
-
+                )},
+                showTopAppBar = { TopAppBar(
+                    topBarTitle = "main",
+                    onDismiss = {
+                        selectedTypes = allTypes
+                        showOnlyFavorites = false
+                        showOnlyVisited = false
+                        showListPoi = false
+                    },
+                ) },
+                showLocationDialog = {
+                    LocationDialog(
+                        onShowScreenType = "main",
+                        onLocationSelected = { city, latLng ->
+                            // Распаковываем lat и lng
+                            val (lat, lng) = latLng
+                            locationViewModel.setManualLocation(city, lat, lng)
+                        },
+                        onRequestGPS = onRequestLocationChange,
+                        userCurrentCity = currentCity,
+                        onDismiss = { showMap = false },
+                    )
+                },
+                showFiltersButtons = {
+                    FiltersButtons(
+                        onShowScreenType = "main",
+                        userCurrentCity = currentCity,
+                        onRequestGPS = onRequestLocationChange,
+                        selectedRadius = selectedRadius,
+                        onRadiusChange = { selectedRadius = it },
+                        onOpenMapScreen = { showMap = true },
+                        onOpenListScreen = {showListPoi = true},
+                        onOpenFilters = { showFiltersPanel = true },
+                        onDismiss = { showMap = false },
+                    )
+                },
                 )
         }
 
@@ -445,6 +517,7 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
         }
 
+        /*
         // ✅ Панель Выбор локации
         if (showLocationDialog) {
             LocationSelectorDialog(
@@ -457,6 +530,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onRequestGPS = onRequestLocationChange
             )
         }
+
+         */
 
         // ✅ Панель Профиль
         if(showProfile) {
@@ -531,6 +606,383 @@ fun MainScreen(context: Context = LocalContext.current) {
     } ?: LoadingScreen()
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NavigationBar(
+    onShowFavoritesList: () -> Unit,
+    onOpenProfile: () -> Unit,
+)
+{
+    val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val sound = LocalView.current
+
+
+    NavigationBar {
+        NavigationBarItem(
+            selected = true,
+            onClick = {
+                sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                coroutineScope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
+            label = { Text("Поиск") }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = {
+                sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                onShowFavoritesList()
+            },
+            icon = { Icon(Icons.Default.Favorite, contentDescription = "Сохранённое") },
+            label = { Text("Сохранённое") }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = {
+                sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                //
+                      },
+            icon = { Icon(Icons.Default.Star, contentDescription = "Достижения") },
+            label = { Text("Достижения") }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = {
+                sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                onOpenProfile()
+            },
+            icon = { Icon(Icons.Default.Person, contentDescription = "Профиль") },
+            label = { Text("Профиль") }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopAppBar (
+    topBarTitle: String,
+    onDismiss: () -> Unit
+) {
+
+    val title = when (topBarTitle) {
+        "main" -> "Weekend Guide"
+        "favorites" -> "Избранное"
+        else -> topBarTitle.toString()
+    }
+
+
+    TopAppBar(
+        title = { Text(title, color = Color.White) },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+        actions = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("125 GP", color = Color.White)
+            }
+        },
+        navigationIcon = {
+            if (topBarTitle != "main") {
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = Color.White
+                    )
+                }
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LocationDialog(
+    userCurrentCity: String?,
+    onLocationSelected: (String, Pair<Double, Double>) -> Unit,
+    onRequestGPS: () -> Unit,
+    onShowScreenType: String?,
+    onDismiss: () -> Unit
+)
+{
+    val sound = LocalView.current
+    val context = LocalContext.current
+    val placesClient = remember { Places.createClient(context) }
+
+    var query by remember { mutableStateOf("") }
+    var suggestions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
+
+    LaunchedEffect(query) {
+        if (query.length >= 3) {
+            val request = FindAutocompletePredictionsRequest.builder()
+                .setQuery(query)
+                .build()
+            placesClient.findAutocompletePredictions(request)
+                .addOnSuccessListener { response ->
+                    suggestions = response.autocompletePredictions
+                }
+                .addOnFailureListener { e ->
+                    suggestions = emptyList()
+                    e.printStackTrace()
+                }
+        } else {
+            suggestions = emptyList()
+        }
+    }
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text(userCurrentCity ?:"Город или адрес") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp)),
+
+            leadingIcon = {
+               if (onShowScreenType == "map") {
+                   // 🔙 Кнопка "Назад"
+                   IconButton(onClick = {
+                       sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                       onDismiss()
+                   }) {
+                       Icon(
+                           imageVector = Icons.Default.ArrowBack,
+                           contentDescription = "Назад",
+                           tint = MaterialTheme.colorScheme.onSurface
+                       )
+                   }
+               } else Icon(Icons.Default.Search, contentDescription = null)
+            },
+            trailingIcon = {
+                IconButton(onClick = {
+                    sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                    onRequestGPS()
+                    suggestions = emptyList() //clear
+                }) {
+                    Icon(Icons.Default.LocationOn, contentDescription = "Определить по GPS")
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(50.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White
+            )
+        )
+
+        LazyColumn(
+            modifier = Modifier.heightIn(max = 200.dp)
+        ) {
+            items(suggestions) { prediction ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable {
+                            sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                            val placeId = prediction.placeId
+                            val placeRequest = FetchPlaceRequest.builder(
+                                placeId,
+                                listOf(Place.Field.LAT_LNG, Place.Field.NAME)
+                            ).build()
+
+                            placesClient.fetchPlace(placeRequest)
+                                .addOnSuccessListener { result ->
+                                    val place = result.place
+                                    val latLng = place.latLng
+                                    if (latLng != null) {
+                                        onLocationSelected(
+                                            place.name ?: "",
+                                            Pair(latLng.latitude, latLng.longitude)
+                                        )
+                                    }
+                                    suggestions = emptyList() //clear
+                                }
+                        },
+                    shape = RoundedCornerShape(50.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Text(
+                        text = prediction.getFullText(null).toString(),
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FiltersButtons(
+    userCurrentCity: String?,
+    onRequestGPS: () -> Unit,
+    selectedRadius: String,
+    onRadiusChange: (String) -> Unit,
+    onOpenMapScreen: () -> Unit,
+    onOpenListScreen: () -> Unit,
+    onOpenFilters: () -> Unit,
+    onShowScreenType: String? = null,
+    onDismiss: () -> Unit,
+) {
+    val sound = LocalView.current
+
+    val buttonHeight = 30.dp
+    var radiusExpanded by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+
+        val commonButtonColors = ButtonDefaults.outlinedButtonColors(
+            containerColor = Color.White // Белый фон для всех кнопок
+        )
+
+        if (onShowScreenType == "map") {
+            OutlinedButton(
+                onClick = {
+                    sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                    onOpenListScreen()
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(buttonHeight),
+                shape = RoundedCornerShape(4.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                colors = commonButtonColors
+            ) {
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Список", fontSize = 13.sp, maxLines = 1)
+            }
+        } else {
+            OutlinedButton(
+                onClick = {
+                    sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                    if (userCurrentCity == null) {
+                        onRequestGPS()
+                    } else {
+                        onOpenMapScreen()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(buttonHeight),
+                shape = RoundedCornerShape(4.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                colors = commonButtonColors
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Place,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("На карте", fontSize = 13.sp, maxLines = 1)
+            }
+        }
+
+        // 🎯 Кнопка с выпадающим списком радиуса
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            OutlinedButton(
+                onClick = { radiusExpanded = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(buttonHeight),
+                shape = RoundedCornerShape(4.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                colors = commonButtonColors
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(" + $selectedRadius", fontSize = 13.sp, maxLines = 1)
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // ⬇ Выпадающее меню
+            DropdownMenu(
+                expanded = radiusExpanded,
+                onDismissRequest = { radiusExpanded = false },
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .align(Alignment.TopCenter)
+            ) {
+                listOf("20км", "50км", "100км", "200км", "∞").forEach { radius ->
+                    DropdownMenuItem(
+                        text = { Text(radius) },
+                        onClick = {
+                            sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                            onRadiusChange(radius)
+                            radiusExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // ⚙️ Кнопка "Фильтр"
+        OutlinedButton(
+            onClick = {
+                sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                onOpenFilters()
+            },
+            modifier = Modifier
+                .weight(1f)
+                .height(buttonHeight),
+            shape = RoundedCornerShape(4.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            contentPadding = PaddingValues(horizontal = 8.dp),
+            colors = commonButtonColors
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Фильтр", fontSize = 13.sp, maxLines = 1)
+        }
+    }
+}
+
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -559,7 +1011,10 @@ fun MainContent(
     onRequestGPS: () -> Unit,
     selectedRadius: String,
     onRadiusChange: (String) -> Unit,
-
+    showNavigationBar: @Composable () -> Unit,
+    showTopAppBar: @Composable () -> Unit,
+    showLocationDialog: @Composable () -> Unit,
+    showFiltersButtons: @Composable () -> Unit,
 
     ) {
     
@@ -568,361 +1023,33 @@ fun MainContent(
     val coroutineScope = rememberCoroutineScope()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp // ширина экрана
 
-
-    LaunchedEffect(userPOIList) {
-        if (userPOIList.isNotEmpty() && randomPOI == null) {
-            randomPOI = userPOIList.random()
-        }
-    }
-
-    val context = LocalContext.current
-    val placesClient = remember { Places.createClient(context) }
-
-    var query by remember { mutableStateOf("") }
-    var suggestions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
-
-    LaunchedEffect(query) {
-        if (query.length >= 3) {
-            val request = FindAutocompletePredictionsRequest.builder()
-                .setQuery(query)
-                .build()
-            placesClient.findAutocompletePredictions(request)
-                .addOnSuccessListener { response ->
-                    suggestions = response.autocompletePredictions
-                }
-                .addOnFailureListener { e ->
-                    suggestions = emptyList()
-                    e.printStackTrace()
-                }
-        } else {
-            suggestions = emptyList()
-        }
-    }
-
-
     Scaffold(
+
+        //ШАПКА
         topBar = {
-            TopAppBar(
-                title = { Text("Weekend Guide", color = Color.White) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
-                actions = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("125 GP", color = Color.White)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        /*
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Профиль",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clickable { onOpenProfile() }
-                        )
-                         */
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                }
-            )
+            showTopAppBar()
         },
-
-
-
-
         //НИЖНЕЕ МЕНЮ
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = true,
-                    onClick = { coroutineScope.launch {
-                        listState.animateScrollToItem(0) }
-                              },
-                    icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
-                    label = { Text("Поиск") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = onShowFavoritesList,
-                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Сохранённое") },
-                    label = { Text("Сохранённое") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {},
-                    icon = { Icon(Icons.Default.Star, contentDescription = "Достижения") },
-                    label = { Text("Достижения") }
-                )
-                NavigationBarItem(
-                    selected = false,
-                    onClick = {onOpenProfile()},
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Профиль") },
-                    label = { Text("Профиль") }
-                )
-            }
+            showNavigationBar()
         }
 
         // ОСНОВНОЙ ЭКРАН
     ) { paddingValues ->
 
-        //Поле локация
         Column (
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
                 .padding(horizontal = 4.dp)
         ) {
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text(userCurrentCity ?:"Город или адрес") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp)),
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            onRequestGPS()
-                            suggestions = emptyList() //clear
-                        }) {
-                            Icon(Icons.Default.LocationOn, contentDescription = "Определить по GPS")
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(50.dp)
-                )
-
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 200.dp)
-                ) {
-                    items(suggestions) { prediction ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    val placeId = prediction.placeId
-                                    val placeRequest = FetchPlaceRequest.builder(
-                                        placeId,
-                                        listOf(Place.Field.LAT_LNG, Place.Field.NAME)
-                                    ).build()
-
-                                    placesClient.fetchPlace(placeRequest)
-                                        .addOnSuccessListener { result ->
-                                            val place = result.place
-                                            val latLng = place.latLng
-                                            if (latLng != null) {
-                                                onLocationSelected(
-                                                    place.name ?: "",
-                                                    Pair(latLng.latitude, latLng.longitude)
-                                                )
-                                            }
-                                            suggestions = emptyList() //clear
-                                        }
-                                },
-                            shape = RoundedCornerShape(50.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                        ) {
-                            Text(
-                                text = prediction.getFullText(null).toString(),
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-                }
-            }
+            //Поле выбор локации
+            showLocationDialog()
 
            Spacer(modifier = Modifier.height(4.dp))
 
-// кнопки фильтры
-            val buttonHeight = 30.dp
-            val spacing = 4.dp
-
-            var radiusExpanded by remember { mutableStateOf(false) }
-            val radiusButtonAnchor = remember { mutableStateOf<Offset?>(null) }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(spacing)
-            ) {
-                // 👈 Кнопка "На карте"
-                OutlinedButton(
-                    onClick = {
-                        if (userCurrentCity == null) {
-                            onOpenLocation()
-                        } else {
-                            onOpenMapScreen()
-                        }
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(buttonHeight),
-                    shape = RoundedCornerShape(4.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Place,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("На карте", fontSize = 13.sp, maxLines = 1)
-                }
-
-                // 🎯 Выпадающий список радиуса
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedButton(
-                        onClick = { radiusExpanded = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(buttonHeight),
-                        shape = RoundedCornerShape(4.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                        contentPadding = PaddingValues(horizontal = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(selectedRadius, fontSize = 13.sp, maxLines = 1)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = radiusExpanded,
-                        onDismissRequest = { radiusExpanded = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        listOf("20км", "50км", "100км", "200км", "∞").forEach { radius ->
-                            DropdownMenuItem(
-                                text = { Text(radius) },
-                                onClick = {
-                                    onRadiusChange(radius)
-                                    radiusExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                // ⚙️ Кнопка "Фильтры"
-                OutlinedButton(
-                    onClick = onOpenFilters,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(buttonHeight),
-                    shape = RoundedCornerShape(4.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                    contentPadding = PaddingValues(horizontal = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Фильтры", fontSize = 13.sp, maxLines = 1)
-                }
-            }
-
-
-
-
-
-
-
-
-            /*
-
-            // ⚙️ Кнопка фильтров
-            IconButton(onClick = onOpenFilters) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Фильтры",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            // Кнопка Показать на карте
-            Button(
-                onClick = {
-                    if (userCurrentCity == null) {
-                        onOpenLocation()
-                    } else {
-                        onOpenMapScreen()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Показать на карте")
-            }
-
-             */
-
-// Поле текущего местоположения
-/*
-            Row(
-                modifier = Modifier
-                    .padding(top = 16.dp, start = 5.dp, end = 5.dp)
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .clip(RoundedCornerShape(10))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Кнопка LocationOn
-                IconButton(onClick = {onOpenLocation()}) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // 📍 Центр панели — кликабельное поле
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable { onOpenLocation() },
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = userCurrentCity ?: "Искать рядом с...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (userCurrentCity != null) MaterialTheme.colorScheme.onSurface else Color.Gray,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
-
-            }
-
- */
-
-
+            // кнопки фильтры
+            showFiltersButtons()
 
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -966,7 +1093,7 @@ fun MainContent(
                         items(displayedPOIs) { poi ->
                             Box(
                                 modifier = Modifier
-                                    .width(screenWidth - 32.dp) // учтём отступы по 16.dp
+                                    .width(screenWidth - 32.dp)
                             ) {
                                 POICard(
                                     poi = poi,
@@ -1059,16 +1186,32 @@ fun MapScreen(
     onFavoriteClick: (String) -> Unit,
     onRequestGPS: () -> Unit,
     onLocationSelected: (String, Pair<Double, Double>) -> Unit,
+    showLocationDialog: @Composable () -> Unit,
+    showFiltersButtons: @Composable () -> Unit,
 
     ) {
+    val radiusValue = when (selectedRadius) {
+        "20км" -> 20_000.0
+        "50км" -> 50_000.0
+        "100км" -> 100_000.0
+        "200км" -> 200_000.0
+        "∞" -> 0.0
+        else -> 200_000.0
+    }
+    val zoom = when (selectedRadius) {
+        "20км" -> 10f
+        "50км" -> 9f
+        "100км" -> 8f
+        else -> 7f
+    }
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             userLocation?.let { LatLng(it.first, it.second) } ?: LatLng(51.1657, 10.4515),
-            8f
+            zoom
         )
     }
-
+/*
     val context = LocalContext.current
     val placesClient = remember { Places.createClient(context) }
 
@@ -1093,15 +1236,12 @@ fun MapScreen(
         }
     }
 
+ */
 
-    val radiusValue = when (selectedRadius) {
-        "20км" -> 20_000.0
-        "50км" -> 50_000.0
-        "100км" -> 100_000.0
-        "200км" -> 200_000.0
-        "∞" -> 0.0
-        else -> 200_000.0
-    }
+
+
+
+
 
         Box(
             modifier = Modifier
@@ -1135,8 +1275,6 @@ fun MapScreen(
                     )
                 }
 
-
-
                 userLocation?.let {
                     Circle(
                         center = LatLng(it.first, it.second),
@@ -1148,16 +1286,26 @@ fun MapScreen(
                 }
             }
 
+            Column (
+                modifier = Modifier
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp)
+                    .fillMaxSize()
+            ) {
+                //Поле выбор локации
+                showLocationDialog()
 
+                Spacer(modifier = Modifier.height(4.dp))
 
-
-
-
+                // кнопки фильтры
+                showFiltersButtons()
+            }
 
 
 
             // 🎯 ПАНЕЛЬ — единая "таблетка" с тремя элементами
 
+
+            /*
             Row(
                 modifier = Modifier
                     .padding(top = 40.dp, start = 16.dp, end = 16.dp)
@@ -1231,6 +1379,11 @@ fun MapScreen(
 
             }
 
+             */
+
+
+
+
         }
 }
 
@@ -1244,107 +1397,7 @@ fun LoadingScreen() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LocationSelectorDialog(
-    onDismiss: () -> Unit,
-    onLocationSelected: (String, Pair<Double, Double>) -> Unit,
-    onRequestGPS: () -> Unit
-) {
-    val context = LocalContext.current
-    val placesClient = remember { Places.createClient(context) }
 
-    var query by remember { mutableStateOf("") }
-    var suggestions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
-
-    LaunchedEffect(query) {
-        if (query.length >= 3) {
-            val request = FindAutocompletePredictionsRequest.builder()
-                .setQuery(query)
-                .build()
-            placesClient.findAutocompletePredictions(request)
-                .addOnSuccessListener { response ->
-                    suggestions = response.autocompletePredictions
-                }
-                .addOnFailureListener { e ->
-                    suggestions = emptyList()
-                    e.printStackTrace()
-                }
-        } else {
-            suggestions = emptyList()
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Город или адрес") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp)),
-            leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = null)
-            },
-            trailingIcon = {
-                IconButton(onClick = {
-                    onRequestGPS()
-                    onDismiss()
-                }) {
-                    Icon(Icons.Default.LocationOn, contentDescription = "Определить по GPS")
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(
-            modifier = Modifier.heightIn(max = 300.dp)
-        ) {
-            items(suggestions) { prediction ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clickable {
-                            val placeId = prediction.placeId
-                            val placeRequest = FetchPlaceRequest.builder(
-                                placeId,
-                                listOf(Place.Field.LAT_LNG, Place.Field.NAME)
-                            ).build()
-
-                            placesClient.fetchPlace(placeRequest)
-                                .addOnSuccessListener { result ->
-                                    val place = result.place
-                                    val latLng = place.latLng
-                                    if (latLng != null) {
-                                        onLocationSelected(
-                                            place.name ?: "",
-                                            Pair(latLng.latitude, latLng.longitude)
-                                        )
-                                    }
-                                    onDismiss()
-                                }
-                        },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Text(
-                        text = prediction.getFullText(null).toString(),
-                        modifier = Modifier.padding(12.dp),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        }
-    }
-}
 
 
 
@@ -1582,38 +1635,18 @@ fun ListPOIScreen(
     onFavoriteClick: (String) -> Unit,
     onShowPOICardTypeList: () -> Unit,
     onPOIClick: () -> Unit,
+    showTopAppBar: @Composable () -> Unit,
+    showFiltersButtons: @Composable () -> Unit,
 ) {
     val listState = rememberLazyListState()
     val poiCount = userPOIList.size
-   // var sortedPOIs by remember { mutableStateOf(userPOIList) }
 
     Scaffold(
+
+        //ШАПКА
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Назад",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
-                actions = {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Профиль",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clickable { onOpenProfile() }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-            )
-        }
+            showTopAppBar()
+        },
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -1621,12 +1654,22 @@ fun ListPOIScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // кнопки фильтры
+            showFiltersButtons()
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            /*
             // 🏷 Заголовок
             Text(
                 text = "$poiCount мест рядом с ${userCurrentCity ?: "вами"}",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
+
+
 
             // 🔘 Кнопки сортировки, фильтра и карты
             Row(
@@ -1668,6 +1711,7 @@ fun ListPOIScreen(
                     modifier = buttonModifier
                 )
             }
+             */
 
             // 📋 Список POI
 
@@ -1851,14 +1895,17 @@ fun POICard(
                     }
 
                     //посещенные
+                    if (isVisited) {
                         Icon(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .padding(4.dp),
-                            imageVector = if (isVisited) Icons.Default.CheckCircle else Icons.Default.CheckCircle,
+                            imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Посещенные",
-                            tint = if (isVisited) Color.Green else Color.Gray
+                            tint = Color.Green
                         )
+                    }
+
                     //избранные
                     IconButton(
                         onClick = onFavoriteClick,
@@ -2021,22 +2068,16 @@ fun POIFullScreen(
                         }
 
                         // Левая верхняя иконка "Посещено" — всегда видна
-
-                        IconButton(
-                            onClick = {handleCheckpointClick()},
-                            enabled = !isVisited,
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(8.dp)
-                                .background(Color.White.copy(alpha = if (isVisited) 0.0f else 0.7f), shape = CircleShape)
-                        ) {
+                        if(isVisited) {
                             Icon(
-                                imageVector = if (isVisited) Icons.Default.CheckCircle else Icons.Default.CheckCircle,
-                                contentDescription = "Избранное",
-                                tint = if (isVisited) Color.Green else Color.Gray
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(8.dp),
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Посещенно",
+                                tint = Color.Green
                             )
                         }
-
 
                         // Правая верхняя иконка "Избранное"
                         IconButton(
