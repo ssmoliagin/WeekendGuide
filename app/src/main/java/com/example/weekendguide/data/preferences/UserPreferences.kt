@@ -21,6 +21,8 @@ data class UserSettings(
     val currentLocation: Pair<Double, Double>?,
     val favoritePoiIds: Set<String>,
     val visitedPoiIds: Set<String>,
+    val currentGP: Int,
+    val totalGP: Int
 )
 
 class UserPreferences(private val context: Context) {
@@ -36,6 +38,40 @@ class UserPreferences(private val context: Context) {
         val VISITED = stringSetPreferencesKey("visited_poi_ids")
     }
 
+    //очки
+    private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+
+    suspend fun getCurrentGP(): Int = prefs.getInt("current_gp", 0)
+    fun getTotalGP(): Int = prefs.getInt("total_gp", 0)
+
+    suspend fun addGP(points: Int) {
+        val current = getCurrentGP()
+        val total = getTotalGP()
+        prefs.edit()
+            .putInt("current_gp", current + points)
+            .putInt("total_gp", total + points)
+            .apply()
+    }
+
+    suspend fun spendGP(points: Int): Boolean {
+        val current = getCurrentGP()
+        return if (current >= points) {
+            prefs.edit().putInt("current_gp", current - points).apply()
+            true
+        } else {
+            false
+        }
+    }
+
+    suspend fun resetGP() {
+        prefs.edit()
+            .putInt("current_gp", 0)
+            .putInt("total_gp", 0)
+            .apply()
+    }
+
+
+    //
     suspend fun saveLanguage(language: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.LANGUAGE] = language
@@ -123,6 +159,8 @@ class UserPreferences(private val context: Context) {
         val currentLocation = if (lat != null && lng != null) Pair(lat, lng) else null
         val favoritePoiIds = prefs[Keys.FAVORITES] ?: emptySet()
         val visitedPoiIds = prefs[Keys.VISITED] ?: emptySet()
+        val currentGP = getCurrentGP()
+        val totalGP = getTotalGP()
 
         return UserSettings(
             language = language,
@@ -131,7 +169,9 @@ class UserPreferences(private val context: Context) {
             currentCity = currentCity,
             currentLocation = currentLocation,
             favoritePoiIds = favoritePoiIds,
-            visitedPoiIds = visitedPoiIds
+            visitedPoiIds = visitedPoiIds,
+            currentGP = currentGP,
+            totalGP = totalGP
         )
     }
 
