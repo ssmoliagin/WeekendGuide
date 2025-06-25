@@ -33,8 +33,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -61,6 +63,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
@@ -128,6 +131,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.material.icons.filled.* // Это нужно!
+import androidx.compose.material3.AssistChip
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,6 +141,7 @@ fun MainScreen(context: Context = LocalContext.current) {
     //состояние окон
     var showMap by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
+    var showStatistics by remember { mutableStateOf(false) }
     var showProfile by remember { mutableStateOf(false) }
     var showPOIInMap by remember { mutableStateOf(false) }
     var showListPoi by remember { mutableStateOf(false) }
@@ -143,6 +150,8 @@ fun MainScreen(context: Context = LocalContext.current) {
     var showOnlyFavorites by remember { mutableStateOf(false) } //скрытый фильтр ТОЛЬКО избранные
     var showOnlyVisited by remember { mutableStateOf(false) } // скрытый фильтр ТОЛЬКО посещенные
     var showVisited by remember { mutableStateOf(true) } // показать посещенные
+
+    var selectedItem by remember { mutableStateOf("search") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
     val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
 
@@ -299,7 +308,39 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
         }
 
+        fun resetFilters() {
+            selectedTypes = allTypes
+            selectedRadius = "200км"
+            showOnlyVisited = false
+            showOnlyFavorites = false
+
+            showListPoi = false
+            showStatistics = false
+            showMap = false
+        }
+
         // --- НАВИГАЦИЯ ---
+
+        //показ меню
+        @Composable
+        fun showNavigationBar() {
+            NavigationBar(
+                selectedItem = selectedItem,
+                onItemSelected = { selectedItem = it }, // 🔸 Обновляем из NavigationBar
+                onShowFavoritesList = {
+                    showOnlyFavorites = true
+                    selectedRadius = "∞"
+                    showListPoi = true
+                },
+                onOpenProfile = { showProfile = true },
+                onOpenStatistics = {
+                    showOnlyVisited = true
+                    selectedRadius = "∞"
+                    showStatistics = true
+                },
+                onDismiss = {resetFilters()}
+            )}
+
 
         if (showMap) {
             MapScreen(
@@ -320,7 +361,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                         },
                         onRequestGPS = onRequestLocationChange,
                         userCurrentCity = currentCity,
-                        onDismiss = { showMap = false },
+                        onDismiss = {resetFilters()},
                     )
                 },
                 showFiltersButtons = {
@@ -349,14 +390,11 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onPOIClick = {showFullPOI = true},
                 showTopAppBar = { TopAppBar(
                     topBarTitle = if (showOnlyFavorites)"favorites"
+                         else if (showStatistics) "statistic"
                          else  "${finalPOIList.size} мест рядом с $currentCity",
-                    onDismiss = {
-                        selectedTypes = allTypes
-                        showOnlyFavorites = false
-                        showOnlyVisited = false
-                        showListPoi = false
-                    },
+                    onDismiss = {resetFilters()},
                 ) },
+                showNavigationBar = { showNavigationBar() },
                 showFiltersButtons = {
                     FiltersButtons(
                         onShowScreenType = "list",
@@ -385,22 +423,10 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onFavoriteClick = onFavoriteClick,
                 onPOIClick = {showFullPOI = true},
                 onSelectPOI = { poi -> selectedPOI = poi },
-                showNavigationBar = {
-                    NavigationBar(
-                        onShowFavoritesList = {
-                        showOnlyFavorites = true
-                        showListPoi = true
-                    },
-                        onOpenProfile = { showProfile = true },
-                )},
+                showNavigationBar = { showNavigationBar() },
                 showTopAppBar = { TopAppBar(
                     topBarTitle = "main",
-                    onDismiss = {
-                        selectedTypes = allTypes
-                        showOnlyFavorites = false
-                        showOnlyVisited = false
-                        showListPoi = false
-                    },
+                    onDismiss = {resetFilters()},
                 ) },
                 showLocationDialog = {
                     LocationDialog(
@@ -429,6 +455,19 @@ fun MainScreen(context: Context = LocalContext.current) {
                     )
                 },
                 )
+        }
+
+        // Экран Статистика
+        if (showStatistics) {
+            StatisticsScreen(
+                userPOIList = finalPOIList,
+                allTypes = allTypes,
+                showNavigationBar = { showNavigationBar() },
+                showTopAppBar = { TopAppBar(
+                    topBarTitle = "statistic",
+                    onDismiss = {resetFilters()},
+                ) },
+            )
         }
 
         // ✅ Панель Фильтры
@@ -749,7 +788,7 @@ fun MapScreen(
 
             Column (
                 modifier = Modifier
-                    .padding(top = 40.dp, start = 16.dp, end = 16.dp)
+                    .padding(top = 40.dp, start = 4.dp, end = 4.dp)
                     .fillMaxSize()
             ) {
                 //Поле выбор локации
@@ -775,6 +814,7 @@ fun ListPOIScreen(
     onFavoriteClick: (String) -> Unit,
     onPOIClick: () -> Unit,
     showTopAppBar: @Composable () -> Unit,
+    showNavigationBar: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -785,22 +825,26 @@ fun ListPOIScreen(
         topBar = {
             showTopAppBar()
         },
+        //НИЖНЕЕ МЕНЮ
+        bottomBar = {
+            showNavigationBar()
+        }
 
         ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 4.dp)
         ) {
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // кнопки фильтры
 
             showFiltersButtons()
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 📋 Список POI
 
@@ -840,11 +884,27 @@ fun FiltersPanel(
     showVisited: Boolean,
     onToggleShowVisited: () -> Unit,
 ) {
-
     val radiusValues = listOf("20", "50", "100", "200", "∞")
     val radiusSliderPosition = radiusValues.indexOfFirst {
         it.removeSuffix("км") == selectedRadius.removeSuffix("км")
     }.coerceAtLeast(0)
+
+    val typeIcons = mapOf(
+        "castle" to Icons.Default.Castle,
+        "nature" to Icons.Default.Forest,
+        "park" to Icons.Default.NaturePeople,
+        "funpark" to Icons.Default.Attractions,
+        "museum" to Icons.Default.Museum,
+        "swimming" to Icons.Default.Pool,
+        "hiking" to Icons.Default.DirectionsWalk,
+        "cycling" to Icons.Default.DirectionsBike,
+        "zoo" to Icons.Default.Pets,
+        "city-walk" to Icons.Default.LocationCity,
+        "festival" to Icons.Default.Celebration,
+        "extreme" to Icons.Default.DownhillSkiing
+    )
+
+    val allSelected = selectedTypes.containsAll(allTypes)
 
     Card(
         modifier = Modifier
@@ -876,32 +936,56 @@ fun FiltersPanel(
             // ✅ Типы мест
             Text("Типы мест", style = MaterialTheme.typography.titleMedium)
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                OutlinedButton(onClick = onSelectAllTypes) {
-                    Text("Выбрать все")
-                }
-                OutlinedButton(onClick = onClearAllTypes) {
-                    Text("Убрать все")
-                }
-            }
-
             FlowRow(
-          //      mainAxisSpacing = 8.dp,
-           //     crossAxisSpacing = 8.dp,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allTypes.forEach { type ->
+                    val icon = typeIcons[type]
                     FilterChip(
                         selected = selectedTypes.contains(type),
                         onClick = { onTypeToggle(type) },
-                        label = { Text(type) }
+                        label = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                if (icon != null) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = type,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = type,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 10.sp,
+                                        maxLines = 1
+                                    )
+                                } else {
+                                    Text(type)
+                                }
+                            }
+                        }
                     )
                 }
+
+                // 🔁 Кнопка "Выбрать все / Убрать все"
+                AssistChip(
+                    onClick = {
+                        if (allSelected) onClearAllTypes() else onSelectAllTypes()
+                    },
+                    label = {
+                        Text(if (allSelected) "Убрать все" else "Выбрать все")
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (allSelected) Icons.Default.Clear else Icons.Default.DoneAll,
+                            contentDescription = null
+                        )
+                    }
+                )
             }
 
+            // ☑️ Показывать посещённые
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -917,6 +1001,8 @@ fun FiltersPanel(
         }
     }
 }
+
+
 
 @Composable
 fun ProfilePanel(
@@ -1430,6 +1516,7 @@ fun TopAppBar (
     val title = when (topBarTitle) {
         "main" -> "Weekend Guide"
         "favorites" -> "Избранное"
+        "statistic" -> "Достижения"
         else -> topBarTitle
     }
 
@@ -1438,7 +1525,7 @@ fun TopAppBar (
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
         actions = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${value?.currentGP} GP", color = Color.White)
+                Text("${value?.currentGP} 🏆", color = Color.White)
             }
         },
         navigationIcon = {
@@ -1458,51 +1545,58 @@ fun TopAppBar (
     )
 }
 
-//Нижнее меню
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationBar(
+    selectedItem: String,
+    onItemSelected: (String) -> Unit,
     onShowFavoritesList: () -> Unit,
     onOpenProfile: () -> Unit,
-)
-{
-    val coroutineScope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
+    onOpenStatistics: () -> Unit,
+    onDismiss: () -> Unit
+) {
     val sound = LocalView.current
 
     NavigationBar {
         NavigationBarItem(
-            selected = true,
+            selected = selectedItem == "search",
             onClick = {
+                onItemSelected("search")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-                coroutineScope.launch {
-                    listState.animateScrollToItem(0)
-                }
+                onDismiss()
             },
             icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
             label = { Text("Поиск") }
         )
+
         NavigationBarItem(
-            selected = false,
+            selected = selectedItem == "favorites",
             onClick = {
+                onItemSelected("favorites")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                onDismiss()
                 onShowFavoritesList()
             },
             icon = { Icon(Icons.Default.Favorite, contentDescription = "Сохранённое") },
             label = { Text("Сохранённое") }
         )
+
         NavigationBarItem(
-            selected = false,
+            selected = selectedItem == "statistics",
             onClick = {
+                onItemSelected("statistics")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-                //
+                onDismiss()
+                onOpenStatistics()
             },
             icon = { Icon(Icons.Default.Star, contentDescription = "Достижения") },
             label = { Text("Достижения") }
         )
+
         NavigationBarItem(
-            selected = false,
+            selected = selectedItem == "profile",
             onClick = {
+                onItemSelected("profile")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                 onOpenProfile()
             },
@@ -1511,6 +1605,8 @@ fun NavigationBar(
         )
     }
 }
+
+
 
 //Панель ввода местоположения
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1710,7 +1806,7 @@ fun FiltersButtons(
                 colors = commonButtonColors
             ) {
                 Icon(
-                    imageVector = Icons.Default.Place,
+                    imageVector = Icons.Default.Map,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
@@ -1736,7 +1832,7 @@ fun FiltersButtons(
                 colors = commonButtonColors
             ) {
                 Icon(
-                    imageVector = Icons.Default.LocationOn,
+                    imageVector = Icons.Default.Radar,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
@@ -1788,7 +1884,7 @@ fun FiltersButtons(
             colors = commonButtonColors
         ) {
             Icon(
-                imageVector = Icons.Default.Settings,
+                imageVector = Icons.Default.FilterList,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
@@ -1798,6 +1894,151 @@ fun FiltersButtons(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StatisticsScreen(
+    userPOIList: List<POI>,
+    allTypes: List<String>,
+    showNavigationBar: @Composable () -> Unit,
+    showTopAppBar: @Composable () -> Unit,
+) {
+
+    val typeStats = userPOIList.groupingBy { it.type }.eachCount()
+
+    val context = LocalContext.current
+    val prefs = remember { UserPreferences(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    Scaffold(
+        topBar = { showTopAppBar() },
+        bottomBar = { showNavigationBar() }
+    ) { paddingValues ->
+        LazyColumn(
+            contentPadding = paddingValues,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            item {
+                Text(
+                    text = "📊 Достижения по категориям",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+
+            items(allTypes) { type ->
+                val count = typeStats[type] ?: 0
+
+                AchievementCard(
+                    type = type,
+                    count = count,
+                    onLevelUp = {
+                        coroutineScope.launch {
+                            prefs.addGP(1000)
+                            Toast
+                                .makeText(context, "+1000 GP за новый уровень!", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AchievementCard(
+    type: String,
+    count: Int,
+    onLevelUp: () -> Unit
+) {
+    val typeIcons = mapOf(
+        "castle" to Icons.Default.Castle,
+        "nature" to Icons.Default.Forest,
+        "park" to Icons.Default.NaturePeople,
+        "funpark" to Icons.Default.Attractions,
+        "museum" to Icons.Default.Museum,
+        "swimming" to Icons.Default.Pool,
+        "hiking" to Icons.Default.DirectionsWalk,
+        "cycling" to Icons.Default.DirectionsBike,
+        "zoo" to Icons.Default.Pets,
+        "city-walk" to Icons.Default.LocationCity,
+        "festival" to Icons.Default.Celebration,
+        "extreme" to Icons.Default.DownhillSkiing
+    )
+
+    val typeGoals = listOf(5, 10, 20)
+    val level = typeGoals.indexOfFirst { count < it }.let {
+        if (it == -1) typeGoals.size else it
+    }
+    val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()
+    val percent = (count * 100 / currentGoal).coerceAtMost(100)
+    val icon = typeIcons[type] ?: Icons.Default.Star
+    val leveledUp = count == currentGoal
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        elevation = CardDefaults.cardElevation(6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (leveledUp) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = type,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .padding(end = 12.dp)
+                )
+                Text(
+                    text = type.replaceFirstChar { it.uppercaseChar() },
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "Ур. ${level + 1}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            LinearProgressIndicator(
+                progress = percent / 100f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .padding(top = 12.dp)
+            )
+
+            Text(
+                text = "$count / $currentGoal (${1000 * (level + 1)} очков за уровень)",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            if (leveledUp) {
+                Button(
+                    onClick = onLevelUp,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(top = 8.dp)
+                ) {
+                    Icon(Icons.Default.EmojiEvents, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Level Up!")
+                }
+            }
+        }
+    }
+}
+
+
 
 @Composable
 fun LoadingScreen() {
