@@ -22,7 +22,8 @@ data class UserSettings(
     val favoritePoiIds: Set<String>,
     val visitedPoiIds: Set<String>,
     val currentGP: Int,
-    val totalGP: Int
+    val totalGP: Int,
+    val categoryLevels: Map<String, Int> // <-- новое поле
 )
 
 class UserPreferences(private val context: Context) {
@@ -36,10 +37,37 @@ class UserPreferences(private val context: Context) {
         val LNG = doublePreferencesKey("current_lng")
         val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
         val VISITED = stringSetPreferencesKey("visited_poi_ids")
+        val CATEGORY_LEVELS = stringPreferencesKey("category_levels") // JSON-объект: {"castles": 1, "zoos": 2}
+
+    }
+    private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+
+    //Методы для получения и сохранения уровней
+
+    suspend fun getCategoryLevels(): Map<String, Int> {
+        val prefs = context.dataStore.data.first()
+        val json = prefs[Keys.CATEGORY_LEVELS] ?: return emptyMap()
+        return Json.decodeFromString(json)
     }
 
-    //очки
-    private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    suspend fun saveCategoryLevels(map: Map<String, Int>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(map)
+        }
+    }
+
+    suspend fun getLevelForCategory(category: String): Int {
+        return getCategoryLevels()[category] ?: 0
+    }
+
+    suspend fun levelUpCategory(category: String, newLevel: Int, rewardPoints: Int) {
+        val levels = getCategoryLevels().toMutableMap()
+        levels[category] = newLevel
+        saveCategoryLevels(levels)
+        addGP(rewardPoints)
+    }
+
+    //Методы для получения и сохранения очков
 
     suspend fun getCurrentGP(): Int = prefs.getInt("current_gp", 0)
     fun getTotalGP(): Int = prefs.getInt("total_gp", 0)
@@ -162,6 +190,9 @@ class UserPreferences(private val context: Context) {
         val currentGP = getCurrentGP()
         val totalGP = getTotalGP()
 
+        val categoryLevelsJson = prefs[Keys.CATEGORY_LEVELS]
+        val categoryLevels = categoryLevelsJson?.let { Json.decodeFromString<Map<String, Int>>(it) } ?: emptyMap()
+
         return UserSettings(
             language = language,
             homeRegion = homeRegion,
@@ -171,7 +202,8 @@ class UserPreferences(private val context: Context) {
             favoritePoiIds = favoritePoiIds,
             visitedPoiIds = visitedPoiIds,
             currentGP = currentGP,
-            totalGP = totalGP
+            totalGP = totalGP,
+            categoryLevels = categoryLevels
         )
     }
 

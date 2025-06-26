@@ -9,6 +9,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,23 +35,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -133,7 +129,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.material.icons.filled.* // Это нужно!
 import androidx.compose.material3.AssistChip
-import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.mutableStateMapOf
+import com.example.weekendguide.viewmodel.GPViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,14 +149,26 @@ fun MainScreen(context: Context = LocalContext.current) {
     var showOnlyVisited by remember { mutableStateOf(false) } // скрытый фильтр ТОЛЬКО посещенные
     var showVisited by remember { mutableStateOf(true) } // показать посещенные
 
-    var selectedItem by remember { mutableStateOf("search") }// 🔹 Состояние выбранного пункта меню
+    var selectedItem by remember { mutableStateOf("main") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
-    val locationViewModel: LocationViewModel = viewModel(factory = ViewModelFactory(context.applicationContext as Application))
 
     val prefs = UserPreferences(context)
     val region by produceState<Region?>(initialValue = null) {
         value = prefs.getHomeRegion()
     }
+
+    val locationViewModel: LocationViewModel = viewModel(
+        key = "LocationViewModel",
+        factory = ViewModelFactory(context.applicationContext as Application)
+    )
+
+    val gpViewModel: GPViewModel = viewModel(
+        key = "GPViewModel",
+        factory = ViewModelFactory(context.applicationContext as Application)
+    )
+
+    //обновление очков
+    val currentGP by gpViewModel.gp.collectAsState()
 
     // --- ОПРЕДЕЛЯЕМ ЛОКАЦИЮ ---
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -213,18 +223,18 @@ fun MainScreen(context: Context = LocalContext.current) {
 
     // --- ОСНОВНАЯ ЛОГИКА ---
     region?.let { reg ->
-        val viewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
-        val poiList by viewModel.poiList.collectAsState()
+        val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
+        val poiList by poiViewModel.poiList.collectAsState()
 
-        val favoriteIds by viewModel.favoriteIds.collectAsState() // НОВОЕ ИЗБРАННЫЕ ПОИ
+        val favoriteIds by poiViewModel.favoriteIds.collectAsState() // НОВОЕ ИЗБРАННЫЕ ПОИ
         val onFavoriteClick: (String) -> Unit = { poiId ->
-            viewModel.toggleFavorite(poiId)
+            poiViewModel.toggleFavorite(poiId)
         }
 
         //посещенные пои
-        val visitedPoiIds by viewModel.visitedPoiIds.collectAsState()
+        val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
         val onCheckpointClick: (String) -> Unit = { poiId ->
-            viewModel.markPoiVisited(poiId)
+            poiViewModel.markPoiVisited(poiId)
         }
 
 
@@ -321,12 +331,28 @@ fun MainScreen(context: Context = LocalContext.current) {
 
         // --- НАВИГАЦИЯ ---
 
+        //показ шапки
+        @Composable
+        fun showTopAppBar ()
+        {
+            TopAppBar(
+                currentGP = currentGP, // ➕ добавили
+                onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
+                topBarTitle = if (showListPoi) {
+                    if (showOnlyFavorites)"favorites"
+                    else if (showStatistics) "statistic"
+                    else  "${finalPOIList.size} мест рядом с $currentCity"
+                } else if (showStatistics) "statistic"
+                        else "main",
+            onDismiss = {resetFilters()},
+        ) }
+
         //показ меню
         @Composable
         fun showNavigationBar() {
             NavigationBar(
                 selectedItem = selectedItem,
-                onItemSelected = { selectedItem = it }, // 🔸 Обновляем из NavigationBar
+                onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
                 onShowFavoritesList = {
                     showOnlyFavorites = true
                     selectedRadius = "∞"
@@ -341,6 +367,42 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onDismiss = {resetFilters()}
             )}
 
+        //показ панель локации
+        @Composable
+        fun showLocationPanel() {
+            LocationPanel(
+                onShowScreenType =
+                    if (showMap) "map"
+                    else "main",
+                onLocationSelected = { city, latLng ->
+                    // Распаковываем lat и lng
+                    val (lat, lng) = latLng
+                    locationViewModel.setManualLocation(city, lat, lng)
+                },
+                onRequestGPS = onRequestLocationChange,
+                userCurrentCity = currentCity,
+                onDismiss = {resetFilters()},
+            )}
+
+        //показ кнопки фильтры
+        @Composable
+        fun showFiltersButtons() {
+            FiltersButtons(
+                onShowScreenType =
+                    if (showMap) "map"
+                    else "list",
+                userCurrentCity = currentCity,
+                onRequestGPS = onRequestLocationChange,
+                selectedRadius = selectedRadius,
+                onRadiusChange = { selectedRadius = it },
+                onOpenMapScreen = { showMap = true },
+                onOpenListScreen = {showListPoi = true},
+                onOpenFilters = { showFiltersPanel = true },
+                onDismiss = { showMap = false },
+            )
+        }
+
+
 
         if (showMap) {
             MapScreen(
@@ -351,32 +413,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onOpenPOIinMap = {showPOIInMap = true},
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
                 isVisited = { poi -> visitedPoiIds.contains(poi.id) },
-                showLocationDialog = {
-                    LocationDialog(
-                        onShowScreenType = "map",
-                        onLocationSelected = { city, latLng ->
-                            // Распаковываем lat и lng
-                            val (lat, lng) = latLng
-                            locationViewModel.setManualLocation(city, lat, lng)
-                        },
-                        onRequestGPS = onRequestLocationChange,
-                        userCurrentCity = currentCity,
-                        onDismiss = {resetFilters()},
-                    )
-                },
-                showFiltersButtons = {
-                    FiltersButtons(
-                        onShowScreenType = "map",
-                        userCurrentCity = currentCity,
-                        onRequestGPS = onRequestLocationChange,
-                        selectedRadius = selectedRadius,
-                        onRadiusChange = { selectedRadius = it },
-                        onOpenMapScreen = { showMap = true },
-                        onOpenListScreen = {showListPoi = true},
-                        onOpenFilters = { showFiltersPanel = true },
-                        onDismiss = { showMap = false },
-                    )
-                }
+                showLocationPanel = { showLocationPanel() },
+                showFiltersButtons = { showFiltersButtons() },
             )
         } else if (showListPoi) {
             ListPOIScreen(
@@ -388,26 +426,9 @@ fun MainScreen(context: Context = LocalContext.current) {
                 isVisited = { poi -> visitedPoiIds.contains(poi.id) },
                 onFavoriteClick = onFavoriteClick,
                 onPOIClick = {showFullPOI = true},
-                showTopAppBar = { TopAppBar(
-                    topBarTitle = if (showOnlyFavorites)"favorites"
-                         else if (showStatistics) "statistic"
-                         else  "${finalPOIList.size} мест рядом с $currentCity",
-                    onDismiss = {resetFilters()},
-                ) },
+                showTopAppBar = { showTopAppBar () },
                 showNavigationBar = { showNavigationBar() },
-                showFiltersButtons = {
-                    FiltersButtons(
-                        onShowScreenType = "list",
-                        userCurrentCity = currentCity,
-                        onRequestGPS = onRequestLocationChange,
-                        selectedRadius = selectedRadius,
-                        onRadiusChange = { selectedRadius = it },
-                        onOpenMapScreen = { showMap = true },
-                        onOpenListScreen = {showListPoi = true},
-                        onOpenFilters = { showFiltersPanel = true },
-                        onDismiss = { showMap = false },
-                    )
-                },
+                showFiltersButtons = { showFiltersButtons() },
             )
         }
 
@@ -424,36 +445,9 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onPOIClick = {showFullPOI = true},
                 onSelectPOI = { poi -> selectedPOI = poi },
                 showNavigationBar = { showNavigationBar() },
-                showTopAppBar = { TopAppBar(
-                    topBarTitle = "main",
-                    onDismiss = {resetFilters()},
-                ) },
-                showLocationDialog = {
-                    LocationDialog(
-                        onShowScreenType = "main",
-                        onLocationSelected = { city, latLng ->
-                            // Распаковываем lat и lng
-                            val (lat, lng) = latLng
-                            locationViewModel.setManualLocation(city, lat, lng)
-                        },
-                        onRequestGPS = onRequestLocationChange,
-                        userCurrentCity = currentCity,
-                        onDismiss = { showMap = false },
-                    )
-                },
-                showFiltersButtons = {
-                    FiltersButtons(
-                        onShowScreenType = "main",
-                        userCurrentCity = currentCity,
-                        onRequestGPS = onRequestLocationChange,
-                        selectedRadius = selectedRadius,
-                        onRadiusChange = { selectedRadius = it },
-                        onOpenMapScreen = { showMap = true },
-                        onOpenListScreen = {showListPoi = true},
-                        onOpenFilters = { showFiltersPanel = true },
-                        onDismiss = { showMap = false },
-                    )
-                },
+                showTopAppBar = { showTopAppBar () },
+                showLocationPanel = { showLocationPanel() },
+                showFiltersButtons = { showFiltersButtons() },
                 )
         }
 
@@ -463,10 +457,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                 userPOIList = finalPOIList,
                 allTypes = allTypes,
                 showNavigationBar = { showNavigationBar() },
-                showTopAppBar = { TopAppBar(
-                    topBarTitle = "statistic",
-                    onDismiss = {resetFilters()},
-                ) },
+                showTopAppBar = { showTopAppBar () },
+                gpViewModel = gpViewModel,
             )
         }
 
@@ -512,7 +504,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 POIFullScreen (
                     poi = poi,
                     isFavorite = favoriteIds.contains(poi.id),
-                    onFavoriteClick = { viewModel.toggleFavorite(poi.id) },
+                    onFavoriteClick = { poiViewModel.toggleFavorite(poi.id) },
                     isVisited = visitedPoiIds.contains(poi.id),
                     userLocation = userLocation,
                     userCurrentCity = currentCity,
@@ -520,7 +512,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                         selectedPOI = null
                         showFullPOI = false
                     },
-                    viewModel = viewModel
+                    poiViewModel = poiViewModel,
+                    gpViewModel = gpViewModel,
                 )
             }
         }
@@ -530,7 +523,7 @@ fun MainScreen(context: Context = LocalContext.current) {
             POIFullScreen (
                 poi = poi,
                 isFavorite = favoriteIds.contains(poi.id),
-                onFavoriteClick = { viewModel.toggleFavorite(poi.id) },
+                onFavoriteClick = { poiViewModel.toggleFavorite(poi.id) },
                 isVisited = visitedPoiIds.contains(poi.id),
                 userLocation = userLocation,
                 userCurrentCity = currentCity,
@@ -538,7 +531,8 @@ fun MainScreen(context: Context = LocalContext.current) {
                     selectedPOI = null
                     showFullPOI = false
                 },
-                viewModel = viewModel
+                poiViewModel = poiViewModel,
+                gpViewModel = gpViewModel,
             )
         }
         
@@ -560,7 +554,7 @@ fun MainContent(
     onSelectPOI: (POI) -> Unit,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    showLocationDialog: @Composable () -> Unit,
+    showLocationPanel: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
     ) {
     
@@ -588,7 +582,7 @@ fun MainContent(
                 .padding(horizontal = 4.dp)
         ) {
             //Поле выбор локации
-            showLocationDialog()
+            showLocationPanel()
 
            Spacer(modifier = Modifier.height(4.dp))
 
@@ -718,7 +712,7 @@ fun MapScreen(
     onOpenPOIinMap: () -> Unit,
     isFavorite: (POI) -> Boolean,
     isVisited: (POI) -> Boolean,
-    showLocationDialog: @Composable () -> Unit,
+    showLocationPanel: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
     ) {
 
@@ -792,7 +786,7 @@ fun MapScreen(
                     .fillMaxSize()
             ) {
                 //Поле выбор локации
-                showLocationDialog()
+                showLocationPanel()
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -1191,7 +1185,7 @@ fun POICard(
                             .background(Color.White.copy(alpha = 0.6f), shape = CircleShape)
                     ) {
                         Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = "Избранные",
                             tint = if (isFavorite) Color.Red else Color.Gray
                         )
@@ -1235,7 +1229,8 @@ fun POIFullScreen(
     userLocation: Pair<Double, Double>? = null,
     userCurrentCity: String? = null,
     onDismiss: () -> Unit,
-    viewModel: POIViewModel,
+    poiViewModel: POIViewModel,
+    gpViewModel: GPViewModel
 ) {
 
     val distanceKm = remember(poi, userLocation) {
@@ -1246,7 +1241,7 @@ fun POIFullScreen(
         }
     }
 
-    val wikiDescription by viewModel.wikiDescription.collectAsState()
+    val wikiDescription by poiViewModel.wikiDescription.collectAsState()
 
     val context = LocalContext.current
     val locationViewModel: LocationViewModel = viewModel()
@@ -1258,9 +1253,9 @@ fun POIFullScreen(
 
 
     LaunchedEffect(poi.title) {
-        viewModel.loadWikipediaDescription(poi.title)
+        poiViewModel.loadWikipediaDescription(poi.title)
     }
-
+/*
     fun handleCheckpointClick() {
         coroutineScope.launch {
             try {
@@ -1287,8 +1282,8 @@ fun POIFullScreen(
                 val distanceMeters = result[0]
 
                 if (distanceMeters < 20000000) {  //дистанция в метрах
-                    viewModel.markPoiVisited(poi.id)
-                    prefs.addGP(100)
+                    poiViewModel.markPoiVisited(poi.id)
+                    gpViewModel.addGP(100)
                     Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
@@ -1299,6 +1294,8 @@ fun POIFullScreen(
             }
         }
     }
+
+ */
 
     Scaffold(
         topBar = {
@@ -1361,7 +1358,7 @@ fun POIFullScreen(
                                 .background(Color.White.copy(alpha = 0.7f), shape = CircleShape)
                         ) {
                             Icon(
-                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                 contentDescription = "Избранное",
                                 tint = if (isFavorite) Color.Red else Color.Gray
                             )
@@ -1474,21 +1471,38 @@ fun POIFullScreen(
             }
 
             // Кнопка чекпоинта
+            var isChecking by remember { mutableStateOf(false) }
             Button(
-                onClick = { handleCheckpointClick() },
-                enabled = !isVisited,
+                onClick = {
+                    isChecking = true
+                    coroutineScope.launch {
+                        gpViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
+                            if (success) {
+                                poiViewModel.markPoiVisited(poi.id)
+                                Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                            }
+                            isChecking = false
+                        }
+                    }
+                },
+                enabled = !isVisited && !isChecking,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(16.dp),
-
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isVisited) Color.Gray else Color.Green//MaterialTheme.colorScheme.primary
+                    containerColor = if (isVisited) Color.Gray else Color.Green
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = if (isVisited) "Уже посещено" else "Чекпоинт",
+                    text = when {
+                        isVisited -> "Уже посещено"
+                        isChecking -> "Проверка..."
+                        else -> "Чекпоинт"
+                    },
                     color = Color.White
                 )
             }
@@ -1501,6 +1515,8 @@ fun POIFullScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopAppBar (
+    currentGP: Int,
+    onItemSelected: (String) -> Unit,
     topBarTitle: String,
     onDismiss: () -> Unit
 ) {
@@ -1524,14 +1540,18 @@ fun TopAppBar (
         title = { Text(title, color = Color.White) },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
         actions = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("${value?.currentGP} 🏆", color = Color.White)
+            Row(
+                modifier = Modifier
+                    .padding(end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("$currentGP 🏆", color = Color.White)
             }
         },
         navigationIcon = {
             if (topBarTitle != "main") {
                 IconButton(onClick = {
                     sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                    onItemSelected("main")
                     onDismiss()
                 }) {
                     Icon(
@@ -1559,9 +1579,9 @@ fun NavigationBar(
 
     NavigationBar {
         NavigationBarItem(
-            selected = selectedItem == "search",
+            selected = selectedItem == "main",
             onClick = {
-                onItemSelected("search")
+                onItemSelected("main")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                 onDismiss()
             },
@@ -1577,8 +1597,8 @@ fun NavigationBar(
                 onDismiss()
                 onShowFavoritesList()
             },
-            icon = { Icon(Icons.Default.Favorite, contentDescription = "Сохранённое") },
-            label = { Text("Сохранённое") }
+            icon = { Icon(Icons.Default.Bookmarks, contentDescription = "Избранное") },
+            label = { Text("Избранное") }
         )
 
         NavigationBarItem(
@@ -1589,7 +1609,7 @@ fun NavigationBar(
                 onDismiss()
                 onOpenStatistics()
             },
-            icon = { Icon(Icons.Default.Star, contentDescription = "Достижения") },
+            icon = { Icon(Icons.Default.BarChart, contentDescription = "Достижения") },
             label = { Text("Достижения") }
         )
 
@@ -1611,7 +1631,7 @@ fun NavigationBar(
 //Панель ввода местоположения
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LocationDialog(
+fun LocationPanel(
     userCurrentCity: String?,
     onLocationSelected: (String, Pair<Double, Double>) -> Unit,
     onRequestGPS: () -> Unit,
@@ -1902,13 +1922,41 @@ fun StatisticsScreen(
     allTypes: List<String>,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
+    gpViewModel: GPViewModel
 ) {
-
-    val typeStats = userPOIList.groupingBy { it.type }.eachCount()
-
     val context = LocalContext.current
     val prefs = remember { UserPreferences(context) }
     val coroutineScope = rememberCoroutineScope()
+
+    val typeStats = userPOIList.groupingBy { it.type }.eachCount()
+    val leveledUpSet = remember { mutableStateMapOf<String, Int>() }
+
+    // Загрузка достигнутых уровней
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            val savedLevels = prefs.getCategoryLevels()
+            savedLevels.forEach { (category, level) ->
+                leveledUpSet[category] = level
+            }
+        }
+    }
+
+    val typeIcons = mapOf(
+        "castle" to Icons.Default.Castle,
+        "nature" to Icons.Default.Forest,
+        "park" to Icons.Default.NaturePeople,
+        "funpark" to Icons.Default.Attractions,
+        "museum" to Icons.Default.Museum,
+        "swimming" to Icons.Default.Pool,
+        "hiking" to Icons.Default.DirectionsWalk,
+        "cycling" to Icons.Default.DirectionsBike,
+        "zoo" to Icons.Default.Pets,
+        "city-walk" to Icons.Default.LocationCity,
+        "festival" to Icons.Default.Celebration,
+        "extreme" to Icons.Default.DownhillSkiing
+    )
+
+    val typeGoals = listOf(5, 10, 20)
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -1930,113 +1978,119 @@ fun StatisticsScreen(
 
             items(allTypes) { type ->
                 val count = typeStats[type] ?: 0
+                val level = typeGoals.indexOfFirst { count < it }.let { if (it == -1) typeGoals.size else it }
+                val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()
+                val percent = (count * 100 / currentGoal).coerceAtMost(100)
+                val points = 1000 * (level + 1)
+                val icon = typeIcons[type] ?: Icons.Default.Star
 
-                AchievementCard(
-                    type = type,
-                    count = count,
-                    onLevelUp = {
-                        coroutineScope.launch {
-                            prefs.addGP(1000)
-                            Toast
-                                .makeText(context, "+1000 GP за новый уровень!", Toast.LENGTH_SHORT)
-                                .show()
+                val savedLevel = leveledUpSet[type] ?: 0
+                val isNewLevelReached = level > savedLevel
+                var showCongrats by remember { mutableStateOf(false) }
+
+                if (showCongrats) {
+                    LaunchedEffect(Unit) {
+                        delay(2000)
+                        showCongrats = false
+                    }
+                }
+
+                val animatedProgress by animateFloatAsState(
+                    targetValue = percent / 100f,
+                    animationSpec = tween(durationMillis = 500),
+                    label = "Animated Progress"
+                )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    elevation = CardDefaults.cardElevation(6.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isNewLevelReached) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = type,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(end = 12.dp)
+                            )
+                            Text(
+                                text = type.replaceFirstChar { it.uppercaseChar() },
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = "Ур. ${level + 1}",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+
+                        LinearProgressIndicator(
+                            progress = animatedProgress,
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(14.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .padding(top = 12.dp)
+                        )
+
+                        Text(
+                            text = "$count / $currentGoal ($points очков за уровень)",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+
+                        if (isNewLevelReached) {
+                            Button(
+                                onClick = {
+                                    showCongrats = true
+                                    coroutineScope.launch {
+                                        prefs.levelUpCategory(type, level, points)
+                                        leveledUpSet[type] = level
+                                        gpViewModel.addGP(points)
+                                        Toast.makeText(context, "+$points GP за новый уровень!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.End)
+                                    .padding(top = 8.dp)
+                            ) {
+                                Icon(Icons.Default.EmojiEvents, contentDescription = null)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Level Up!")
+                            }
+                        }
+
+                        if (showCongrats) {
+                            Text(
+                                text = "🎉 +$points GP!",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                modifier = Modifier
+                                    .align(Alignment.End)
+                                    .padding(top = 8.dp)
+                            )
                         }
                     }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AchievementCard(
-    type: String,
-    count: Int,
-    onLevelUp: () -> Unit
-) {
-    val typeIcons = mapOf(
-        "castle" to Icons.Default.Castle,
-        "nature" to Icons.Default.Forest,
-        "park" to Icons.Default.NaturePeople,
-        "funpark" to Icons.Default.Attractions,
-        "museum" to Icons.Default.Museum,
-        "swimming" to Icons.Default.Pool,
-        "hiking" to Icons.Default.DirectionsWalk,
-        "cycling" to Icons.Default.DirectionsBike,
-        "zoo" to Icons.Default.Pets,
-        "city-walk" to Icons.Default.LocationCity,
-        "festival" to Icons.Default.Celebration,
-        "extreme" to Icons.Default.DownhillSkiing
-    )
-
-    val typeGoals = listOf(5, 10, 20)
-    val level = typeGoals.indexOfFirst { count < it }.let {
-        if (it == -1) typeGoals.size else it
-    }
-    val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()
-    val percent = (count * 100 / currentGoal).coerceAtMost(100)
-    val icon = typeIcons[type] ?: Icons.Default.Star
-    val leveledUp = count == currentGoal
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        elevation = CardDefaults.cardElevation(6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (leveledUp) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = type,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .padding(end = 12.dp)
-                )
-                Text(
-                    text = type.replaceFirstChar { it.uppercaseChar() },
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "Ур. ${level + 1}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
-
-            LinearProgressIndicator(
-                progress = percent / 100f,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .padding(top = 12.dp)
-            )
-
-            Text(
-                text = "$count / $currentGoal (${1000 * (level + 1)} очков за уровень)",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-
-            if (leveledUp) {
-                Button(
-                    onClick = onLevelUp,
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(top = 8.dp)
-                ) {
-                    Icon(Icons.Default.EmojiEvents, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Level Up!")
                 }
             }
         }
     }
 }
+
+
+
+
 
 
 
