@@ -17,6 +17,7 @@ data class UserSettings(
     val language: String,
     val homeRegion: Region?,
     val purchasedRegions: Set<String>,
+    val purchasedCountries: Set<String>,
     val currentCity: String?,
     val currentLocation: Pair<Double, Double>?,
     val favoritePoiIds: Set<String>,
@@ -32,6 +33,7 @@ class UserPreferences(private val context: Context) {
         val LANGUAGE = stringPreferencesKey("language_code")
         val HOME_REGION = stringPreferencesKey("home_region") // JSON-строка Region
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
+        val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
         val CURRENT_CITY = stringPreferencesKey("current_city")
         val LAT = doublePreferencesKey("current_lat")
         val LNG = doublePreferencesKey("current_lng")
@@ -72,6 +74,7 @@ class UserPreferences(private val context: Context) {
     suspend fun getCurrentGP(): Int = prefs.getInt("current_gp", 0)
     fun getTotalGP(): Int = prefs.getInt("total_gp", 0)
 
+
     suspend fun addGP(points: Int) {
         val current = getCurrentGP()
         val total = getTotalGP()
@@ -83,13 +86,19 @@ class UserPreferences(private val context: Context) {
 
     suspend fun spendGP(points: Int): Boolean {
         val current = getCurrentGP()
+        val spent = getSpentGP()
         return if (current >= points) {
-            prefs.edit().putInt("current_gp", current - points).apply()
+            prefs.edit().apply {
+                putInt("current_gp", current - points)
+                putInt("spent_gp", spent + points)
+            }.apply()
             true
         } else {
             false
         }
     }
+
+    fun getSpentGP(): Int = prefs.getInt("spent_gp", 0)
 
     suspend fun resetGP() {
         prefs.edit()
@@ -128,6 +137,18 @@ class UserPreferences(private val context: Context) {
             val current = prefs[Keys.PURCHASED_REGIONS] ?: emptySet()
             prefs[Keys.PURCHASED_REGIONS] = current + regionCode
         }
+    }
+
+    suspend fun addPurchasedCountries(countryCode: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.PURCHASED_COUNTRIES] ?: emptySet()
+            prefs[Keys.PURCHASED_COUNTRIES] = current + countryCode
+        }
+    }
+
+    suspend fun getPurchasedCountries(): Set<String> {
+        val prefs = context.dataStore.data.first()
+        return prefs[Keys.PURCHASED_COUNTRIES] ?: emptySet()
     }
 
     suspend fun getPurchasedRegions(): Set<String> {
@@ -181,6 +202,7 @@ class UserPreferences(private val context: Context) {
         val homeRegionJson = prefs[Keys.HOME_REGION]
         val homeRegion = homeRegionJson?.let { Json.decodeFromString<Region>(it) }
         val purchasedRegions = prefs[Keys.PURCHASED_REGIONS] ?: emptySet()
+        val purchasedCountries = prefs[Keys.PURCHASED_COUNTRIES] ?: emptySet()
         val currentCity = prefs[Keys.CURRENT_CITY]
         val lat = prefs[Keys.LAT]
         val lng = prefs[Keys.LNG]
@@ -197,6 +219,7 @@ class UserPreferences(private val context: Context) {
             language = language,
             homeRegion = homeRegion,
             purchasedRegions = purchasedRegions,
+            purchasedCountries = purchasedCountries,
             currentCity = currentCity,
             currentLocation = currentLocation,
             favoritePoiIds = favoritePoiIds,

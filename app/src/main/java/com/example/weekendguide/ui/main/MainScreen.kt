@@ -131,6 +131,7 @@ import androidx.compose.material.icons.filled.* // Это нужно!
 import androidx.compose.material3.AssistChip
 import androidx.compose.runtime.mutableStateMapOf
 import com.example.weekendguide.viewmodel.GPViewModel
+import com.example.weekendguide.viewmodel.RegionViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -156,6 +157,8 @@ fun MainScreen(context: Context = LocalContext.current) {
     val region by produceState<Region?>(initialValue = null) {
         value = prefs.getHomeRegion()
     }
+
+    val regionViewModel: RegionViewModel = viewModel()
 
     val locationViewModel: LocationViewModel = viewModel(
         key = "LocationViewModel",
@@ -455,10 +458,12 @@ fun MainScreen(context: Context = LocalContext.current) {
         if (showStatistics) {
             StatisticsScreen(
                 userPOIList = finalPOIList,
+                totalPOIList = poiList,
                 allTypes = allTypes,
                 showNavigationBar = { showNavigationBar() },
                 showTopAppBar = { showTopAppBar () },
                 gpViewModel = gpViewModel,
+                regionViewModel = regionViewModel
             )
         }
 
@@ -1919,10 +1924,12 @@ fun FiltersButtons(
 @Composable
 fun StatisticsScreen(
     userPOIList: List<POI>,
+    totalPOIList: List<POI>,
     allTypes: List<String>,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    gpViewModel: GPViewModel
+    gpViewModel: GPViewModel,
+    regionViewModel: RegionViewModel
 ) {
     val context = LocalContext.current
     val prefs = remember { UserPreferences(context) }
@@ -1968,9 +1975,92 @@ fun StatisticsScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+
+            item {
+                var totalGP by remember { mutableStateOf(0) }
+                var spentGP by remember { mutableStateOf(0) }
+                var purchasedRegionsCount by remember { mutableStateOf(0) }
+                var purchasedCountriesCount by remember { mutableStateOf(0) }
+                val totalRegions = regionViewModel.regionsByCountry.collectAsState().value.values.flatten().size
+                val totalCounties = regionViewModel.countries.collectAsState().value.size
+                val totalPOIs = totalPOIList.size
+                val visitedPOIs = userPOIList.size
+                // Загрузка данных из prefs
+                LaunchedEffect(Unit) {
+                    totalGP = prefs.getTotalGP()
+                    spentGP = prefs.getSpentGP() // Предположим, ты добавишь это в UserPreferences
+                    purchasedRegionsCount = prefs.getPurchasedRegions().size
+                    purchasedCountriesCount = prefs.getPurchasedCountries().size
+                }
+
+                // Блок 1: Очки
+                Text(
+                    text = "🏆 Всего очков",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    elevation = CardDefaults.cardElevation(6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(Modifier.padding(vertical = 4.dp)) {
+                            Text("🟢 Набрано:", Modifier.weight(1f))
+                            Text("$totalGP GP", fontWeight = FontWeight.Bold)
+                        }
+                        Row(Modifier.padding(vertical = 4.dp)) {
+                            Text("🔴 Потрачено:", Modifier.weight(1f))
+                            Text("$spentGP GP", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                // Блок 2: Статистика
+                Text(
+                    text = "🧭 Общая статистика",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    elevation = CardDefaults.cardElevation(6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(Modifier.padding(vertical = 4.dp)) {
+                            Text("\uD83C\uDF0D Стран посещено:", Modifier.weight(1f))
+                            Text(
+                                "$purchasedCountriesCount / $totalCounties",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(Modifier.padding(vertical = 4.dp)) {
+                            Text("🚩 Регионов открыто:", Modifier.weight(1f))
+                            Text(
+                                "$purchasedRegionsCount / $totalRegions",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(Modifier.padding(vertical = 4.dp)) {
+                            Text("✅ Посещено мест:", Modifier.weight(1f))
+                            Text(
+                                "$visitedPOIs / $totalPOIs",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+
             item {
                 Text(
-                    text = "📊 Достижения по категориям",
+                    text = "🎯 Достижения по категориям",
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -1981,7 +2071,7 @@ fun StatisticsScreen(
                 val level = typeGoals.indexOfFirst { count < it }.let { if (it == -1) typeGoals.size else it }
                 val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()
                 val percent = (count * 100 / currentGoal).coerceAtMost(100)
-                val points = 1000 * (level + 1)
+                val points = 1000// * (level + 1)
                 val icon = typeIcons[type] ?: Icons.Default.Star
 
                 val savedLevel = leveledUpSet[type] ?: 0
@@ -1990,46 +2080,54 @@ fun StatisticsScreen(
 
                 if (showCongrats) {
                     LaunchedEffect(Unit) {
-                        delay(2000)
+                        delay(2500)
                         showCongrats = false
                     }
                 }
 
                 val animatedProgress by animateFloatAsState(
                     targetValue = percent / 100f,
-                    animationSpec = tween(durationMillis = 500),
+                    animationSpec = tween(durationMillis = 700),
                     label = "Animated Progress"
                 )
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    elevation = CardDefaults.cardElevation(6.dp),
+                        .padding(vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(8.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isNewLevelReached) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                    )
+                    ),
+                    shape = RoundedCornerShape(16.dp) // скругление
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Icon(
                                 imageVector = icon,
                                 contentDescription = type,
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .padding(end = 12.dp)
+                                    .size(40.dp)  // увеличил размер иконки
+                                    .padding(end = 16.dp),
+                                tint = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = type.replaceFirstChar { it.uppercaseChar() },
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "Ур. ${level + 1}",
-                                style = MaterialTheme.typography.labelLarge,
+                                text = "Уровень ${level + 1}",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.secondary
                             )
                         }
+
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         LinearProgressIndicator(
                             progress = animatedProgress,
@@ -2037,15 +2135,15 @@ fun StatisticsScreen(
                             trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(14.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .padding(top = 12.dp)
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(8.dp))
                         )
 
                         Text(
-                            text = "$count / $currentGoal ($points очков за уровень)",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp)
+                            text = "$count / $currentGoal (+$points GP за уровень)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         if (isNewLevelReached) {
@@ -2055,30 +2153,31 @@ fun StatisticsScreen(
                                     coroutineScope.launch {
                                         prefs.levelUpCategory(type, level, points)
                                         leveledUpSet[type] = level
-                                        gpViewModel.addGP(points)
+                                        gpViewModel.addGP(1000)
                                         Toast.makeText(context, "+$points GP за новый уровень!", Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 modifier = Modifier
                                     .align(Alignment.End)
-                                    .padding(top = 8.dp)
+                                    .padding(top = 12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
                                 Icon(Icons.Default.EmojiEvents, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Level Up!")
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Level Up!", color = MaterialTheme.colorScheme.onPrimary)
                             }
                         }
 
                         if (showCongrats) {
                             Text(
                                 text = "🎉 +$points GP!",
-                                style = MaterialTheme.typography.bodyMedium.copy(
+                                style = MaterialTheme.typography.bodyLarge.copy(
                                     color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.ExtraBold
                                 ),
                                 modifier = Modifier
                                     .align(Alignment.End)
-                                    .padding(top = 8.dp)
+                                    .padding(top = 10.dp)
                             )
                         }
                     }

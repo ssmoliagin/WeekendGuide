@@ -143,6 +143,7 @@ fun SelectRegionScreen(
                                 selectedRegion?.let { region ->
                                     viewModel.downloadAndCacheRegionPOI(region)
                                     userPreferences.addPurchasedRegion(region.region_code)
+                                    userPreferences.addPurchasedCountries(region.country_code)
                                     userPreferences.saveHomeRegion(region)
                                     onRegionSelected()
                                 }
