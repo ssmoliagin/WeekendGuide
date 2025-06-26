@@ -120,9 +120,6 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.dropWhile
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalConfiguration
@@ -171,7 +168,9 @@ fun MainScreen(context: Context = LocalContext.current) {
     )
 
     //обновление очков
-    val currentGP by gpViewModel.gp.collectAsState()
+    val currentGP by gpViewModel.currentGP.collectAsState()
+    val totalGP by gpViewModel.totalGP.collectAsState()
+    val spentGP by gpViewModel.spentGP.collectAsState()
 
     // --- ОПРЕДЕЛЯЕМ ЛОКАЦИЮ ---
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -228,18 +227,17 @@ fun MainScreen(context: Context = LocalContext.current) {
     region?.let { reg ->
         val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
         val poiList by poiViewModel.poiList.collectAsState()
-
-        val favoriteIds by poiViewModel.favoriteIds.collectAsState() // НОВОЕ ИЗБРАННЫЕ ПОИ
+        val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState() //посещенные пои
+        val favoriteIds by poiViewModel.favoriteIds.collectAsState() //  ИЗБРАННЫЕ ПОИ
         val onFavoriteClick: (String) -> Unit = { poiId ->
             poiViewModel.toggleFavorite(poiId)
         }
 
-        //посещенные пои
-        val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
+        /* //старый метод если все ок, удалить
         val onCheckpointClick: (String) -> Unit = { poiId ->
             poiViewModel.markPoiVisited(poiId)
         }
-
+         */
 
         //ФИЛЬТРАЦИЯ
         var selectedRadius by remember { mutableStateOf("200км") }
@@ -457,13 +455,15 @@ fun MainScreen(context: Context = LocalContext.current) {
         // Экран Статистика
         if (showStatistics) {
             StatisticsScreen(
+                totalGP = totalGP,
+                currentGP = currentGP,
+                spentGP = spentGP,
                 userPOIList = finalPOIList,
                 totalPOIList = poiList,
                 allTypes = allTypes,
                 showNavigationBar = { showNavigationBar() },
                 showTopAppBar = { showTopAppBar () },
                 gpViewModel = gpViewModel,
-                regionViewModel = regionViewModel
             )
         }
 
@@ -1527,12 +1527,14 @@ fun TopAppBar (
 ) {
     val sound = LocalView.current
 
-    val context = LocalContext.current
-    val prefs = UserPreferences(context)
-    var value by remember { mutableStateOf<UserSettings?>(null) }
-    LaunchedEffect(Unit) {
-        value = prefs.getAll()
-    }
+    /* old
+      val context = LocalContext.current
+      val prefs = UserPreferences(context)
+      var value by remember { mutableStateOf<UserSettings?>(null) }
+      LaunchedEffect(Unit) {
+          value = prefs.getAll()
+      }
+       */
 
     val title = when (topBarTitle) {
         "main" -> "Weekend Guide"
@@ -1923,13 +1925,15 @@ fun FiltersButtons(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatisticsScreen(
+    totalGP: Int,
+    currentGP: Int,
+    spentGP: Int,
     userPOIList: List<POI>,
     totalPOIList: List<POI>,
     allTypes: List<String>,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    gpViewModel: GPViewModel,
-    regionViewModel: RegionViewModel
+    gpViewModel: GPViewModel
 ) {
     val context = LocalContext.current
     val prefs = remember { UserPreferences(context) }
@@ -1937,6 +1941,9 @@ fun StatisticsScreen(
 
     val typeStats = userPOIList.groupingBy { it.type }.eachCount()
     val leveledUpSet = remember { mutableStateMapOf<String, Int>() }
+
+    var purchasedRegionsCount by remember { mutableStateOf(0) }
+    var purchasedCountriesCount by remember { mutableStateOf(0) }
 
     // Загрузка достигнутых уровней
     LaunchedEffect(Unit) {
@@ -1946,7 +1953,13 @@ fun StatisticsScreen(
                 leveledUpSet[category] = level
             }
         }
+        // Загрузка количество регионов и стран (временое решение пока не переделаю poi.csv)
+        purchasedRegionsCount = prefs.getPurchasedRegions().size
+        purchasedCountriesCount = prefs.getPurchasedCountries().size
     }
+
+    val totalPOIs = totalPOIList.size
+    val visitedPOIs = userPOIList.size
 
     val typeIcons = mapOf(
         "castle" to Icons.Default.Castle,
@@ -1963,7 +1976,7 @@ fun StatisticsScreen(
         "extreme" to Icons.Default.DownhillSkiing
     )
 
-    val typeGoals = listOf(5, 10, 20)
+    val typeGoals = listOf(5, 10, 20, 50, 100) // мест до следущего уровня
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -1977,22 +1990,6 @@ fun StatisticsScreen(
         ) {
 
             item {
-                var totalGP by remember { mutableStateOf(0) }
-                var spentGP by remember { mutableStateOf(0) }
-                var purchasedRegionsCount by remember { mutableStateOf(0) }
-                var purchasedCountriesCount by remember { mutableStateOf(0) }
-                val totalRegions = regionViewModel.regionsByCountry.collectAsState().value.values.flatten().size
-                val totalCounties = regionViewModel.countries.collectAsState().value.size
-                val totalPOIs = totalPOIList.size
-                val visitedPOIs = userPOIList.size
-                // Загрузка данных из prefs
-                LaunchedEffect(Unit) {
-                    totalGP = prefs.getTotalGP()
-                    spentGP = prefs.getSpentGP() // Предположим, ты добавишь это в UserPreferences
-                    purchasedRegionsCount = prefs.getPurchasedRegions().size
-                    purchasedCountriesCount = prefs.getPurchasedCountries().size
-                }
-
                 // Блок 1: Очки
                 Text(
                     text = "🏆 Всего очков",
@@ -2035,14 +2032,14 @@ fun StatisticsScreen(
                         Row(Modifier.padding(vertical = 4.dp)) {
                             Text("\uD83C\uDF0D Стран посещено:", Modifier.weight(1f))
                             Text(
-                                "$purchasedCountriesCount / $totalCounties",
+                                "$purchasedCountriesCount",
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
                             Text("🚩 Регионов открыто:", Modifier.weight(1f))
                             Text(
-                                "$purchasedRegionsCount / $totalRegions",
+                                "$purchasedRegionsCount",
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -2057,7 +2054,6 @@ fun StatisticsScreen(
                 }
             }
 
-
             item {
                 Text(
                     text = "🎯 Достижения по категориям",
@@ -2070,6 +2066,7 @@ fun StatisticsScreen(
                 val count = typeStats[type] ?: 0
                 val level = typeGoals.indexOfFirst { count < it }.let { if (it == -1) typeGoals.size else it }
                 val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()
+                val nextGoal = currentGoal - count
                 val percent = (count * 100 / currentGoal).coerceAtMost(100)
                 val points = 1000// * (level + 1)
                 val icon = typeIcons[type] ?: Icons.Default.Star
@@ -2115,7 +2112,7 @@ fun StatisticsScreen(
                                 tint = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = type.replaceFirstChar { it.uppercaseChar() },
+                                text = "${type.replaceFirstChar { it.uppercaseChar() }} - $count",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
@@ -2140,7 +2137,7 @@ fun StatisticsScreen(
                         )
 
                         Text(
-                            text = "$count / $currentGoal (+$points GP за уровень)",
+                            text = "$nextGoal до следующего уровня",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant

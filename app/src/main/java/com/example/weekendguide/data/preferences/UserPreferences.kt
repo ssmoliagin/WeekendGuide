@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 private val Context.dataStore by preferencesDataStore(name = "user_preferences")
@@ -84,14 +83,14 @@ class UserPreferences(private val context: Context) {
             .apply()
     }
 
-    suspend fun spendGP(points: Int): Boolean {
+    suspend fun spentGP(points: Int): Boolean {
         val current = getCurrentGP()
         val spent = getSpentGP()
         return if (current >= points) {
-            prefs.edit().apply {
-                putInt("current_gp", current - points)
-                putInt("spent_gp", spent + points)
-            }.apply()
+            prefs.edit()
+                .putInt("current_gp", current - points)
+                .putInt("spent_gp", spent + points)
+                .apply()
             true
         } else {
             false
@@ -104,6 +103,7 @@ class UserPreferences(private val context: Context) {
         prefs.edit()
             .putInt("current_gp", 0)
             .putInt("total_gp", 0)
+            .putInt("spent_gp",0)
             .apply()
     }
 

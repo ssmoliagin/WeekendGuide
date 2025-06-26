@@ -2,7 +2,6 @@ package com.example.weekendguide.viewmodel
 
 import android.app.Application
 import android.location.Location
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.POI
@@ -17,26 +16,50 @@ import kotlinx.coroutines.launch
 
 class GPViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = UserPreferences(application)
-    private val _gp = MutableStateFlow(0)
-    val gp: StateFlow<Int> = _gp.asStateFlow()
+    private val _current_gp = MutableStateFlow(0)
+    private val _total_gp = MutableStateFlow(0)
+    private val _spent_gp = MutableStateFlow(0)
+    val currentGP: StateFlow<Int> = _current_gp.asStateFlow()
+    val totalGP: StateFlow<Int> = _total_gp.asStateFlow()
+    val spentGP: StateFlow<Int> = _spent_gp.asStateFlow()
 
     init {
         viewModelScope.launch {
-            _gp.value = prefs.getCurrentGP()
+            _current_gp.value = prefs.getCurrentGP()
+            _total_gp.value = prefs.getTotalGP()
+            _spent_gp.value = prefs.getSpentGP()
         }
     }
 
+    //пополняем очки
     fun addGP(amount: Int) {
         viewModelScope.launch {
             prefs.addGP(amount)
-            _gp.value = prefs.getCurrentGP()
+            _current_gp.value = prefs.getCurrentGP()
+            _total_gp.value = prefs.getTotalGP()
         }
     }
 
+    //тратим очки
+    fun spentGP(amount: Int) {
+        viewModelScope.launch {
+            val success = prefs.spentGP(amount)
+            if (success) {
+                _current_gp.value = prefs.getCurrentGP()
+                _spent_gp.value = prefs.getSpentGP()
+            } else {
+                // Можно добавить LiveData/Event для UI: "Недостаточно очков"
+            }
+        }
+    }
+
+    //обнулить
     fun resetGP() {
         viewModelScope.launch {
             prefs.resetGP()
-            _gp.value = 0
+            _current_gp.value = 0
+            _total_gp.value = 0
+            _spent_gp.value = 0
         }
     }
 
