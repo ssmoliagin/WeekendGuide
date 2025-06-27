@@ -3,8 +3,10 @@ package com.example.weekendguide.ui.main
 import android.Manifest
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -125,22 +127,30 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.material.icons.filled.* // Это нужно!
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateMapOf
 import com.example.weekendguide.viewmodel.GPViewModel
 import com.example.weekendguide.viewmodel.RegionViewModel
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(context: Context = LocalContext.current) {
+fun MainScreen(
+    context: Context = LocalContext.current,
+    onLoggedOut: () -> Unit
+) {
     //состояние окон
-    var showMap by remember { mutableStateOf(false) }
+    var showMapScreen by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
-    var showStatistics by remember { mutableStateOf(false) }
-    var showProfile by remember { mutableStateOf(false) }
+    var showStatisticsScreen by remember { mutableStateOf(false) }
+    var showProfileScreen by remember { mutableStateOf(false) }
     var showPOIInMap by remember { mutableStateOf(false) }
-    var showListPoi by remember { mutableStateOf(false) }
+    var showListPOIScreen by remember { mutableStateOf(false) }
     var onSortPOI by remember { mutableStateOf(false) }
     var showFullPOI by remember { mutableStateOf(false) }
     var showOnlyFavorites by remember { mutableStateOf(false) } //скрытый фильтр ТОЛЬКО избранные
@@ -319,15 +329,16 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
         }
 
-        fun resetFilters() {
+        fun resetFiltersUndScreens() {
             selectedTypes = allTypes
             selectedRadius = "200км"
             showOnlyVisited = false
             showOnlyFavorites = false
 
-            showListPoi = false
-            showStatistics = false
-            showMap = false
+            showListPOIScreen = false
+            showStatisticsScreen = false
+            showMapScreen = false
+            showProfileScreen = false
         }
 
         // --- НАВИГАЦИЯ ---
@@ -339,13 +350,15 @@ fun MainScreen(context: Context = LocalContext.current) {
             TopAppBar(
                 currentGP = currentGP, // ➕ добавили
                 onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
-                topBarTitle = if (showListPoi) {
+                topBarTitle =
+                    if (showListPOIScreen) {
                     if (showOnlyFavorites)"favorites"
-                    else if (showStatistics) "statistic"
                     else  "${finalPOIList.size} мест рядом с $currentCity"
-                } else if (showStatistics) "statistic"
-                        else "main",
-            onDismiss = {resetFilters()},
+                }
+                    else if (showStatisticsScreen) "statistic"
+                    else if (showProfileScreen) "profile"
+                    else "main",
+            onDismiss = {resetFiltersUndScreens()},
         ) }
 
         //показ меню
@@ -357,15 +370,19 @@ fun MainScreen(context: Context = LocalContext.current) {
                 onShowFavoritesList = {
                     showOnlyFavorites = true
                     selectedRadius = "∞"
-                    showListPoi = true
+                    showListPOIScreen = true
                 },
-                onOpenProfile = { showProfile = true },
+                onOpenProfile = {
+                    showOnlyVisited = true
+                    selectedRadius = "∞"
+                    showProfileScreen = true
+                                },
                 onOpenStatistics = {
                     showOnlyVisited = true
                     selectedRadius = "∞"
-                    showStatistics = true
+                    showStatisticsScreen = true
                 },
-                onDismiss = {resetFilters()}
+                onDismiss = {resetFiltersUndScreens()}
             )}
 
         //показ панель локации
@@ -373,7 +390,7 @@ fun MainScreen(context: Context = LocalContext.current) {
         fun showLocationPanel() {
             LocationPanel(
                 onShowScreenType =
-                    if (showMap) "map"
+                    if (showMapScreen) "map"
                     else "main",
                 onLocationSelected = { city, latLng ->
                     // Распаковываем lat и lng
@@ -382,7 +399,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 },
                 onRequestGPS = onRequestLocationChange,
                 userCurrentCity = currentCity,
-                onDismiss = {resetFilters()},
+                onDismiss = {resetFiltersUndScreens()},
             )}
 
         //показ кнопки фильтры
@@ -390,22 +407,22 @@ fun MainScreen(context: Context = LocalContext.current) {
         fun showFiltersButtons() {
             FiltersButtons(
                 onShowScreenType =
-                    if (showMap) "map"
+                    if (showMapScreen) "map"
                     else "list",
                 userCurrentCity = currentCity,
                 onRequestGPS = onRequestLocationChange,
                 selectedRadius = selectedRadius,
                 onRadiusChange = { selectedRadius = it },
-                onOpenMapScreen = { showMap = true },
-                onOpenListScreen = {showListPoi = true},
+                onOpenMapScreen = { showMapScreen = true },
+                onOpenListScreen = {showListPOIScreen = true},
                 onOpenFilters = { showFiltersPanel = true },
-                onDismiss = { showMap = false },
+                onDismiss = { showMapScreen = false },
             )
         }
 
 
 
-        if (showMap) {
+        if (showMapScreen) {
             MapScreen(
                 userPOIList = finalPOIList,
                 userLocation = userLocation,
@@ -417,7 +434,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 showLocationPanel = { showLocationPanel() },
                 showFiltersButtons = { showFiltersButtons() },
             )
-        } else if (showListPoi) {
+        } else if (showListPOIScreen) {
             ListPOIScreen(
                 userPOIList = finalPOIList,
                 userLocation = userLocation,
@@ -438,7 +455,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 userPOIList = finalPOIList,
                 userLocation = userLocation,
                 userCurrentCity = currentCity,
-                onOpenListScreen = {showListPoi = true},
+                onOpenListScreen = {showListPOIScreen = true},
                 onSelectSingleType = onSelectSingleType,
                 isFavorite = { poi -> favoriteIds.contains(poi.id) },
                 isVisited = { poi -> visitedPoiIds.contains(poi.id) },
@@ -453,7 +470,7 @@ fun MainScreen(context: Context = LocalContext.current) {
         }
 
         // Экран Статистика
-        if (showStatistics) {
+        if (showStatisticsScreen) {
             StatisticsScreen(
                 totalGP = totalGP,
                 currentGP = currentGP,
@@ -464,6 +481,17 @@ fun MainScreen(context: Context = LocalContext.current) {
                 showNavigationBar = { showNavigationBar() },
                 showTopAppBar = { showTopAppBar () },
                 gpViewModel = gpViewModel,
+            )
+        }
+
+        // ✅ Экран Профиль
+        if(showProfileScreen) {
+            ProfileScreen(
+                userPOIList = finalPOIList,
+                totalPOIList = poiList,
+                showNavigationBar = { showNavigationBar() },
+                showTopAppBar = { showTopAppBar () },
+                onLoggedOut = onLoggedOut
             )
         }
 
@@ -487,6 +515,8 @@ fun MainScreen(context: Context = LocalContext.current) {
             }
         }
 
+
+        /*
         // ✅ Панель Профиль
         if(showProfile) {
             ModalBottomSheet(
@@ -498,6 +528,7 @@ fun MainScreen(context: Context = LocalContext.current) {
                 )
             }
         }
+         */
 
         // ✅ POI на Карте
         val poi = selectedPOI
@@ -1003,100 +1034,7 @@ fun FiltersPanel(
 
 
 
-@Composable
-fun ProfilePanel(
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val preferences = remember { UserPreferences(context) }
-    val user = FirebaseAuth.getInstance().currentUser
 
-    var userSettings by remember { mutableStateOf<UserSettings?>(null) }
-
-    LaunchedEffect(Unit) {
-        userSettings = withContext(Dispatchers.IO) {
-            preferences.getAll()
-        }
-    }
-
-    Surface(
-        tonalElevation = 4.dp,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Профиль", style = MaterialTheme.typography.headlineSmall)
-
-            user?.email?.let {
-                ProfileRow(label = "Email", value = it)
-            }
-            ProfileRow(
-                label = "currentGP",
-                value = userSettings?.currentGP.toString() ?: "-"
-            )
-
-            ProfileRow(
-                label = "totalGP",
-                value = userSettings?.totalGP.toString() ?: "-"
-            )
-
-            ProfileRow(
-                label = "Язык интерфейса",
-                value = userSettings?.language ?: "-"
-            )
-
-            ProfileRow(
-                label = "Регионы",
-                value = userSettings?.purchasedRegions?.joinToString(", ") ?: "-"
-            )
-
-            ProfileRow(
-                label = "Избранное",
-                value = userSettings?.favoritePoiIds?.joinToString(", ") ?: "-"
-            )
-
-            ProfileRow(
-                label = "Посещенное",
-                value = userSettings?.visitedPoiIds?.joinToString(", ") ?: "-"
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        FirebaseAuth.getInstance().signOut()
-                     //   context.dataStore.edit { it.clear() }
-                        onDismiss()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
-            ) {
-                Icon(Icons.Default.Close, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Выйти")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProfileRow(label: String, value: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
-    }
-}
 
 
 @Composable
@@ -1237,7 +1175,6 @@ fun POIFullScreen(
     poiViewModel: POIViewModel,
     gpViewModel: GPViewModel
 ) {
-
     val distanceKm = remember(poi, userLocation) {
         userLocation?.let { (userLat, userLng) ->
             val result = FloatArray(1)
@@ -1252,55 +1189,9 @@ fun POIFullScreen(
     val locationViewModel: LocationViewModel = viewModel()
     val coroutineScope = rememberCoroutineScope()
 
-    val location by locationViewModel.location.collectAsState()
-
-    val prefs = remember { UserPreferences(context) }
-
-
     LaunchedEffect(poi.title) {
         poiViewModel.loadWikipediaDescription(poi.title)
     }
-/*
-    fun handleCheckpointClick() {
-        coroutineScope.launch {
-            try {
-                val oldLocation = locationViewModel.location.value
-
-                // Запрашиваем GPS-локацию
-                locationViewModel.detectLocationFromGPS()
-
-                // Ждём, пока локация изменится
-                val newLocation = locationViewModel.location
-                    .filterNotNull()
-                    .dropWhile { it == oldLocation }
-                    .first()
-
-                // Считаем дистанцию
-                val result = FloatArray(1)
-                Location.distanceBetween(
-                    newLocation.first,
-                    newLocation.second,
-                    poi.lat,
-                    poi.lng,
-                    result
-                )
-                val distanceMeters = result[0]
-
-                if (distanceMeters < 20000000) {  //дистанция в метрах
-                    poiViewModel.markPoiVisited(poi.id)
-                    gpViewModel.addGP(100)
-                    Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Ошибка при определении GPS", Toast.LENGTH_SHORT).show()
-                e.printStackTrace()
-            }
-        }
-    }
-
- */
 
     Scaffold(
         topBar = {
@@ -1527,19 +1418,11 @@ fun TopAppBar (
 ) {
     val sound = LocalView.current
 
-    /* old
-      val context = LocalContext.current
-      val prefs = UserPreferences(context)
-      var value by remember { mutableStateOf<UserSettings?>(null) }
-      LaunchedEffect(Unit) {
-          value = prefs.getAll()
-      }
-       */
-
     val title = when (topBarTitle) {
         "main" -> "Weekend Guide"
         "favorites" -> "Избранное"
         "statistic" -> "Достижения"
+        "profile" -> "Профиль"
         else -> topBarTitle
     }
 
@@ -1588,9 +1471,9 @@ fun NavigationBar(
         NavigationBarItem(
             selected = selectedItem == "main",
             onClick = {
+                onDismiss()
                 onItemSelected("main")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-                onDismiss()
             },
             icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
             label = { Text("Поиск") }
@@ -1599,9 +1482,9 @@ fun NavigationBar(
         NavigationBarItem(
             selected = selectedItem == "favorites",
             onClick = {
+                onDismiss()
                 onItemSelected("favorites")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-                onDismiss()
                 onShowFavoritesList()
             },
             icon = { Icon(Icons.Default.Bookmarks, contentDescription = "Избранное") },
@@ -1611,9 +1494,9 @@ fun NavigationBar(
         NavigationBarItem(
             selected = selectedItem == "statistics",
             onClick = {
+                onDismiss()
                 onItemSelected("statistics")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-                onDismiss()
                 onOpenStatistics()
             },
             icon = { Icon(Icons.Default.BarChart, contentDescription = "Достижения") },
@@ -1623,6 +1506,7 @@ fun NavigationBar(
         NavigationBarItem(
             selected = selectedItem == "profile",
             onClick = {
+                onDismiss()
                 onItemSelected("profile")
                 sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                 onOpenProfile()
@@ -2184,7 +2068,494 @@ fun StatisticsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreen(
+    userPOIList: List<POI>,
+    totalPOIList: List<POI>,
+    showNavigationBar: @Composable () -> Unit,
+    showTopAppBar: @Composable () -> Unit,
+    onLoggedOut: () -> Unit
+) {
+    val totalPOIs = totalPOIList.size
+    val visitedPOIs = userPOIList.size
+    val exploredPercentage = if (totalPOIs > 0) {
+        (visitedPOIs.toDouble() / totalPOIs * 100).roundToInt()
+    } else {
+        0
+    }
 
+    val context = LocalContext.current
+    val preferences = remember { UserPreferences(context) }
+    val user = FirebaseAuth.getInstance().currentUser
+    var userSettings by remember { mutableStateOf<UserSettings?>(null) }
+
+    LaunchedEffect(Unit) {
+        userSettings = withContext(Dispatchers.IO) {
+            preferences.getAll()
+        }
+    }
+
+    val email = user?.email ?: "example@email.com"
+    val displayName = user?.displayName?.takeIf { it.isNotBlank() }
+    val defaultName = email.substringBefore("@")
+    val name = displayName ?: defaultName
+
+    var selectedLanguage by remember { mutableStateOf("Русский") }
+    var selectedUnits by remember { mutableStateOf("Метры") }
+    var selectedTheme by remember { mutableStateOf("Настройки устройства") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = { showTopAppBar() },
+        bottomBar = { showNavigationBar() }
+    ) { paddingValues ->
+        LazyColumn(
+            contentPadding = paddingValues,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // ——— Блок: Личные данные ———
+            item {
+                Text("Личные данные", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(16.dp)
+                    ) {
+                        // Иконка с первой буквой имени
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(Color.Gray, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = name.firstOrNull()?.uppercase() ?: "?",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        }
+
+                        Spacer(Modifier.width(16.dp))
+
+                        Column {
+                            Text("Name", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                            Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Text("Email", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                            Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // ——— Блок: Настройки ———
+            item {
+                Text("Настройки", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        DropdownSetting("Язык", selectedLanguage, listOf("Русский", "English", "Deutsch")) {
+                            selectedLanguage = it
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        DropdownSetting("Единицы измерения", selectedUnits, listOf("Метры", "Мили")) {
+                            selectedUnits = it
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        DropdownSetting("Экран", selectedTheme, listOf("Светлая", "Тёмная", "Настройки устройства")) {
+                            selectedTheme = it
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // ——— Моя коллекция ———
+            item {
+                Text("Моя коллекция", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFFF8E1), RoundedCornerShape(12.dp)) // мягкий фон без внешних отступов
+                        .padding(8.dp) // небольшой отступ вокруг карточки
+                ) {
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                // TODO: Открыть магазин наборов POI
+                            },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🗺️", fontSize = 24.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "Откройте новые места!",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("📍 Вам доступно")
+                                Text(
+                                    text = "$totalPOIs точек",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("🎯 Исследовано")
+                                Text(
+                                    text = "$exploredPercentage%",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            Text(
+                                text = "Посмотреть новые коллекции...",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // ——— Блок: О приложении ———
+            item {
+                val context = LocalContext.current
+
+                Text("О приложении", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+
+                        // — Обратная связь —
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:smoliagin@example.com")
+                                    }
+                                    context.startActivity(intent)
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("📧", fontSize = 24.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Обратная связь",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            )
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // — Политика —
+                        Text(
+                            text = "Политика конфиденциальности и Условия использования",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.clickable {
+                                // TODO: открыть ссылку
+                            }
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // — Автор и версия —
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("©SSmoliagin", style = MaterialTheme.typography.bodySmall)
+                            Text("v1.0.0", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+            }
+
+            // ——— Выйти / Удалить аккаунт ———
+            item {
+                AccountActionsSection(onLoggedOut)
+            }
+        }
+    }
+}
+@Composable
+fun AccountActionsSection(onLoggedOut: () -> Unit) {
+    val context = LocalContext.current
+    var showSignOutDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Column {
+        // ——— Выйти из аккаунта ———
+        Button(
+            onClick = {
+                showSignOutDialog = true
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Выйти из аккаунта", color = Color.White)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // ——— Удалить аккаунт ———
+        Text(
+            text = "⚠ Удалить аккаунт",
+            color = Color.Red,
+            fontSize = 14.sp,
+            modifier = Modifier.clickable {
+                showDeleteDialog = true
+            }
+        )
+
+        // ——— Диалог выхода ———
+        if (showSignOutDialog) {
+            AlertDialog(
+                onDismissRequest = { showSignOutDialog = false },
+                title = { Text("Выйти из аккаунта?") },
+                text = { Text("Вы уверены, что хотите выйти?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showSignOutDialog = false
+                        FirebaseAuth.getInstance().signOut()
+                        onLoggedOut()
+                    }) {
+                        Text("Выйти")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showSignOutDialog = false }) {
+                        Text("Отмена")
+                    }
+                }
+            )
+        }
+
+        // ——— Диалог удаления аккаунта ———
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Удалить аккаунт?") },
+                text = { Text("Вы уверены, что хотите безвозвратно удалить свой аккаунт?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        val user = FirebaseAuth.getInstance().currentUser
+                        user?.delete()?.addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                Toast.makeText(context, "Аккаунт удалён", Toast.LENGTH_SHORT).show()
+                                onLoggedOut()
+                            } else {
+                                Toast.makeText(context, "Ошибка удаления аккаунта", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }) {
+                        Text("Удалить", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Отмена")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DropdownSetting(
+    label: String,
+    selected: String,
+    options: List<String>,
+    onOptionSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier.menuAnchor().fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+/*
+@Composable
+fun ProfilePanel(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val preferences = remember { UserPreferences(context) }
+    val user = FirebaseAuth.getInstance().currentUser
+    var userSettings by remember { mutableStateOf<UserSettings?>(null) }
+
+    LaunchedEffect(Unit) {
+        userSettings = withContext(Dispatchers.IO) {
+            preferences.getAll()
+        }
+    }
+
+    Surface(
+        tonalElevation = 4.dp,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("Профиль", style = MaterialTheme.typography.headlineSmall)
+
+            user?.email?.let {
+                ProfileRow(label = "Email", value = it)
+            }
+            ProfileRow(
+                label = "currentGP",
+                value = userSettings?.currentGP.toString() ?: "-"
+            )
+
+            ProfileRow(
+                label = "totalGP",
+                value = userSettings?.totalGP.toString() ?: "-"
+            )
+
+            ProfileRow(
+                label = "Язык интерфейса",
+                value = userSettings?.language ?: "-"
+            )
+
+            ProfileRow(
+                label = "Регионы",
+                value = userSettings?.purchasedRegions?.joinToString(", ") ?: "-"
+            )
+
+            ProfileRow(
+                label = "Избранное",
+                value = userSettings?.favoritePoiIds?.joinToString(", ") ?: "-"
+            )
+
+            ProfileRow(
+                label = "Посещенное",
+                value = userSettings?.visitedPoiIds?.joinToString(", ") ?: "-"
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        FirebaseAuth.getInstance().signOut()
+                        //   context.dataStore.edit { it.clear() }
+                        onDismiss()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Icon(Icons.Default.Close, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Выйти")
+            }
+        }
+    }
+}
+
+ */
+
+@Composable
+private fun ProfileRow(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+        Text(value, style = MaterialTheme.typography.bodyLarge)
+    }
+}
 
 
 

@@ -23,7 +23,7 @@ data class UserSettings(
     val visitedPoiIds: Set<String>,
     val currentGP: Int,
     val totalGP: Int,
-    val categoryLevels: Map<String, Int> // <-- новое поле
+    val categoryLevels: Map<String, Int>
 )
 
 class UserPreferences(private val context: Context) {
@@ -231,6 +231,7 @@ class UserPreferences(private val context: Context) {
     }
 
     //посещенные
+    /*
     suspend fun toggleVisited(id: String) {
         context.dataStore.edit { prefs ->
             val current = prefs[Keys.VISITED] ?: emptySet()
@@ -241,6 +242,8 @@ class UserPreferences(private val context: Context) {
             }
         }
     }
+
+     */
 
     val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
         .map { prefs -> prefs[Keys.VISITED] ?: emptySet() }

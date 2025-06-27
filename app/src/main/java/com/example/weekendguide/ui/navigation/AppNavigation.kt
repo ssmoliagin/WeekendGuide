@@ -62,7 +62,11 @@ fun AppNavigation() {
         }
 
         composable("main") {
-            MainScreen()
+            MainScreen(onLoggedOut = {
+                navController.navigate("splash") {
+                    popUpTo(0) { inclusive = true } // Удаляет всю навигационную историю
+                }
+            })
         }
 
     }

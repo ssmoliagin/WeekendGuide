@@ -1,6 +1,5 @@
 package com.example.weekendguide.ui.login
 
-//import android.Manifest
 import android.app.Activity
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,18 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-//import androidx.lifecycle.viewmodel.compose.viewModel
-//import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.preferences.UserPreferences
-
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
-//import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
