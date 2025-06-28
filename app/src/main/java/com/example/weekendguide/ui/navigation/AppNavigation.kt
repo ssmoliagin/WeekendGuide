@@ -1,26 +1,35 @@
 package com.example.weekendguide.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.region.SelectRegionScreen
 import com.example.weekendguide.ui.main.MainScreen
+import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.android.gms.auth.api.identity.Identity
 
 
 @Composable
 fun AppNavigation(
-    themeViewModel: ThemeViewModel
+    themeViewModel: ThemeViewModel,
+    loginViewModel: LoginViewModel
 ) {
     val navController = rememberNavController()
+
+
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
@@ -43,7 +52,9 @@ fun AppNavigation(
         }
 
         composable("login") {
-            LoginScreen(onNavigate = { destination ->
+            LoginScreen(
+                loginViewModel = loginViewModel,
+                onNavigate = { destination ->
                 when (destination) {
                     SplashViewModel.Destination.RegionSelect -> navController.navigate("region") {
                         popUpTo("login") { inclusive = true }
@@ -65,7 +76,9 @@ fun AppNavigation(
         }
 
         composable("main") {
-            MainScreen(onLoggedOut = {
+            MainScreen(
+                loginViewModel = loginViewModel,
+                onLoggedOut = {
                 navController.navigate("splash") {
                     popUpTo(0) { inclusive = true } // Удаляет всю навигационную историю
                 }

@@ -40,14 +40,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.preferences.UserSettings
+import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +70,8 @@ fun ProfileScreen(
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
     onLoggedOut: () -> Unit,
-    themeViewModel: ThemeViewModel
+    themeViewModel: ThemeViewModel,
+    loginViewModel: LoginViewModel,
 ) {
 
     var sheetVisible by remember { mutableStateOf(false) }
@@ -111,6 +116,7 @@ fun ProfileScreen(
     val context = LocalContext.current
     val preferences = remember { UserPreferences(context) }
     val user = FirebaseAuth.getInstance().currentUser
+   /*
     var userSettings by remember { mutableStateOf<UserSettings?>(null) }
 
     LaunchedEffect(Unit) {
@@ -119,10 +125,14 @@ fun ProfileScreen(
         }
     }
 
-    val email = user?.email ?: "example@email.com"
-    val displayName = user?.displayName?.takeIf { it.isNotBlank() }
-    val defaultName = email.substringBefore("@")
-    val name = displayName ?: defaultName
+    */
+
+    val userInfo by loginViewModel.userInfo.collectAsState()
+
+    val email = userInfo.email ?: ""
+    val displayName = userInfo.displayName ?: ""
+    val photoUrl = userInfo.photoUrl
+    val name = displayName.ifBlank { email.substringBefore("@") }
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -154,14 +164,24 @@ fun ProfileScreen(
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
-                                .background(Color.Gray, CircleShape),
+                                .clip(CircleShape)
+                                .background(Color.Gray),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = name.firstOrNull()?.uppercase() ?: "?",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleLarge
-                            )
+                            if (!photoUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = photoUrl,
+                                    contentDescription = "User Photo",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Text(
+                                    text = name.firstOrNull()?.uppercase() ?: "?",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            }
                         }
 
                         Spacer(Modifier.width(16.dp))

@@ -10,11 +10,28 @@ import com.example.weekendguide.ui.theme.WeekendGuideTheme
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.ViewModelFactory
 import androidx.compose.runtime.getValue
+import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.LoginViewModelFactory
+import com.google.android.gms.auth.api.identity.Identity
+import com.google.firebase.auth.FirebaseAuth
 
 
 @Composable
 fun AppEntryPoint() {
-    val context = LocalContext.current
+
+    val context = LocalContext.current.applicationContext
+
+    // ✅ создаём LoginViewModel
+    val loginViewModel: LoginViewModel = viewModel(
+        factory = LoginViewModelFactory(
+            auth = FirebaseAuth.getInstance(),
+            oneTapClient = Identity.getSignInClient(context),
+            userPreferences = UserPreferences(context)
+        )
+    )
+
+    // ✅ создаём ThemeViewModel
     val themeViewModel: ThemeViewModel = viewModel(
         key = "ThemeViewModel",
         factory = ViewModelFactory(context.applicationContext as Application)
@@ -30,6 +47,9 @@ fun AppEntryPoint() {
     }
 
     WeekendGuideTheme(darkTheme = isDarkTheme) {
-        AppNavigation(themeViewModel = themeViewModel)
+        AppNavigation(
+            themeViewModel = themeViewModel,
+            loginViewModel = loginViewModel
+        )
     }
 }

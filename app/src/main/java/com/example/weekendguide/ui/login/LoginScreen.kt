@@ -1,116 +1,91 @@
 package com.example.weekendguide.ui.login
 
 import android.app.Activity
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.weekendguide.Constants
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onNavigate: (SplashViewModel.Destination) -> Unit
-) {
+    loginViewModel: LoginViewModel,
+    onNavigate: (SplashViewModel.Destination) -> Unit,
+    ) {
+
     val context = LocalContext.current
+
     val activity = context as Activity
-    val auth = remember { FirebaseAuth.getInstance() }
-    val oneTapClient = remember { Identity.getSignInClient(context) }
-    val preferences = remember { UserPreferences(context) }
+
+    val isLoading by loginViewModel.isLoading.collectAsState()
+    val errorMessage by loginViewModel.errorMessage.collectAsState()
+    val userInfo by loginViewModel.userInfo.collectAsState()
+
     val coroutineScope = rememberCoroutineScope()
-
-    var isLoading by remember { mutableStateOf(false) }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
     val languages = listOf("ru", "en", "de")
+
     var selectedLanguage by remember { mutableStateOf("ru") }
     var expanded by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
-    suspend fun checkRegionAndNavigate() {
-        preferences.saveLanguage(selectedLanguage)
-        val region = preferences.getHomeRegion()
-        if (region != null) {
-            onNavigate(SplashViewModel.Destination.Main)
-        } else {
-            onNavigate(SplashViewModel.Destination.RegionSelect)
+    // Навигация при изменении destination
+    val navigateDestination = remember { mutableStateOf<SplashViewModel.Destination?>(null) }
+    LaunchedEffect(Unit) {
+        loginViewModel.navigateDestination.collect { destination ->
+            onNavigate(destination)
         }
+    }
+
+    // При старте проверяем залогинен ли пользователь
+    LaunchedEffect(Unit) {
+        loginViewModel.checkAlreadyLoggedIn()
     }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        try {
-            val credential = oneTapClient.getSignInCredentialFromIntent(result.data)
-            val idToken = credential.googleIdToken
-            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-
-            isLoading = true
-            auth.signInWithCredential(firebaseCredential)
-                .addOnCompleteListener(activity) { task ->
-                    isLoading = false
-                    if (task.isSuccessful) {
-                        coroutineScope.launch {
-                            checkRegionAndNavigate()
-                        }
-                    } else {
-                        errorMessage = "Google sign-in failed"
-                    }
-                }
-        } catch (e: Exception) {
-            Log.e("LoginScreen", "Google sign-in failed", e)
-            isLoading = false
-            errorMessage = "Google sign-in error"
-        }
-    }
-
-    fun startGoogleSignIn() {
-        isLoading = true
-        val signInRequest = BeginSignInRequest.builder()
-            .setGoogleIdTokenRequestOptions(
-                BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
-                    .setSupported(true)
-                    .setServerClientId(Constants.WEB_CLIENT_ID)
-                    .setFilterByAuthorizedAccounts(false)
-                    .build()
-            )
-            .build()
-
-        oneTapClient.beginSignIn(signInRequest)
-            .addOnSuccessListener { result ->
-                val intentSenderRequest = IntentSenderRequest.Builder(result.pendingIntent).build()
-                launcher.launch(intentSenderRequest)
-            }
-            .addOnFailureListener {
-                Log.e("LoginScreen", "Google sign-in initiation failed", it)
-                isLoading = false
-                errorMessage = "Не удалось начать вход через Google"
-            }
-    }
-
-    LaunchedEffect(Unit) {
-        auth.currentUser?.let {
-            coroutineScope.launch {
-                checkRegionAndNavigate()
-            }
+        if (result.resultCode == Activity.RESULT_OK) {
+            loginViewModel.handleGoogleSignInResult(result.data)
         }
     }
 
@@ -158,30 +133,7 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(onClick = {
-                        isLoading = true
-                        errorMessage = null
-
-                        auth.signInWithEmailAndPassword(email, password)
-                            .addOnSuccessListener {
-                                isLoading = false
-                                coroutineScope.launch {
-                                    checkRegionAndNavigate()
-                                }
-                            }
-                            .addOnFailureListener {
-                                // если не найден — регистрируем
-                                auth.createUserWithEmailAndPassword(email, password)
-                                    .addOnSuccessListener {
-                                        isLoading = false
-                                        coroutineScope.launch {
-                                            checkRegionAndNavigate()
-                                        }
-                                    }
-                                    .addOnFailureListener { error ->
-                                        isLoading = false
-                                        errorMessage = error.localizedMessage ?: "Ошибка входа/регистрации"
-                                    }
-                            }
+                        loginViewModel.loginWithEmail(email, password)
                     }) {
                         Text("Войти или зарегистрироваться")
                     }
@@ -189,7 +141,9 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(onClick = {
-                        startGoogleSignIn()
+                        loginViewModel.startGoogleSignIn { intentSenderRequest ->
+                            launcher.launch(intentSenderRequest)
+                        }
                     }) {
                         Text("Войти через Google")
                     }
@@ -206,6 +160,7 @@ fun LoginScreen(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
+
                             languages.forEach { language ->
                                 DropdownMenuItem(
                                     text = { Text(language.uppercase()) },

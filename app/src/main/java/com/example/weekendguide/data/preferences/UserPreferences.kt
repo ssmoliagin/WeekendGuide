@@ -12,6 +12,12 @@ import kotlinx.serialization.json.Json
 
 private val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
+data class UserInfo(
+    val email: String? = null,
+    val displayName: String? = null,
+    val photoUrl: String? = null
+)
+
 data class UserSettings(
     val language: String,
     val homeRegion: Region?,
@@ -28,6 +34,8 @@ data class UserSettings(
 
 class UserPreferences(private val context: Context) {
 
+
+
     private object Keys {
         val LANGUAGE = stringPreferencesKey("language_code")
         val HOME_REGION = stringPreferencesKey("home_region") // JSON-строка Region
@@ -41,8 +49,38 @@ class UserPreferences(private val context: Context) {
         val CATEGORY_LEVELS = stringPreferencesKey("category_levels")
         val THEME = stringPreferencesKey("app_theme") // "light", "dark", "system"
 
+        val EMAIL = stringPreferencesKey("user_email")
+        val DISPLAY_NAME = stringPreferencesKey("user_display_name")
+        val PHOTO_URL = stringPreferencesKey("user_photo_url")
     }
+
     private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+
+    //login
+    val userInfoFlow: Flow<UserInfo> = context.dataStore.data
+        .map { prefs ->
+            UserInfo(
+                email = prefs[Keys.EMAIL],
+                displayName = prefs[Keys.DISPLAY_NAME],
+                photoUrl = prefs[Keys.PHOTO_URL]
+            )
+        }
+
+    suspend fun saveUserInfo(userInfo: UserInfo) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.EMAIL] = userInfo.email ?: ""
+            prefs[Keys.DISPLAY_NAME] = userInfo.displayName ?: ""
+            prefs[Keys.PHOTO_URL] = userInfo.photoUrl ?: ""
+        }
+    }
+
+    suspend fun clearUserInfo() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.EMAIL)
+            prefs.remove(Keys.DISPLAY_NAME)
+            prefs.remove(Keys.PHOTO_URL)
+        }
+    }
 
     //смена темы
     suspend fun saveTheme(theme: String) {
@@ -241,21 +279,6 @@ class UserPreferences(private val context: Context) {
             categoryLevels = categoryLevels
         )
     }
-
-    //посещенные
-    /*
-    suspend fun toggleVisited(id: String) {
-        context.dataStore.edit { prefs ->
-            val current = prefs[Keys.VISITED] ?: emptySet()
-            prefs[Keys.VISITED] = if (current.contains(id)) {
-                current - id
-            } else {
-                current + id
-            }
-        }
-    }
-
-     */
 
     val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
         .map { prefs -> prefs[Keys.VISITED] ?: emptySet() }

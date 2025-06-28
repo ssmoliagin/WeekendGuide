@@ -39,6 +39,8 @@ import com.example.weekendguide.ui.profile.ProfileScreen
 import com.example.weekendguide.ui.statistics.StatisticsScreen
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
+import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
@@ -51,6 +53,7 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    loginViewModel: LoginViewModel,
     themeViewModel: ThemeViewModel,
     context: Context = LocalContext.current,
     onLoggedOut: () -> Unit
@@ -81,6 +84,8 @@ fun MainScreen(
         key = "GPViewModel",
         factory = ViewModelFactory(context.applicationContext as Application)
     )
+
+
     //обновление очков
     val currentGP by pointsViewModel.currentGP.collectAsState()
     val totalGP by pointsViewModel.totalGP.collectAsState()
@@ -389,6 +394,7 @@ fun MainScreen(
                 showTopAppBar = { showTopAppBar () },
                 onLoggedOut = onLoggedOut,
                 themeViewModel = themeViewModel,
+                loginViewModel = loginViewModel,
             )
         }
 
