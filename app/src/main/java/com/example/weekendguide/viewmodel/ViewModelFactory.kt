@@ -13,6 +13,9 @@ class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory
             modelClass.isAssignableFrom(GPViewModel::class.java) -> {
                 GPViewModel(app) as T
             }
+            modelClass.isAssignableFrom(ThemeViewModel::class.java) -> {
+                ThemeViewModel(app) as T
+            }
             else -> throw IllegalArgumentException("Unknown ViewModel class: $modelClass")
         }
     }

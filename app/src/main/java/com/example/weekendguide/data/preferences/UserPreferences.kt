@@ -38,10 +38,22 @@ class UserPreferences(private val context: Context) {
         val LNG = doublePreferencesKey("current_lng")
         val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
         val VISITED = stringSetPreferencesKey("visited_poi_ids")
-        val CATEGORY_LEVELS = stringPreferencesKey("category_levels") // JSON-объект: {"castles": 1, "zoos": 2}
+        val CATEGORY_LEVELS = stringPreferencesKey("category_levels")
+        val THEME = stringPreferencesKey("app_theme") // "light", "dark", "system"
 
     }
     private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+
+    //смена темы
+    suspend fun saveTheme(theme: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.THEME] = theme
+        }
+    }
+    suspend fun getTheme(): String {
+        val prefs = context.dataStore.data.first()
+        return prefs[Keys.THEME] ?: "light" // по умолчанию светлая тема
+    }
 
     //Методы для получения и сохранения уровней
 

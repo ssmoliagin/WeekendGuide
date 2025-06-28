@@ -132,15 +132,18 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import com.example.weekendguide.viewmodel.GPViewModel
 import com.example.weekendguide.viewmodel.RegionViewModel
+import com.example.weekendguide.viewmodel.ThemeViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    themeViewModel: ThemeViewModel,
     context: Context = LocalContext.current,
     onLoggedOut: () -> Unit
 ) {
@@ -176,6 +179,15 @@ fun MainScreen(
         key = "GPViewModel",
         factory = ViewModelFactory(context.applicationContext as Application)
     )
+/*
+    val themeViewModel: ThemeViewModel = viewModel(
+        key = "ThemeViewModel",
+        factory = ViewModelFactory(context.applicationContext as Application)
+    )
+
+ */
+
+   //val themeViewModel: ThemeViewModel = viewModel()
 
     //обновление очков
     val currentGP by gpViewModel.currentGP.collectAsState()
@@ -491,7 +503,8 @@ fun MainScreen(
                 totalPOIList = poiList,
                 showNavigationBar = { showNavigationBar() },
                 showTopAppBar = { showTopAppBar () },
-                onLoggedOut = onLoggedOut
+                onLoggedOut = onLoggedOut,
+                themeViewModel = themeViewModel,
             )
         }
 
@@ -2075,7 +2088,8 @@ fun ProfileScreen(
     totalPOIList: List<POI>,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
+    themeViewModel: ThemeViewModel
 ) {
     val totalPOIs = totalPOIList.size
     val visitedPOIs = userPOIList.size
@@ -2096,6 +2110,26 @@ fun ProfileScreen(
         }
     }
 
+    //ТЕМА
+
+    val currentTheme by themeViewModel.theme.collectAsState()
+
+    val themeOptions = listOf("Светлая", "Тёмная", "Настройки устройства")
+    val themeValues = listOf("light", "dark", "system")
+
+    var selectedThemeIndex by remember {
+        mutableStateOf(themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0)
+    }
+    var selectedTheme by remember { mutableStateOf(themeOptions[selectedThemeIndex]) }
+
+    // Обновляем selectedTheme, если currentTheme изменился извне
+    LaunchedEffect(currentTheme) {
+        val idx = themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0
+        selectedThemeIndex = idx
+        selectedTheme = themeOptions[idx]
+    }
+
+    //
     val email = user?.email ?: "example@email.com"
     val displayName = user?.displayName?.takeIf { it.isNotBlank() }
     val defaultName = email.substringBefore("@")
@@ -2103,7 +2137,7 @@ fun ProfileScreen(
 
     var selectedLanguage by remember { mutableStateOf("Русский") }
     var selectedUnits by remember { mutableStateOf("Метры") }
-    var selectedTheme by remember { mutableStateOf("Настройки устройства") }
+    //var selectedTheme by remember { mutableStateOf("Настройки устройства") }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -2163,7 +2197,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
-            // ——— Блок: Настройки ———
+// ——— Блок: Настройки ———
             item {
                 Text("Настройки", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
@@ -2175,20 +2209,78 @@ fun ProfileScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        DropdownSetting("Язык", selectedLanguage, listOf("Русский", "English", "Deutsch")) {
-                            selectedLanguage = it
+
+                        // Тема
+                        Text("Тема", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Spacer(Modifier.height(4.dp))
+
+                        var themeMenuExpanded by remember { mutableStateOf(false) }
+
+                        Box {
+                            OutlinedButton(
+                                onClick = { themeMenuExpanded = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(text = selectedTheme)
+                            }
+
+                            DropdownMenu(
+                                expanded = themeMenuExpanded,
+                                onDismissRequest = { themeMenuExpanded = false }
+                            ) {
+                                themeOptions.forEachIndexed { index, label ->
+                                    DropdownMenuItem(
+                                        text = { Text(label) },
+                                        onClick = {
+                                            selectedThemeIndex = index
+                                            selectedTheme = label
+                                            themeViewModel.setTheme(themeValues[index])
+                                            themeMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(16.dp))
 
-                        DropdownSetting("Единицы измерения", selectedUnits, listOf("Метры", "Мили")) {
-                            selectedUnits = it
-                        }
+                        // Язык
+                        Text("Язык", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Spacer(Modifier.height(4.dp))
 
-                        Spacer(Modifier.height(8.dp))
+                        var languageMenuExpanded by remember { mutableStateOf(false) }
+                        val languages = listOf("Русский", "Deutsch", "English")
+                        var selectedLanguage by remember { mutableStateOf(languages[0]) }
 
-                        DropdownSetting("Экран", selectedTheme, listOf("Светлая", "Тёмная", "Настройки устройства")) {
-                            selectedTheme = it
+                        Box {
+                            OutlinedButton(
+                                onClick = { languageMenuExpanded = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(text = selectedLanguage)
+                            }
+
+                            DropdownMenu(
+                                expanded = languageMenuExpanded,
+                                onDismissRequest = { languageMenuExpanded = false }
+                            ) {
+                                languages.forEachIndexed { index, label ->
+                                    DropdownMenuItem(
+                                        text = { Text(label) },
+                                        onClick = {
+                                            selectedLanguage = label
+                                            languageMenuExpanded = false
+                                            // Здесь можно добавить сохранение языка в будущем
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }

@@ -13,10 +13,13 @@ import com.example.weekendguide.ui.region.SelectRegionScreen
 import com.example.weekendguide.ui.main.MainScreen
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
+import com.example.weekendguide.viewmodel.ThemeViewModel
 
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    themeViewModel: ThemeViewModel
+) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "splash") {
@@ -66,7 +69,9 @@ fun AppNavigation() {
                 navController.navigate("splash") {
                     popUpTo(0) { inclusive = true } // Удаляет всю навигационную историю
                 }
-            })
+            },
+                themeViewModel = themeViewModel
+            )
         }
 
     }
