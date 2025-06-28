@@ -10,8 +10,8 @@ class ViewModelFactory(private val app: Application) : ViewModelProvider.Factory
             modelClass.isAssignableFrom(LocationViewModel::class.java) -> {
                 LocationViewModel(app) as T
             }
-            modelClass.isAssignableFrom(GPViewModel::class.java) -> {
-                GPViewModel(app) as T
+            modelClass.isAssignableFrom(PointsViewModel::class.java) -> {
+                PointsViewModel(app) as T
             }
             modelClass.isAssignableFrom(ThemeViewModel::class.java) -> {
                 ThemeViewModel(app) as T

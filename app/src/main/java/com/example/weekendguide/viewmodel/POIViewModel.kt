@@ -7,11 +7,13 @@ import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.WikiRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class POIViewModel(
     private val dataRepository: DataRepository,
+    private val wikiRepository: WikiRepository,
     private val region: Region,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
@@ -45,7 +47,7 @@ class POIViewModel(
 
     fun loadWikipediaDescription(title: String) {
         viewModelScope.launch {
-            _wikiDescription.value = dataRepository.fetchWikipediaDescription(title)
+            _wikiDescription.value = wikiRepository.fetchWikipediaDescription(title)
         }
     }
 

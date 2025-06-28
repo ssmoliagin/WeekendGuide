@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class GPViewModel(application: Application) : AndroidViewModel(application) {
+class PointsViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = UserPreferences(application)
     private val _current_gp = MutableStateFlow(0)
     private val _total_gp = MutableStateFlow(0)
