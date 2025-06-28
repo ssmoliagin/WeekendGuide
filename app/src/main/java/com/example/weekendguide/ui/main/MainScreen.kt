@@ -131,6 +131,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -2081,6 +2083,10 @@ fun StatisticsScreen(
     }
 }
 
+enum class SettingsType {
+    THEME, LANGUAGE, UNITS
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -2091,6 +2097,38 @@ fun ProfileScreen(
     onLoggedOut: () -> Unit,
     themeViewModel: ThemeViewModel
 ) {
+
+    var sheetVisible by remember { mutableStateOf(false) }
+    var sheetType by remember { mutableStateOf<SettingsType?>(null) }
+
+    fun openSheet(type: SettingsType) {
+        sheetType = type
+        sheetVisible = true
+    }
+
+    // ТЕМА
+    val currentTheme by themeViewModel.theme.collectAsState()
+    val themeOptions = listOf("Светлая", "Тёмная", "Настройки устройства")
+    val themeValues = listOf("light", "dark", "system")
+    var selectedThemeIndex by remember {
+        mutableStateOf(themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0)
+    }
+    var selectedTheme by remember { mutableStateOf(themeOptions[selectedThemeIndex]) }
+
+    LaunchedEffect(currentTheme) {
+        val idx = themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0
+        selectedThemeIndex = idx
+        selectedTheme = themeOptions[idx]
+    }
+
+    // ЯЗЫК — пока заглушка
+    val languages = listOf("Русский", "English", "Deutsch")
+    var selectedLanguage by remember { mutableStateOf("Русский") }
+
+    // Единицы — заглушка
+    var selectedUnits by remember { mutableStateOf("Метры") }
+
+    // Прочее
     val totalPOIs = totalPOIList.size
     val visitedPOIs = userPOIList.size
     val exploredPercentage = if (totalPOIs > 0) {
@@ -2110,35 +2148,10 @@ fun ProfileScreen(
         }
     }
 
-    //ТЕМА
-
-    val currentTheme by themeViewModel.theme.collectAsState()
-
-    val themeOptions = listOf("Светлая", "Тёмная", "Настройки устройства")
-    val themeValues = listOf("light", "dark", "system")
-
-    var selectedThemeIndex by remember {
-        mutableStateOf(themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0)
-    }
-    var selectedTheme by remember { mutableStateOf(themeOptions[selectedThemeIndex]) }
-
-    // Обновляем selectedTheme, если currentTheme изменился извне
-    LaunchedEffect(currentTheme) {
-        val idx = themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0
-        selectedThemeIndex = idx
-        selectedTheme = themeOptions[idx]
-    }
-
-    //
     val email = user?.email ?: "example@email.com"
     val displayName = user?.displayName?.takeIf { it.isNotBlank() }
     val defaultName = email.substringBefore("@")
     val name = displayName ?: defaultName
-
-    var selectedLanguage by remember { mutableStateOf("Русский") }
-    var selectedUnits by remember { mutableStateOf("Метры") }
-    //var selectedTheme by remember { mutableStateOf("Настройки устройства") }
-    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -2197,7 +2210,7 @@ fun ProfileScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
-// ——— Блок: Настройки ———
+ // ——— Блок: Настройки ———
             item {
                 Text("Настройки", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
@@ -2208,79 +2221,19 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-
-                        // Тема
-                        Text("Тема", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                        Spacer(Modifier.height(4.dp))
-
-                        var themeMenuExpanded by remember { mutableStateOf(false) }
-
-                        Box {
-                            OutlinedButton(
-                                onClick = { themeMenuExpanded = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(text = selectedTheme)
-                            }
-
-                            DropdownMenu(
-                                expanded = themeMenuExpanded,
-                                onDismissRequest = { themeMenuExpanded = false }
-                            ) {
-                                themeOptions.forEachIndexed { index, label ->
-                                    DropdownMenuItem(
-                                        text = { Text(label) },
-                                        onClick = {
-                                            selectedThemeIndex = index
-                                            selectedTheme = label
-                                            themeViewModel.setTheme(themeValues[index])
-                                            themeMenuExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-
-                        // Язык
-                        Text("Язык", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                        Spacer(Modifier.height(4.dp))
-
-                        var languageMenuExpanded by remember { mutableStateOf(false) }
-                        val languages = listOf("Русский", "Deutsch", "English")
-                        var selectedLanguage by remember { mutableStateOf(languages[0]) }
-
-                        Box {
-                            OutlinedButton(
-                                onClick = { languageMenuExpanded = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(text = selectedLanguage)
-                            }
-
-                            DropdownMenu(
-                                expanded = languageMenuExpanded,
-                                onDismissRequest = { languageMenuExpanded = false }
-                            ) {
-                                languages.forEachIndexed { index, label ->
-                                    DropdownMenuItem(
-                                        text = { Text(label) },
-                                        onClick = {
-                                            selectedLanguage = label
-                                            languageMenuExpanded = false
-                                            // Здесь можно добавить сохранение языка в будущем
-                                        }
-                                    )
-                                }
-                            }
+                    Column(Modifier.padding(16.dp)) {
+                        SettingRow("🌐 Язык", selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
+                        SettingRow("🌓 Экран", selectedTheme) { openSheet(SettingsType.THEME) }
+                        SettingRow("📏 Измерения", "Метры") { openSheet(SettingsType.UNITS) }
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🔔 Уведомления")
+                            Switch(checked = true, onCheckedChange = { /*TODO*/ })
                         }
                     }
                 }
@@ -2399,7 +2352,19 @@ fun ProfileScreen(
 
                         // — Политика —
                         Text(
-                            text = "Политика конфиденциальности и Условия использования",
+                            text = "Политика конфиденциальности",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.clickable {
+                                // TODO: открыть ссылку
+                            }
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // — Политика —
+                        Text(
+                            text = "Условия использования",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.clickable {
@@ -2428,8 +2393,134 @@ fun ProfileScreen(
                 AccountActionsSection(onLoggedOut)
             }
         }
+
+        // ⬇️ Вызов шторки внизу после Scaffold
+        if (sheetVisible && sheetType != null) {
+            val (title, options, selected, onSelect) = when (sheetType) {
+                SettingsType.THEME -> Quad(
+                    "Тема", themeOptions, selectedTheme
+                ) { selected: String ->
+                    selectedTheme = selected
+                    val idx = themeOptions.indexOf(selected)
+                    themeViewModel.setTheme(themeValues[idx])
+                    sheetVisible = false
+                }
+
+                SettingsType.LANGUAGE -> Quad(
+                    "Язык", languages, selectedLanguage
+                ) { selected: String ->
+                    selectedLanguage = selected
+                    sheetVisible = false
+                }
+
+                SettingsType.UNITS -> Quad(
+                    "Единицы измерения", listOf("Метры", "Мили"), selectedUnits
+                ) { selected: String ->
+                    selectedUnits = selected
+                    sheetVisible = false
+                }
+
+                else -> return@Scaffold
+            }
+
+            SettingsBottomSheet(
+                sheetTitle = title,
+                options = options,
+                selectedOption = selected,
+                onOptionSelected = onSelect,
+                onDismissRequest = { sheetVisible = false }
+            )
+        }
     }
 }
+
+@Composable
+private fun <T> Quad(
+    title: String,
+    options: List<T>,
+    selected: T,
+    onSelect: (T) -> Unit
+): Quadruple<String, List<T>, T, (T) -> Unit> = Quadruple(title, options, selected, onSelect)
+
+data class Quadruple<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
+
+@Composable
+fun SettingRow(
+    iconText: String,
+    value: String,
+    onClick: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(iconText, style = MaterialTheme.typography.bodyLarge)
+        Text(value, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsBottomSheet(
+    sheetTitle: String,
+    options: List<String>,
+    selectedOption: String,
+    onOptionSelected: (String) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = sheetTitle,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            options.forEach { option ->
+                val isSelected = option == selectedOption
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onOptionSelected(option)
+                            onDismissRequest()
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = {
+                            onOptionSelected(option)
+                            onDismissRequest()
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(option)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
 @Composable
 fun AccountActionsSection(onLoggedOut: () -> Unit) {
     val context = LocalContext.current
@@ -2513,145 +2604,6 @@ fun AccountActionsSection(onLoggedOut: () -> Unit) {
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DropdownSetting(
-    label: String,
-    selected: String,
-    options: List<String>,
-    onOptionSelected: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-        OutlinedTextField(
-            value = selected,
-            onValueChange = {},
-            label = { Text(label) },
-            readOnly = true,
-            trailingIcon = {
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
-        )
-
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option) },
-                    onClick = {
-                        onOptionSelected(option)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-
-    Spacer(modifier = Modifier.height(8.dp))
-}
-
-/*
-@Composable
-fun ProfilePanel(
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val preferences = remember { UserPreferences(context) }
-    val user = FirebaseAuth.getInstance().currentUser
-    var userSettings by remember { mutableStateOf<UserSettings?>(null) }
-
-    LaunchedEffect(Unit) {
-        userSettings = withContext(Dispatchers.IO) {
-            preferences.getAll()
-        }
-    }
-
-    Surface(
-        tonalElevation = 4.dp,
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("Профиль", style = MaterialTheme.typography.headlineSmall)
-
-            user?.email?.let {
-                ProfileRow(label = "Email", value = it)
-            }
-            ProfileRow(
-                label = "currentGP",
-                value = userSettings?.currentGP.toString() ?: "-"
-            )
-
-            ProfileRow(
-                label = "totalGP",
-                value = userSettings?.totalGP.toString() ?: "-"
-            )
-
-            ProfileRow(
-                label = "Язык интерфейса",
-                value = userSettings?.language ?: "-"
-            )
-
-            ProfileRow(
-                label = "Регионы",
-                value = userSettings?.purchasedRegions?.joinToString(", ") ?: "-"
-            )
-
-            ProfileRow(
-                label = "Избранное",
-                value = userSettings?.favoritePoiIds?.joinToString(", ") ?: "-"
-            )
-
-            ProfileRow(
-                label = "Посещенное",
-                value = userSettings?.visitedPoiIds?.joinToString(", ") ?: "-"
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        FirebaseAuth.getInstance().signOut()
-                        //   context.dataStore.edit { it.clear() }
-                        onDismiss()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
-            ) {
-                Icon(Icons.Default.Close, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Выйти")
-            }
-        }
-    }
-}
-
- */
-
-@Composable
-private fun ProfileRow(label: String, value: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-
-
-
 
 @Composable
 fun LoadingScreen() {
