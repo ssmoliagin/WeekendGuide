@@ -49,13 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.weekendguide.data.model.POI
-import com.example.weekendguide.data.preferences.UserPreferences
-import com.example.weekendguide.data.preferences.UserSettings
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 enum class SettingsType {
@@ -72,6 +69,7 @@ fun ProfileScreen(
     onLoggedOut: () -> Unit,
     themeViewModel: ThemeViewModel,
     loginViewModel: LoginViewModel,
+    translateViewModel: TranslateViewModel,
 ) {
 
     var sheetVisible by remember { mutableStateOf(false) }
@@ -81,6 +79,13 @@ fun ProfileScreen(
         sheetType = type
         sheetVisible = true
     }
+
+    //Персональные данные
+    val userInfo by loginViewModel.userData.collectAsState()
+    val email = userInfo.email ?: ""
+    val displayName = userInfo.displayName ?: ""
+    val photoUrl = userInfo.photoUrl
+    val name = displayName.ifBlank { email.substringBefore("@") }
 
     // ТЕМА
     val currentTheme by themeViewModel.theme.collectAsState()
@@ -97,9 +102,21 @@ fun ProfileScreen(
         selectedTheme = themeOptions[idx]
     }
 
-    // ЯЗЫК — пока заглушка
-    val languages = listOf("Русский", "English", "Deutsch")
-    var selectedLanguage by remember { mutableStateOf("Русский") }
+    // ЯЗЫК
+    val currentLanguage by translateViewModel.language.collectAsState()
+    val languagesOptions = listOf("Русский", "English", "Deutsch")
+    val languageValues =  listOf("ru", "en", "de")
+    var selectedLanguageIndex by remember {
+        mutableStateOf(languageValues.indexOf(currentLanguage).takeIf { it >= 0 } ?: 0)
+    }
+    var selectedLanguage by remember { mutableStateOf(languagesOptions[selectedLanguageIndex]) }
+
+    LaunchedEffect(currentLanguage) {
+        val idx = languageValues.indexOf(currentLanguage).takeIf { it >= 0 } ?: 0
+        selectedLanguageIndex = idx
+        selectedLanguage = languagesOptions[idx]
+    }
+
 
     // Единицы — заглушка
     var selectedUnits by remember { mutableStateOf("Метры") }
@@ -113,26 +130,6 @@ fun ProfileScreen(
         0
     }
 
-    val context = LocalContext.current
-    val preferences = remember { UserPreferences(context) }
-    val user = FirebaseAuth.getInstance().currentUser
-   /*
-    var userSettings by remember { mutableStateOf<UserSettings?>(null) }
-
-    LaunchedEffect(Unit) {
-        userSettings = withContext(Dispatchers.IO) {
-            preferences.getAll()
-        }
-    }
-
-    */
-
-    val userInfo by loginViewModel.userInfo.collectAsState()
-
-    val email = userInfo.email ?: ""
-    val displayName = userInfo.displayName ?: ""
-    val photoUrl = userInfo.photoUrl
-    val name = displayName.ifBlank { email.substringBefore("@") }
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -398,9 +395,11 @@ fun ProfileScreen(
                 }
 
                 SettingsType.LANGUAGE -> Quad(
-                    "Язык", languages, selectedLanguage
+                    "Язык", languagesOptions, selectedLanguage
                 ) { selected: String ->
                     selectedLanguage = selected
+                    val idx = languagesOptions.indexOf(selected)
+                    translateViewModel.setLanguage(languageValues[idx])
                     sheetVisible = false
                 }
 

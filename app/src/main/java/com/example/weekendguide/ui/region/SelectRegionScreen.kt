@@ -14,26 +14,29 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.viewmodel.RegionViewModel
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun SelectRegionScreen(
     onRegionSelected: () -> Unit,
-    viewModel: RegionViewModel = viewModel()
+    translateViewModel: TranslateViewModel,
+    regionViewModel: RegionViewModel = viewModel()
+
 ) {
-    val countries by viewModel.countries.collectAsState()
-    val regionsByCountry by viewModel.regionsByCountry.collectAsState()
-    val loading by viewModel.loading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val countries by regionViewModel.countries.collectAsState()
+    val regionsByCountry by regionViewModel.regionsByCountry.collectAsState()
+    val loading by regionViewModel.loading.collectAsState()
+    val error by regionViewModel.error.collectAsState()
 
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
 
     val coroutineScope = rememberCoroutineScope()
 
-    val language by produceState(initialValue = "en") {
-        value = userPreferences.getLanguage()
-    }
+
+    val language by translateViewModel.language.collectAsState()
+
 
     var selectedCountryCode by remember { mutableStateOf<String?>(null) }
     var selectedRegion by remember { mutableStateOf<Region?>(null) }
@@ -62,9 +65,9 @@ fun SelectRegionScreen(
                         // Выбор страны
                         items(countries) { country ->
                             val countryName = when (language) {
-                                "en" -> country.name_en
+                                "ru" -> country.name_ru
                                 "de" -> country.name_de
-                                else -> country.name_ru
+                                else -> country.name_en
                             }
 
                             Card(
@@ -141,7 +144,7 @@ fun SelectRegionScreen(
                             showConfirmDialog = false
                             coroutineScope.launch {
                                 selectedRegion?.let { region ->
-                                    viewModel.downloadAndCacheRegionPOI(region)
+                                    regionViewModel.downloadAndCacheRegionPOI(region)
                                     userPreferences.addPurchasedRegion(region.region_code)
                                     userPreferences.addPurchasedCountries(region.country_code)
                                     userPreferences.saveHomeRegion(region)

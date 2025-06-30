@@ -13,11 +13,14 @@ import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.region.SelectRegionScreen
 import com.example.weekendguide.ui.main.MainScreen
+import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
+import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.auth.api.identity.Identity
 
@@ -25,7 +28,10 @@ import com.google.android.gms.auth.api.identity.Identity
 @Composable
 fun AppNavigation(
     themeViewModel: ThemeViewModel,
-    loginViewModel: LoginViewModel
+    loginViewModel: LoginViewModel,
+    translateViewModel: TranslateViewModel,
+    locationViewModel: LocationViewModel,
+    pointsViewModel: PointsViewModel,
 ) {
     val navController = rememberNavController()
 
@@ -45,7 +51,6 @@ fun AppNavigation(
                     SplashViewModel.Destination.Main -> navController.navigate("main") {
                         popUpTo("splash") { inclusive = true }
                     }
-                    SplashViewModel.Destination.Map -> navController.navigate("map")
                     SplashViewModel.Destination.Loading -> { /* No-op */ }
                 }
             })
@@ -68,7 +73,9 @@ fun AppNavigation(
         }
 
         composable("region") {
-            SelectRegionScreen(onRegionSelected = {
+            SelectRegionScreen(
+                translateViewModel = translateViewModel,
+                onRegionSelected = {
                 navController.navigate("main") {
                     popUpTo("region") { inclusive = true }
                 }
@@ -77,13 +84,16 @@ fun AppNavigation(
 
         composable("main") {
             MainScreen(
-                loginViewModel = loginViewModel,
                 onLoggedOut = {
                 navController.navigate("splash") {
                     popUpTo(0) { inclusive = true } // Удаляет всю навигационную историю
                 }
             },
-                themeViewModel = themeViewModel
+                loginViewModel = loginViewModel,
+                themeViewModel = themeViewModel,
+                translateViewModel = translateViewModel,
+                locationViewModel = locationViewModel,
+                pointsViewModel = pointsViewModel
             )
         }
 

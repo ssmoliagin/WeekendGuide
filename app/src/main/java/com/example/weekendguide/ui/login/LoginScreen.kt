@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.example.weekendguide.R
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

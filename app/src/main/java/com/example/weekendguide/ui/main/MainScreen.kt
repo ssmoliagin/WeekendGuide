@@ -44,6 +44,7 @@ import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.example.weekendguide.viewmodel.ViewModelFactory
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
@@ -55,6 +56,9 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 fun MainScreen(
     loginViewModel: LoginViewModel,
     themeViewModel: ThemeViewModel,
+    translateViewModel: TranslateViewModel,
+    locationViewModel: LocationViewModel,
+    pointsViewModel: PointsViewModel,
     context: Context = LocalContext.current,
     onLoggedOut: () -> Unit
 ) {
@@ -76,15 +80,6 @@ fun MainScreen(
     val region by produceState<Region?>(initialValue = null) {
         value = prefs.getHomeRegion()
     }
-    val locationViewModel: LocationViewModel = viewModel(
-        key = "LocationViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
-    )
-    val pointsViewModel: PointsViewModel = viewModel(
-        key = "GPViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
-    )
-
 
     //обновление очков
     val currentGP by pointsViewModel.currentGP.collectAsState()
@@ -395,6 +390,7 @@ fun MainScreen(
                 onLoggedOut = onLoggedOut,
                 themeViewModel = themeViewModel,
                 loginViewModel = loginViewModel,
+                translateViewModel = translateViewModel,
             )
         }
 

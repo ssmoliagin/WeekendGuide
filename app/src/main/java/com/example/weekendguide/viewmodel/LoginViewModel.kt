@@ -5,7 +5,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.Constants
-import com.example.weekendguide.data.preferences.UserInfo
+import com.example.weekendguide.data.preferences.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -32,10 +32,10 @@ class LoginViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    val userInfo: StateFlow<UserInfo> = userPreferences.userInfoFlow.stateIn(
+    val userData: StateFlow<UserData> = userPreferences.userDataFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = UserInfo()
+        initialValue = UserData()
     )
 
     private val _navigateDestination = MutableSharedFlow<SplashViewModel.Destination>()
@@ -138,12 +138,12 @@ class LoginViewModel(
 
     private suspend fun saveUserToPreferences(user: FirebaseUser?) {
         if (user == null) return
-        val info = UserInfo(
+        val data = UserData(
             email = user.email,
             displayName = user.displayName,
             photoUrl = user.photoUrl?.toString()
         )
-        userPreferences.saveUserInfo(info)
+        userPreferences.saveUserInfo(data)
     }
 
     fun checkAlreadyLoggedIn() {

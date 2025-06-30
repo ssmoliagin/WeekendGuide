@@ -12,32 +12,24 @@ import kotlinx.serialization.json.Json
 
 private val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
-data class UserInfo(
+data class UserData(
     val email: String? = null,
     val displayName: String? = null,
-    val photoUrl: String? = null
-)
+    val photoUrl: String? = null,
+    val language: String? = null,
+    val userThema: String? = null,
 
-data class UserSettings(
-    val language: String,
-    val homeRegion: Region?,
-    val purchasedRegions: Set<String>,
-    val purchasedCountries: Set<String>,
-    val currentCity: String?,
-    val currentLocation: Pair<Double, Double>?,
-    val favoritePoiIds: Set<String>,
-    val visitedPoiIds: Set<String>,
-    val currentGP: Int,
-    val totalGP: Int,
-    val categoryLevels: Map<String, Int>
 )
 
 class UserPreferences(private val context: Context) {
 
-
-
     private object Keys {
+        val EMAIL = stringPreferencesKey("user_email")
+        val DISPLAY_NAME = stringPreferencesKey("user_display_name")
+        val PHOTO_URL = stringPreferencesKey("user_photo_url")
         val LANGUAGE = stringPreferencesKey("language_code")
+        val THEME = stringPreferencesKey("app_theme")
+
         val HOME_REGION = stringPreferencesKey("home_region") // JSON-строка Region
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
         val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
@@ -47,30 +39,27 @@ class UserPreferences(private val context: Context) {
         val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
         val VISITED = stringSetPreferencesKey("visited_poi_ids")
         val CATEGORY_LEVELS = stringPreferencesKey("category_levels")
-        val THEME = stringPreferencesKey("app_theme") // "light", "dark", "system"
-
-        val EMAIL = stringPreferencesKey("user_email")
-        val DISPLAY_NAME = stringPreferencesKey("user_display_name")
-        val PHOTO_URL = stringPreferencesKey("user_photo_url")
     }
 
     private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
 
     //login
-    val userInfoFlow: Flow<UserInfo> = context.dataStore.data
+    val userDataFlow: Flow<UserData> = context.dataStore.data
         .map { prefs ->
-            UserInfo(
+            UserData(
                 email = prefs[Keys.EMAIL],
                 displayName = prefs[Keys.DISPLAY_NAME],
-                photoUrl = prefs[Keys.PHOTO_URL]
+                photoUrl = prefs[Keys.PHOTO_URL],
+                language = prefs[Keys.LANGUAGE]
             )
         }
 
-    suspend fun saveUserInfo(userInfo: UserInfo) {
+    suspend fun saveUserInfo(userData: UserData) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.EMAIL] = userInfo.email ?: ""
-            prefs[Keys.DISPLAY_NAME] = userInfo.displayName ?: ""
-            prefs[Keys.PHOTO_URL] = userInfo.photoUrl ?: ""
+            prefs[Keys.EMAIL] = userData.email ?: ""
+            prefs[Keys.DISPLAY_NAME] = userData.displayName ?: ""
+            prefs[Keys.PHOTO_URL] = userData.photoUrl ?: ""
+            prefs[Keys.LANGUAGE] = userData.language ?: ""
         }
     }
 
@@ -158,7 +147,7 @@ class UserPreferences(private val context: Context) {
     }
 
 
-    //
+    //язык
     suspend fun saveLanguage(language: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.LANGUAGE] = language
@@ -167,7 +156,7 @@ class UserPreferences(private val context: Context) {
 
     suspend fun getLanguage(): String {
         val prefs = context.dataStore.data.first()
-        return prefs[Keys.LANGUAGE] ?: "de"
+        return prefs[Keys.LANGUAGE] ?: ""
     }
 
     suspend fun saveHomeRegion(region: Region) {
@@ -176,6 +165,7 @@ class UserPreferences(private val context: Context) {
         }
     }
 
+    //регион
     suspend fun getHomeRegion(): Region? {
         val prefs = context.dataStore.data.first()
         val json = prefs[Keys.HOME_REGION] ?: return null
@@ -243,7 +233,30 @@ class UserPreferences(private val context: Context) {
     val favoriteIdsFlow: Flow<Set<String>> = context.dataStore.data
         .map { prefs -> prefs[Keys.FAVORITES] ?: emptySet() }
 
+    //посещенные
+    val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
+        .map { prefs -> prefs[Keys.VISITED] ?: emptySet() }
 
+    suspend fun markVisited(id: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.VISITED] ?: emptySet()
+            prefs[Keys.VISITED] = current + id
+        }
+    }
+
+    /*
+    data class UserSettings(
+    val homeRegion: Region?,
+    val purchasedRegions: Set<String>,
+    val purchasedCountries: Set<String>,
+    val currentCity: String?,
+    val currentLocation: Pair<Double, Double>?,
+    val favoritePoiIds: Set<String>,
+    val visitedPoiIds: Set<String>,
+    val currentGP: Int,
+    val totalGP: Int,
+    val categoryLevels: Map<String, Int>
+)
 
     suspend fun getAll(): UserSettings {
         val prefs = context.dataStore.data.first()
@@ -280,15 +293,6 @@ class UserPreferences(private val context: Context) {
         )
     }
 
-    val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
-        .map { prefs -> prefs[Keys.VISITED] ?: emptySet() }
-
-    suspend fun markVisited(id: String) {
-        context.dataStore.edit { prefs ->
-            val current = prefs[Keys.VISITED] ?: emptySet()
-            prefs[Keys.VISITED] = current + id
-        }
-    }
-
+     */
 
 }

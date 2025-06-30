@@ -30,24 +30,12 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
         object RegionSelect : Destination()
         object Main : Destination()
         object Loading : Destination()
-        object Map : Destination()
     }
 
     init {
         viewModelScope.launch {
             delay(1500)
-            detectLanguage()
             decideNextScreen()
-        }
-    }
-
-    private suspend fun detectLanguage() {
-        val saved = preferences.getLanguage()
-        if (saved == null) {
-            val systemLang = Locale.getDefault().language
-            val supported = listOf("en", "de", "ru")
-            val selected = if (systemLang in supported) systemLang else "en"
-            preferences.saveLanguage(selected)
         }
     }
 
