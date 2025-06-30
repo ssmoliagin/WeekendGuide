@@ -2,24 +2,18 @@ package com.example.weekendguide.data.repository
 
 import android.content.Context
 import android.util.Log
-import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
-import com.example.weekendguide.data.model.WikipediaSummary
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
-import com.google.gson.Gson
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.Request
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.net.URLEncoder
 import java.util.Locale
 
 class DataRepositoryImpl(private val context: Context) : DataRepository {

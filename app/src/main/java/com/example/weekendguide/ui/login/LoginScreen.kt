@@ -3,70 +3,69 @@ package com.example.weekendguide.ui.login
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.weekendguide.data.preferences.UserPreferences
+import androidx.compose.ui.unit.sp
+import com.example.weekendguide.R
 import com.example.weekendguide.viewmodel.LoginViewModel
-import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.google.android.gms.auth.api.identity.Identity
-import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     loginViewModel: LoginViewModel,
     onNavigate: (SplashViewModel.Destination) -> Unit,
-    ) {
-
-    val context = LocalContext.current
-
-    val activity = context as Activity
-
+) {
     val isLoading by loginViewModel.isLoading.collectAsState()
     val errorMessage by loginViewModel.errorMessage.collectAsState()
-    val userInfo by loginViewModel.userInfo.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()
-    val languages = listOf("ru", "en", "de")
-
-    var selectedLanguage by remember { mutableStateOf("ru") }
-    var expanded by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            loginViewModel.handleGoogleSignInResult(result.data)
+        }
+    }
 
     // Навигация при изменении destination
     val navigateDestination = remember { mutableStateOf<SplashViewModel.Destination?>(null) }
@@ -81,102 +80,168 @@ fun LoginScreen(
         loginViewModel.checkAlreadyLoggedIn()
     }
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            loginViewModel.handleGoogleSignInResult(result.data)
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Weekend Guide") },
-                actions = {
-                    IconButton(onClick = { /* открыть профиль */ }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Профиль")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+                .padding(24.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Вход в Weekend Guide", style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email") },
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Пароль") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(onClick = {
-                        loginViewModel.loginWithEmail(email, password)
-                    }) {
-                        Text("Войти или зарегистрироваться")
+                    // Верх: логотип и текст
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "Логотип",
+                            modifier = Modifier
+                                .size(160.dp)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = "Зарегистрируйтесь или войдите,\nчтобы начать исследовать достопримечательности",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            textAlign = TextAlign.Center
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // Центр: Google вход + Email блок
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Spacer(modifier = Modifier.height(32.dp))
 
-                    Button(onClick = {
-                        loginViewModel.startGoogleSignIn { intentSenderRequest ->
-                            launcher.launch(intentSenderRequest)
-                        }
-                    }) {
-                        Text("Войти через Google")
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("Выберите язык интерфейса")
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box {
-                        OutlinedButton(onClick = { expanded = true }) {
-                            Text(selectedLanguage.uppercase())
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                        Button(
+                            onClick = {
+                                loginViewModel.startGoogleSignIn { intentSenderRequest ->
+                                    launcher.launch(intentSenderRequest)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(start = 16.dp) // сдвигаем всё вправо, чтобы иконка была у края
                         ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_google),
+                                    contentDescription = "Google",
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .align(Alignment.CenterVertically)
+                                )
 
-                            languages.forEach { language ->
-                                DropdownMenuItem(
-                                    text = { Text(language.uppercase()) },
-                                    onClick = {
-                                        selectedLanguage = language
-                                        expanded = false
-                                    }
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                // Центрируем текст вручную через Spacer’ы
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("Продолжить с Google")
+                                }
+
+                                Spacer(modifier = Modifier.width(20.dp)) // визуально уравновешиваем правый край
+                            }
+                        }
+
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Divider(modifier = Modifier.weight(1f))
+                            Text(
+                                text = "или",
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Divider(modifier = Modifier.weight(1f))
+                        }
+
+                        // Email login block: компактно
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = { email = it },
+                                label = { Text("Email") },
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 14.sp),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.9f)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                label = { Text("Пароль") },
+                                visualTransformation = PasswordVisualTransformation(),
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 14.sp),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.9f)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            TextButton(
+                                onClick = {
+                                    loginViewModel.loginWithEmail(email, password)
+                                }
+                            ) {
+                                Text("Продолжить с Email", fontSize = 14.sp)
+                            }
+
+                            errorMessage?.let {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
                     }
 
-                    errorMessage?.let {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(it, color = MaterialTheme.colorScheme.error)
-                    }
+                    // Низ: условия
+                    Text(
+                        text = "Продолжая, вы соглашаетесь с нашими условиями использования",
+                        style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
