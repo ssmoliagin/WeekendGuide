@@ -3,6 +3,7 @@ package com.example.weekendguide.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -59,9 +60,12 @@ class POIViewModel(
 
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
     val poiList: StateFlow<List<POI>> = _poiList
+    private val _poisIsLoading = MutableStateFlow(false)
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _typesIsLoading = MutableStateFlow(false)
+
+    //val isLoading: StateFlow<Boolean> = _isLoading
+
 
     private val _searchQuery = MutableStateFlow("")
     private val _maxDistance = MutableStateFlow(100)
@@ -80,11 +84,13 @@ class POIViewModel(
 
     init {
         loadPOIs(translateViewModel)
+        loadTypePOITranslations()
+
     }
 
     fun loadPOIs(translateViewModel: TranslateViewModel) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _poisIsLoading.value = true
             try {
                 dataRepository.downloadAndCachePOI(region, translateViewModel)
                 val pois = dataRepository.getPOIs(region.region_code, translateViewModel)
@@ -92,7 +98,22 @@ class POIViewModel(
             } catch (e: Exception) {
                 Log.e("POIViewModel", "Error loading POIs", e)
             } finally {
-                _isLoading.value = false
+                _poisIsLoading.value = false
+            }
+        }
+    }
+
+    fun loadTypePOITranslations() {
+        viewModelScope.launch {
+            _typesIsLoading.value = true
+            try {
+                dataRepository.downloadTypesJson()
+                val json = dataRepository.downloadTypesJson()
+                if (json != null) LocalizerTypes.loadFromJson(json)
+            } catch (e: Exception) {
+                Log.e("POIViewModel", "Error loading Types", e)
+            } finally {
+                _typesIsLoading.value = false
             }
         }
     }

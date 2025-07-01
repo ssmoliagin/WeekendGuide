@@ -48,7 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.weekendguide.data.locales.Localizer
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
@@ -146,7 +146,7 @@ fun ProfileScreen(
             item {
                 //Text("Личные данные", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = Localizer.t("personal_data", currentLanguage),
+                    text = LocalizerUI.t("personal_data", currentLanguage),
                     style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 

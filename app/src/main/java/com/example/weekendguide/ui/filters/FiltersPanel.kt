@@ -42,7 +42,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.weekendguide.data.locales.Localizer
+import com.example.weekendguide.data.locales.LocalizerTypes
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -131,14 +132,14 @@ fun FiltersPanel(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        text = Localizer.t(type, currentLanguage),//type,
+                                        text = LocalizerTypes.t(type, currentLanguage),//type,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontSize = 10.sp,
                                         maxLines = 1
                                     )
                                 } else {
                                     //Text(type)
-                                    Text(Localizer.t(type, currentLanguage))
+                                    Text(LocalizerTypes.t(type, currentLanguage))
                                 }
                             }
                         }

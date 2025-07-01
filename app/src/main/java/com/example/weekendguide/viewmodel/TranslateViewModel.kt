@@ -3,7 +3,8 @@ package com.example.weekendguide.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.weekendguide.data.locales.Localizer
+import com.example.weekendguide.data.locales.LocalizerUI
+import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.LocalesRepo
@@ -27,7 +28,6 @@ class TranslateViewModel(
         viewModelScope.launch {
             _lang.value = prefs.getLanguage()
             loadUITranslations()
-            loadTypePOITranslations()
         }
     }
 
@@ -44,7 +44,6 @@ class TranslateViewModel(
                 _lang.value = saved // ✅ если язык есть, обновляем сразу
             }
             loadUITranslations()
-            loadTypePOITranslations()
         }
     }
 
@@ -58,13 +57,8 @@ class TranslateViewModel(
     private suspend fun loadUITranslations() {
         val json = repo.downloadTranslationsJson()
         if (json != null) {
-            Localizer.loadFromJson(json)
+            LocalizerUI.loadFromJson(json)
         }
     }
-    private suspend fun loadTypePOITranslations() {
-        val json = dataRepo.downloadTypesJson()
-        if (json != null) {
-            Localizer.loadFromJson(json)
-        }
-    }
+
 }
