@@ -19,6 +19,8 @@ class POIViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
+    val language = translateViewModel.language.value
+
     //посещенные
     private val _visitedPoiIds = MutableStateFlow<Set<String>>(emptySet())
     val visitedPoiIds: StateFlow<Set<String>> = _visitedPoiIds.asStateFlow()
@@ -48,7 +50,7 @@ class POIViewModel(
 
     fun loadWikipediaDescription(title: String) {
         viewModelScope.launch {
-            _wikiDescription.value = wikiRepository.fetchWikipediaDescription(title)
+            _wikiDescription.value = wikiRepository.fetchWikipediaDescription(title, language)
         }
     }
 

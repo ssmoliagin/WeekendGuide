@@ -14,13 +14,7 @@ class MainActivity : ComponentActivity() {
         FirebaseApp.initializeApp(this)
         super.onCreate(savedInstanceState)
         setContent {
-            AppEntryPoint() // <— новая точка входа с темой
-/*
-            WeekendGuideTheme/*(darkTheme = false)*/  { //только светлая
-                AppNavigation()
-            }
-
- */
+            AppEntryPoint()
         }
     }
 }

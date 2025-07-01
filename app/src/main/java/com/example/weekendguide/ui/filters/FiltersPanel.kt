@@ -36,10 +36,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weekendguide.data.locales.Localizer
+import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -53,7 +57,9 @@ fun FiltersPanel(
     onClearAllTypes: () -> Unit,
     showVisited: Boolean,
     onToggleShowVisited: () -> Unit,
+    translateViewModel: TranslateViewModel,
 ) {
+    val currentLanguage by translateViewModel.language.collectAsState()
     val radiusValues = listOf("20", "50", "100", "200", "∞")
     val radiusSliderPosition = radiusValues.indexOfFirst {
         it.removeSuffix("км") == selectedRadius.removeSuffix("км")
@@ -125,13 +131,14 @@ fun FiltersPanel(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        text = type,
+                                        text = Localizer.t(type, currentLanguage),//type,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontSize = 10.sp,
                                         maxLines = 1
                                     )
                                 } else {
-                                    Text(type)
+                                    //Text(type)
+                                    Text(Localizer.t(type, currentLanguage))
                                 }
                             }
                         }

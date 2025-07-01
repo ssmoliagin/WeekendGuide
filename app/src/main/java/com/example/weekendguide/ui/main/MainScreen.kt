@@ -409,7 +409,8 @@ fun MainScreen(
                     onSelectAllTypes = { selectedTypes = allTypes },
                     onClearAllTypes = { selectedTypes = emptyList() },
                     showVisited = showVisited,
-                    onToggleShowVisited = { showVisited = !showVisited }
+                    onToggleShowVisited = { showVisited = !showVisited },
+                    translateViewModel = translateViewModel,
                 )
             }
         }

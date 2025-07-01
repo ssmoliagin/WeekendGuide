@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.weekendguide.data.locales.Localizer
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
@@ -143,7 +144,10 @@ fun ProfileScreen(
         ) {
             // ——— Блок: Личные данные ———
             item {
-                Text("Личные данные", style = MaterialTheme.typography.titleMedium)
+                //Text("Личные данные", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = Localizer.t("personal_data", currentLanguage),
+                    style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -382,7 +386,7 @@ fun ProfileScreen(
             }
         }
 
-        // ⬇️ Вызов шторки внизу после Scaffold
+        // ⬇️ Вызов шторки
         if (sheetVisible && sheetType != null) {
             val (title, options, selected, onSelect) = when (sheetType) {
                 SettingsType.THEME -> Quad(

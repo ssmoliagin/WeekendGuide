@@ -25,6 +25,24 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     private val storage = Firebase.storage
     private val json = Json { ignoreUnknownKeys = true }
 
+    override suspend fun downloadTypesJson(): String? = withContext(Dispatchers.IO) {
+        val url = "$path/data/locales/type.json"
+        val file = File(context.cacheDir, "type.json")
+        return@withContext try {
+            if (!file.exists()) {
+                Log.d("LocalesRepo", "Downloading type.json")
+                val ref = storage.getReferenceFromUrl(url)
+                ref.getFile(file).await()
+            } else {
+                Log.d("LocalesRepo", "Using cached type.json")
+            }
+            file.readText()
+        } catch (e: Exception) {
+            Log.e("LocalesRepo", "Error loading type.json", e)
+            null
+        }
+    }
+
     override suspend fun getCountries(): List<Country> = withContext(Dispatchers.IO) {
         val url = "$path/data/places/countries.json"
         val file = File(context.cacheDir, "countries.json")

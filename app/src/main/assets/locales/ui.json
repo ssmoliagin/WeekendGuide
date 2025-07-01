@@ -1,0 +1,72 @@
+﻿{
+  "select_language": {
+    "en": "Select Language",
+    "de": "Sprache wählen",
+    "ru": "Выберите язык"
+  },
+  "personal_data": {
+    "en": "Personal Data",
+    "de": "Persönliche Daten",
+    "ru": "Личные данные"
+  },
+  "name": {
+    "en": "Name",
+    "de": "Name",
+    "ru": "Имя"
+  },
+  "email": {
+    "en": "Email",
+    "de": "E-Mail",
+    "ru": "Почта"
+  },
+  "settings": {
+    "en": "Settings",
+    "de": "Einstellungen",
+    "ru": "Настройки"
+  },
+  "language": {
+    "en": "Language",
+    "de": "Sprache",
+    "ru": "Язык"
+  },
+  "theme": {
+    "en": "Theme",
+    "de": "Thema",
+    "ru": "Тема"
+  },
+  "units": {
+    "en": "Units",
+    "de": "Einheiten",
+    "ru": "Единицы измерения"
+  },
+  "notifications": {
+    "en": "Notifications",
+    "de": "Benachrichtigungen",
+    "ru": "Уведомления"
+  },
+  "light": {
+    "en": "Light",
+    "de": "Hell",
+    "ru": "Светлая"
+  },
+  "dark": {
+    "en": "Dark",
+    "de": "Dunkel",
+    "ru": "Тёмная"
+  },
+  "system": {
+    "en": "System default",
+    "de": "Systemeinstellung",
+    "ru": "Настройки устройства"
+  },
+  "meters": {
+    "en": "Meters",
+    "de": "Meter",
+    "ru": "Метры"
+  },
+  "miles": {
+    "en": "Miles",
+    "de": "Meilen",
+    "ru": "Мили"
+  }
+}

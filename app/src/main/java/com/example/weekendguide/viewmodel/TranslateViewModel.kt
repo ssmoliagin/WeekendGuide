@@ -3,14 +3,21 @@ package com.example.weekendguide.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.weekendguide.data.locales.Localizer
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.LocalesRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-class TranslateViewModel(application: Application) : AndroidViewModel(application) {
+class TranslateViewModel(
+    application: Application,
+    private val repo: LocalesRepo,
+    private  val dataRepo: DataRepository
+) : AndroidViewModel(application) {
 
     private val prefs = UserPreferences(application)
     private val _lang = MutableStateFlow("")
@@ -19,6 +26,8 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
     init {
         viewModelScope.launch {
             _lang.value = prefs.getLanguage()
+            loadUITranslations()
+            loadTypePOITranslations()
         }
     }
 
@@ -34,6 +43,8 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
             } else {
                 _lang.value = saved // ✅ если язык есть, обновляем сразу
             }
+            loadUITranslations()
+            loadTypePOITranslations()
         }
     }
 
@@ -41,6 +52,19 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             prefs.saveLanguage(newLang)
             _lang.value = newLang
+        }
+    }
+
+    private suspend fun loadUITranslations() {
+        val json = repo.downloadTranslationsJson()
+        if (json != null) {
+            Localizer.loadFromJson(json)
+        }
+    }
+    private suspend fun loadTypePOITranslations() {
+        val json = dataRepo.downloadTypesJson()
+        if (json != null) {
+            Localizer.loadFromJson(json)
         }
     }
 }

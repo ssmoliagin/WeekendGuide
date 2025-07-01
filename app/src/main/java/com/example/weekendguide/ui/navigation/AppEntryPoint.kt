@@ -23,12 +23,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.R
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.DataRepositoryImpl
+import com.example.weekendguide.data.repository.LocalesRepoImpl
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModelFactory
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 
@@ -37,6 +40,11 @@ import com.google.firebase.auth.FirebaseAuth
 fun AppEntryPoint() {
 
     val context = LocalContext.current.applicationContext
+    val app = context as Application
+
+    // ✅ создаём репозиторий
+    val localesRepo = remember { LocalesRepoImpl(context) }
+    val dataRepo = remember { DataRepositoryImpl(context) }
 
     // ✅ создаём ViewModels
     val loginViewModel: LoginViewModel = viewModel(
@@ -49,7 +57,11 @@ fun AppEntryPoint() {
 
     val translateViewModel: TranslateViewModel = viewModel(
         key = "TranslateViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
+        factory = TranslateViewModelFactory(
+            app = app,
+            localesRepo = localesRepo,
+            dataRepo = dataRepo
+        )
     )
 
     val themeViewModel: ThemeViewModel = viewModel(
