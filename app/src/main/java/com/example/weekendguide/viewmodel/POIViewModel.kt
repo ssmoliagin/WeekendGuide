@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class POIViewModel(
+    private val translateViewModel: TranslateViewModel,
     private val dataRepository: DataRepository,
     private val wikiRepository: WikiRepository,
     private val region: Region,
@@ -76,15 +77,15 @@ class POIViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        loadPOIs()
+        loadPOIs(translateViewModel)
     }
 
-    fun loadPOIs() {
+    fun loadPOIs(translateViewModel: TranslateViewModel) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                dataRepository.downloadAndCachePOI(region)
-                val pois = dataRepository.getPOIs(region.region_code)
+                dataRepository.downloadAndCachePOI(region, translateViewModel)
+                val pois = dataRepository.getPOIs(region.region_code, translateViewModel)
                 _poiList.value = pois
             } catch (e: Exception) {
                 Log.e("POIViewModel", "Error loading POIs", e)

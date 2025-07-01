@@ -2,11 +2,14 @@ package com.example.weekendguide.data.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
@@ -61,11 +64,11 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
-    override suspend fun downloadAndCachePOI(region: Region) {
+    override suspend fun downloadAndCachePOI(region: Region, translateViewModel: TranslateViewModel) {
         withContext(Dispatchers.IO) {
             try {
-                val userPreferences = UserPreferences(context)
-                val language = userPreferences.getLanguage()
+
+                val language = translateViewModel.language.value
 
                 val remotePath = "$path/data/places/${region.country_code}/${region.region_code}/poi/$language.csv"
                 val localFile = File(context.cacheDir, "poi_${region.region_code}_$language.csv")
@@ -77,10 +80,10 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             }
         }
     }
-    override suspend fun getPOIs(regionCode: String): List<POI> = withContext(Dispatchers.IO) {
-        val userPreferences = UserPreferences(context)
-        val language = userPreferences.getLanguage()
-       // val language = Locale.getDefault().language
+    override suspend fun getPOIs(regionCode: String, translateViewModel: TranslateViewModel): List<POI> = withContext(Dispatchers.IO) {
+
+        val language = translateViewModel.language.value
+
         val file = File(context.cacheDir, "poi_${regionCode}_$language.csv")
 
         if (!file.exists()) {

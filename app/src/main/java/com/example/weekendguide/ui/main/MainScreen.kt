@@ -139,7 +139,7 @@ fun MainScreen(
 
     // --- ОСНОВНАЯ ЛОГИКА ---
     region?.let { reg ->
-        val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg))
+        val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg, translateViewModel))
         val poiList by poiViewModel.poiList.collectAsState()
         val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState() //посещенные пои
         val favoriteIds by poiViewModel.favoriteIds.collectAsState() //  ИЗБРАННЫЕ ПОИ

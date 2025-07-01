@@ -30,10 +30,10 @@ class RegionViewModel(application: Application) : AndroidViewModel(application) 
         loadCountriesAndRegions()
     }
 
-    fun downloadAndCacheRegionPOI(region: Region) {
+    fun downloadAndCacheRegionPOI(region: Region, translateViewModel: TranslateViewModel) {
         viewModelScope.launch {
             try {
-                repository.downloadAndCachePOI(region)
+                repository.downloadAndCachePOI(region,translateViewModel)
             } catch (e: Exception) {
                 _error.value = "Ошибка загрузки POI: ${e.localizedMessage}"
             }

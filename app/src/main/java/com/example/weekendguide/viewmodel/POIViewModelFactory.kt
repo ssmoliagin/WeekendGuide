@@ -10,7 +10,8 @@ import com.example.weekendguide.data.repository.WikiRepositoryImp
 
 class POIViewModelFactory(
     private val context: Context,
-    private val region: Region
+    private val region: Region,
+    private val translateViewModel: TranslateViewModel
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(POIViewModel::class.java)) {
@@ -18,7 +19,7 @@ class POIViewModelFactory(
             val wikiRepository = WikiRepositoryImp(context)
             val userPreferences = UserPreferences(context)
             @Suppress("UNCHECKED_CAST")
-            return POIViewModel(dataRepository, wikiRepository, region, userPreferences) as T
+            return POIViewModel(translateViewModel, dataRepository, wikiRepository, region, userPreferences) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

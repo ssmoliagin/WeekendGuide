@@ -144,7 +144,7 @@ fun SelectRegionScreen(
                             showConfirmDialog = false
                             coroutineScope.launch {
                                 selectedRegion?.let { region ->
-                                    regionViewModel.downloadAndCacheRegionPOI(region)
+                                    regionViewModel.downloadAndCacheRegionPOI(region, translateViewModel)
                                     userPreferences.addPurchasedRegion(region.region_code)
                                     userPreferences.addPurchasedCountries(region.country_code)
                                     userPreferences.saveHomeRegion(region)
