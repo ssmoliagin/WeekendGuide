@@ -42,6 +42,19 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             null
         }
     }
+    override suspend fun getTypes(): String? = withContext(Dispatchers.IO) {
+        try {
+            val file = File(context.cacheDir, "type.json")
+            if (file.exists()) {
+                file.readText()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("DataRepository", "Error reading cached type.json", e)
+            null
+        }
+    }
 
     override suspend fun getCountries(): List<Country> = withContext(Dispatchers.IO) {
         val url = "$path/data/places/countries.json"

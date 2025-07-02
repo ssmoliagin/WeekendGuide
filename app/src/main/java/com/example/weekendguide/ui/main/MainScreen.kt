@@ -9,8 +9,14 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,7 +25,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
@@ -148,11 +156,15 @@ fun MainScreen(
         }
 
         //ФИЛЬТРАЦИЯ
-        var selectedRadius by remember { mutableStateOf("200км") }
+        //читаем все типы точек
+        val allTypes by poiViewModel.allTypes.collectAsState()
 
-        val allTypes = listOf("castle", "nature", "park", "funpark", "museum", "swimming", "hiking", "cycling", "zoo", "city-walk", "festival", "extreme")
-        var selectedTypes by remember { mutableStateOf(allTypes) }
+        // — правильная инициализация selectedTypes
+        var selectedTypes by remember(allTypes) {
+            mutableStateOf(if (allTypes.isNotEmpty()) allTypes else emptyList())
+        }
 
+        // переключение типа
         val onTypeToggle: (String) -> Unit = { type ->
             selectedTypes = if (type in selectedTypes) {
                 selectedTypes - type
@@ -161,6 +173,8 @@ fun MainScreen(
             }
         }
 
+        //радиус поиска точек
+        var selectedRadius by remember { mutableStateOf("200км") }
         val radiusValue = when (selectedRadius) {
             "20км" -> 20
             "50км" -> 50
@@ -170,8 +184,10 @@ fun MainScreen(
             else -> 200
         }
 
-        //определение отфильтрованых пои
-        val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes.toList()) {
+        // Фильтрация POI по радиусу и типам
+        val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes, allTypes) {
+            if (allTypes.isEmpty() || selectedTypes.isEmpty()) return@remember emptyList()
+
             val distanceFiltered = userLocation?.let { (lat, lon) ->
                 poiList.filter { poi ->
                     val result = FloatArray(1)
@@ -180,6 +196,7 @@ fun MainScreen(
                     distanceInKm <= radiusValue
                 }
             } ?: poiList
+
             distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
         }
 
@@ -188,7 +205,6 @@ fun MainScreen(
             selectedTypes = listOf(type)
         }
 
-    //сортировка
     // определение итогового списка POI
         val finalPOIList = remember(
             filteredPOIList,
@@ -227,6 +243,7 @@ fun MainScreen(
             }
         }
 
+        //очищаем фильтры и окна
         fun resetFiltersUndScreens() {
             selectedTypes = allTypes
             selectedRadius = "200км"
@@ -377,6 +394,7 @@ fun MainScreen(
                 showNavigationBar = { showNavigationBar() },
                 showTopAppBar = { showTopAppBar () },
                 pointsViewModel = pointsViewModel,
+                translateViewModel = translateViewModel,
             )
         }
 

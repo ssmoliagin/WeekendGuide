@@ -11,5 +11,5 @@ interface DataRepository {
     suspend fun getPOIs(regionCode: String, translateViewModel: TranslateViewModel): List<POI>
     suspend fun downloadAndCachePOI(region: Region, translateViewModel: TranslateViewModel)
     suspend fun downloadTypesJson(): String?
-
+    suspend fun getTypes(): String?
 }

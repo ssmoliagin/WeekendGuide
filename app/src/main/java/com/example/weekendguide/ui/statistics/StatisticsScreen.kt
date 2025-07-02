@@ -42,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,9 +55,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.viewmodel.PointsViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.collections.component1
@@ -74,8 +77,10 @@ fun StatisticsScreen(
     allTypes: List<String>,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    pointsViewModel: PointsViewModel
+    pointsViewModel: PointsViewModel,
+    translateViewModel: TranslateViewModel,
 ) {
+    val currentLanguage by translateViewModel.language.collectAsState()
     val context = LocalContext.current
     val prefs = remember { UserPreferences(context) }
     val coroutineScope = rememberCoroutineScope()
@@ -253,7 +258,7 @@ fun StatisticsScreen(
                                 tint = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${type.replaceFirstChar { it.uppercaseChar() }} - $count",
+                                text = "${LocalizerTypes.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
