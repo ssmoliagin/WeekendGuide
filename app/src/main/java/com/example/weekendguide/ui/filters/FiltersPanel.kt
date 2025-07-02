@@ -78,7 +78,7 @@ fun FiltersPanel(
         "zoo" to Icons.Default.Pets,
         "city-walk" to Icons.Default.LocationCity,
         "festival" to Icons.Default.Celebration,
-        "extreme" to Icons.Default.DownhillSkiing
+        "active" to Icons.Default.DownhillSkiing
     )
 
     val allSelected = selectedTypes.containsAll(allTypes)

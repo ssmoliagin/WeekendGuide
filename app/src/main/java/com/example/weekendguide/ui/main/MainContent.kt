@@ -21,12 +21,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.ui.poi.POICard
+import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +49,9 @@ fun MainContent(
     showTopAppBar: @Composable () -> Unit,
     showLocationPanel: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
+    translateViewModel: TranslateViewModel,
 ) {
+    val currentLanguage by translateViewModel.language.collectAsState()
 
     val listState = rememberLazyListState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp // ширина экрана
@@ -155,7 +161,7 @@ fun MainContent(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "$count ${type.replaceFirstChar { it.uppercase() }} рядом с ${userCurrentCity ?: "вами"}",
+                                text = "${LocalizerTypes.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} рядом с ${userCurrentCity ?: "вами"} - $count",
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(

@@ -119,7 +119,7 @@ fun StatisticsScreen(
         "zoo" to Icons.Default.Pets,
         "city-walk" to Icons.Default.LocationCity,
         "festival" to Icons.Default.Celebration,
-        "extreme" to Icons.Default.DownhillSkiing
+        "active" to Icons.Default.DownhillSkiing
     )
 
     val typeGoals = listOf(5, 10, 20, 50, 100) // мест до следущего уровня

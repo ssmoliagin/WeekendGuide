@@ -13,6 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+.kotlin/errors/
 
 # Android Studio
 .idea/
@@ -26,8 +27,12 @@ output.json
 *.jks
 google-services.json
 keys/
-.Firebase/
 Constants.kt
-**/main/AndroidManifest.xml
+
+.Firebase/*
+# Manifest — игнорировать только если это не основной файл приложения
+app/src/main/AndroidManifest.xml
+
+
 
 

@@ -379,6 +379,7 @@ fun MainScreen(
                 showTopAppBar = { showTopAppBar () },
                 showLocationPanel = { showLocationPanel() },
                 showFiltersButtons = { showFiltersButtons() },
+                translateViewModel = translateViewModel,
                 )
         }
 

@@ -28,20 +28,27 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     override suspend fun downloadTypesJson(): String? = withContext(Dispatchers.IO) {
         val url = "$path/data/locales/type.json"
         val file = File(context.cacheDir, "type.json")
+
         return@withContext try {
-            if (!file.exists()) {
-                Log.d("LocalesRepo", "Downloading type.json")
-                val ref = storage.getReferenceFromUrl(url)
+            val ref = storage.getReferenceFromUrl(url)
+            val metadata = ref.metadata.await()
+            val remoteUpdated = metadata.updatedTimeMillis
+            val localUpdated = if (file.exists()) file.lastModified() else 0L
+
+            if (remoteUpdated > localUpdated) {
+                Log.d("LocalesRepo", "Remote type.json is newer, downloading")
                 ref.getFile(file).await()
             } else {
                 Log.d("LocalesRepo", "Using cached type.json")
             }
+
             file.readText()
         } catch (e: Exception) {
             Log.e("LocalesRepo", "Error loading type.json", e)
             null
         }
     }
+
     override suspend fun getTypes(): String? = withContext(Dispatchers.IO) {
         try {
             val file = File(context.cacheDir, "type.json")
@@ -98,19 +105,29 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     override suspend fun downloadAndCachePOI(region: Region, translateViewModel: TranslateViewModel) {
         withContext(Dispatchers.IO) {
             try {
-
                 val language = translateViewModel.language.value
-
                 val remotePath = "$path/data/places/${region.country_code}/${region.region_code}/poi/$language.csv"
                 val localFile = File(context.cacheDir, "poi_${region.region_code}_$language.csv")
-
                 val ref = storage.getReferenceFromUrl(remotePath)
-                ref.getFile(localFile).await()
+
+                val metadata = ref.metadata.await()
+                val remoteLastModified = metadata.updatedTimeMillis
+                val localLastModified = localFile.lastModified()
+
+                if (!localFile.exists() || remoteLastModified > localLastModified) {
+                    Log.d("DataRepo", "Downloading updated POI file for ${region.region_code}")
+                    ref.getFile(localFile).await()
+                    localFile.setLastModified(remoteLastModified)
+                } else {
+                    Log.d("DataRepo", "Using cached POI file for ${region.region_code}")
+                }
+
             } catch (e: Exception) {
                 Log.e("DataRepo", "Ошибка загрузки POI для региона ${region.region_code}", e)
             }
         }
     }
+
     override suspend fun getPOIs(regionCode: String, translateViewModel: TranslateViewModel): List<POI> = withContext(Dispatchers.IO) {
 
         val language = translateViewModel.language.value
