@@ -71,6 +71,7 @@ fun ProfileScreen(
     themeViewModel: ThemeViewModel,
     loginViewModel: LoginViewModel,
     translateViewModel: TranslateViewModel,
+    onOpenStore: () -> Unit,
 ) {
 
     var sheetVisible by remember { mutableStateOf(false) }
@@ -250,7 +251,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                // TODO: Открыть магазин наборов POI
+                                onOpenStore()
                             },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {

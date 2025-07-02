@@ -1,28 +1,20 @@
 package com.example.weekendguide.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
-import com.example.weekendguide.ui.region.SelectRegionScreen
 import com.example.weekendguide.ui.main.MainScreen
+import com.example.weekendguide.ui.store.PoiStoreScreen
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
-import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.android.gms.auth.api.identity.Identity
 
 
 @Composable
@@ -73,13 +65,16 @@ fun AppNavigation(
         }
 
         composable("region") {
-            SelectRegionScreen(
+            PoiStoreScreen(
+                isInitialSelection = true,
+                onRegionChosen = {
+                    navController.navigate("main") {
+                        popUpTo("region") { inclusive = true }
+                    }
+                },
                 translateViewModel = translateViewModel,
-                onRegionSelected = {
-                navController.navigate("main") {
-                    popUpTo("region") { inclusive = true }
-                }
-            })
+                pointsViewModel = pointsViewModel
+            )
         }
 
         composable("main") {

@@ -1,7 +1,6 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
-import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -9,14 +8,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -25,9 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
@@ -45,15 +36,14 @@ import com.example.weekendguide.ui.map.MapScreen
 import com.example.weekendguide.ui.poi.POIFullScreen
 import com.example.weekendguide.ui.profile.ProfileScreen
 import com.example.weekendguide.ui.statistics.StatisticsScreen
+import com.example.weekendguide.ui.store.PoiStoreScreen
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
-import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
-import com.example.weekendguide.viewmodel.ViewModelFactory
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.TypeFilter
@@ -68,7 +58,7 @@ fun MainScreen(
     locationViewModel: LocationViewModel,
     pointsViewModel: PointsViewModel,
     context: Context = LocalContext.current,
-    onLoggedOut: () -> Unit
+    onLoggedOut: () -> Unit,
 ) {
     //состояние окон
     var showMapScreen by remember { mutableStateOf(false) }
@@ -77,6 +67,7 @@ fun MainScreen(
     var showProfileScreen by remember { mutableStateOf(false) }
     var showPOIInMap by remember { mutableStateOf(false) }
     var showListPOIScreen by remember { mutableStateOf(false) }
+    var showPOIStoreScreen by remember { mutableStateOf(false) }
     var onSortPOI by remember { mutableStateOf(false) }
     var showFullPOI by remember { mutableStateOf(false) }
     var showOnlyFavorites by remember { mutableStateOf(false) } //скрытый фильтр ТОЛЬКО избранные
@@ -148,7 +139,9 @@ fun MainScreen(
     // --- ОСНОВНАЯ ЛОГИКА ---
     region?.let { reg ->
         val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg, translateViewModel))
+
         val poiList by poiViewModel.poiList.collectAsState()
+
         val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState() //посещенные пои
         val favoriteIds by poiViewModel.favoriteIds.collectAsState() //  ИЗБРАННЫЕ ПОИ
         val onFavoriteClick: (String) -> Unit = { poiId ->
@@ -254,6 +247,7 @@ fun MainScreen(
             showStatisticsScreen = false
             showMapScreen = false
             showProfileScreen = false
+            showPOIStoreScreen = false
         }
 
         // --- НАВИГАЦИЯ ---
@@ -383,6 +377,22 @@ fun MainScreen(
                 )
         }
 
+        //магазин
+        if (showPOIStoreScreen) {
+            PoiStoreScreen(
+                isInitialSelection = false,
+                translateViewModel = translateViewModel,
+                pointsViewModel = pointsViewModel,
+                onRegionChosen = {
+                    // Можно обновить UI или показать Snackbar
+                    showPOIStoreScreen = false
+                },
+                onDismiss = {
+                    showPOIStoreScreen = false
+                }
+            )
+        }
+
         // Экран Статистика
         if (showStatisticsScreen) {
             StatisticsScreen(
@@ -410,6 +420,9 @@ fun MainScreen(
                 themeViewModel = themeViewModel,
                 loginViewModel = loginViewModel,
                 translateViewModel = translateViewModel,
+                onOpenStore = {
+                    showProfileScreen = false
+                    showPOIStoreScreen = true}
             )
         }
 

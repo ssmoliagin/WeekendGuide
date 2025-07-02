@@ -165,12 +165,16 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    //регион
-    suspend fun getHomeRegion(): Region? {
-        val prefs = context.dataStore.data.first()
-        val json = prefs[Keys.HOME_REGION] ?: return null
-        return Json.decodeFromString<Region>(json)
-    }
+
+
+        //регион
+        suspend fun getHomeRegion(): Region? {
+            val prefs = context.dataStore.data.first()
+            val json = prefs[Keys.HOME_REGION] ?: return null
+            return Json.decodeFromString<Region>(json)
+        }
+
+
 
     suspend fun addPurchasedRegion(regionCode: String) {
         context.dataStore.edit { prefs ->
