@@ -76,8 +76,8 @@ fun MainScreen(
     var selectedItem by remember { mutableStateOf("main") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
     val prefs = UserPreferences(context)
-    val region by produceState<Region?>(initialValue = null) {
-        value = prefs.getHomeRegion()
+    val regions by produceState<List<Region>?>(initialValue = null) {
+        value = prefs.getHomeRegions()
     }
 
     //обновление очков
@@ -137,7 +137,7 @@ fun MainScreen(
     }
 
     // --- ОСНОВНАЯ ЛОГИКА ---
-    region?.let { reg ->
+    regions?.let { reg ->
         val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg, translateViewModel))
 
         val poiList by poiViewModel.poiList.collectAsState()
@@ -384,12 +384,9 @@ fun MainScreen(
                 translateViewModel = translateViewModel,
                 pointsViewModel = pointsViewModel,
                 onRegionChosen = {
-                    // Можно обновить UI или показать Snackbar
-                    showPOIStoreScreen = false
+                    {resetFiltersUndScreens()}
                 },
-                onDismiss = {
-                    showPOIStoreScreen = false
-                }
+                onDismiss = {resetFiltersUndScreens()},
             )
         }
 

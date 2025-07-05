@@ -49,7 +49,7 @@ class LoginViewModel(
 
     fun checkRegionAndNavigate() {
         viewModelScope.launch {
-            val region = userPreferences.getHomeRegion()
+            val region = userPreferences.getHomeRegions()
             if (region != null) {
                 _navigateDestination.emit(SplashViewModel.Destination.Main)
             } else {

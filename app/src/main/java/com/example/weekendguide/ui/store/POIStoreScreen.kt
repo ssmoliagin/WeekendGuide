@@ -200,12 +200,14 @@ fun PoiStoreScreen(
                                         pointsViewModel.spentGP(COST)
                                     }
 
-                                    regionViewModel.downloadAndCacheRegionPOI(region, translateViewModel)
-                                    userPreferences.addPurchasedRegion(region.region_code)
-                                    userPreferences.addPurchasedCountries(region.country_code)
+                                   //regionViewModel.downloadAndCacheRegionPOI(region, translateViewModel)
+                                    regionViewModel.purchaseRegionAndLoadPOI(region, translateViewModel)
+                                    //userPreferences.addPurchasedRegion(region.region_code)
+                                    //userPreferences.addPurchasedCountries(region.country_code)
+                                    userPreferences.saveHomeRegion(region)
 
                                     if (isInitialSelection) {
-                                        userPreferences.saveHomeRegion(region)
+
                                     }
                                     onRegionChosen()
                                 }

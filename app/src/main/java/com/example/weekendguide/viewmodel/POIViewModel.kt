@@ -17,7 +17,7 @@ class POIViewModel(
     private val translateViewModel: TranslateViewModel,
     private val dataRepository: DataRepository,
     private val wikiRepository: WikiRepository,
-    private val region: Region,
+    private val region: List<Region>,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
@@ -92,9 +92,17 @@ class POIViewModel(
         viewModelScope.launch {
             _poisIsLoading.value = true
             try {
-                dataRepository.downloadAndCachePOI(region, translateViewModel)
-                val pois = dataRepository.getPOIs(region.region_code, translateViewModel)
-                _poiList.value = pois
+                val allPOIs = mutableListOf<POI>()
+
+                // Для каждого региона загружаем и кэшируем POI
+                for (reg in region) {
+                    dataRepository.downloadAndCachePOI(reg, translateViewModel)
+
+                    val pois = dataRepository.getPOIs(reg.region_code, translateViewModel)
+                    allPOIs += pois
+                }
+
+                _poiList.value = allPOIs
             } catch (e: Exception) {
                 Log.e("POIViewModel", "Error loading POIs", e)
             } finally {

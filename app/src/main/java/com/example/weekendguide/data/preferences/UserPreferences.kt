@@ -30,7 +30,7 @@ class UserPreferences(private val context: Context) {
         val LANGUAGE = stringPreferencesKey("language_code")
         val THEME = stringPreferencesKey("app_theme")
 
-        val HOME_REGION = stringPreferencesKey("home_region") // JSON-строка Region
+        val HOME_REGIONS = stringPreferencesKey("home_region") // JSON-строка Region
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
         val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
         val CURRENT_CITY = stringPreferencesKey("current_city")
@@ -161,18 +161,31 @@ class UserPreferences(private val context: Context) {
 
     suspend fun saveHomeRegion(region: Region) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.HOME_REGION] = Json.encodeToString(region)
+            // Получаем текущий список регионов из DataStore
+            val currentJson = prefs[Keys.HOME_REGIONS]
+            val currentList = if (currentJson != null) {
+                Json.decodeFromString<List<Region>>(currentJson)
+            } else {
+                emptyList()
+            }
+
+            // Добавляем новый регион, если его ещё нет в списке
+            val updatedList = if (region !in currentList) {
+                currentList + region
+            } else {
+                currentList
+            }
+
+            // Сохраняем обновлённый список обратно
+            prefs[Keys.HOME_REGIONS] = Json.encodeToString(updatedList)
         }
     }
 
-
-
-        //регион
-        suspend fun getHomeRegion(): Region? {
-            val prefs = context.dataStore.data.first()
-            val json = prefs[Keys.HOME_REGION] ?: return null
-            return Json.decodeFromString<Region>(json)
-        }
+    suspend fun getHomeRegions(): List<Region> {
+        val prefs = context.dataStore.data.first()
+        val json = prefs[Keys.HOME_REGIONS] ?: return emptyList()
+        return Json.decodeFromString(json)
+    }
 
 
 

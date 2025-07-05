@@ -10,7 +10,7 @@ import com.example.weekendguide.data.repository.WikiRepositoryImp
 
 class POIViewModelFactory(
     private val context: Context,
-    private val region: Region,
+    private val region: List<Region>,
     private val translateViewModel: TranslateViewModel
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
