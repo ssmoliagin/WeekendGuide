@@ -1,6 +1,7 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -40,10 +41,12 @@ import com.example.weekendguide.ui.store.PoiStoreScreen
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.MainStateViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
+import com.example.weekendguide.viewmodel.ViewModelFactory
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.TypeFilter
@@ -75,10 +78,22 @@ fun MainScreen(
     var showVisited by remember { mutableStateOf(true) } // показать посещенные
     var selectedItem by remember { mutableStateOf("main") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
+
+    val mainStateViewModel: MainStateViewModel = viewModel(
+        key = "MainStateViewModel",
+        factory = ViewModelFactory(context.applicationContext as Application)
+    )
+    val regions by mainStateViewModel.regions.collectAsState()
+
+
+
+    /*
     val prefs = UserPreferences(context)
     val regions by produceState<List<Region>?>(initialValue = null) {
         value = prefs.getHomeRegions()
     }
+
+     */
 
     //обновление очков
     val currentGP by pointsViewModel.currentGP.collectAsState()
@@ -138,319 +153,348 @@ fun MainScreen(
 
     // --- ОСНОВНАЯ ЛОГИКА ---
     regions?.let { reg ->
-        val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg, translateViewModel))
+        //val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg, translateViewModel))
 
-        val poiList by poiViewModel.poiList.collectAsState()
+       // val poiList by poiViewModel.poiList.collectAsState()
 
-        val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState() //посещенные пои
-        val favoriteIds by poiViewModel.favoriteIds.collectAsState() //  ИЗБРАННЫЕ ПОИ
-        val onFavoriteClick: (String) -> Unit = { poiId ->
-            poiViewModel.toggleFavorite(poiId)
-        }
-
-        //ФИЛЬТРАЦИЯ
-        //читаем все типы точек
-        val allTypes by poiViewModel.allTypes.collectAsState()
-
-        // — правильная инициализация selectedTypes
-        var selectedTypes by remember(allTypes) {
-            mutableStateOf(if (allTypes.isNotEmpty()) allTypes else emptyList())
-        }
-
-        // переключение типа
-        val onTypeToggle: (String) -> Unit = { type ->
-            selectedTypes = if (type in selectedTypes) {
-                selectedTypes - type
-            } else {
-                selectedTypes + type
+        if (regions.isNotEmpty()) {
+            val poiViewModel: POIViewModel = remember(regions) {
+                // Здесь важный момент — ViewModel пересоздаётся при изменении regions
+                POIViewModelFactory(context, regions, translateViewModel).create(POIViewModel::class.java)
             }
-        }
 
-        //радиус поиска точек
-        var selectedRadius by remember { mutableStateOf("200км") }
-        val radiusValue = when (selectedRadius) {
-            "20км" -> 20
-            "50км" -> 50
-            "100км" -> 100
-            "200км" -> 200
-            "∞" -> Int.MAX_VALUE
-            else -> 200
-        }
+            val poiList by poiViewModel.poiList.collectAsState()
 
-        // Фильтрация POI по радиусу и типам
-        val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes, allTypes) {
-            if (allTypes.isEmpty() || selectedTypes.isEmpty()) return@remember emptyList()
+            val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState() //посещенные пои
+            val favoriteIds by poiViewModel.favoriteIds.collectAsState() //  ИЗБРАННЫЕ ПОИ
+            val onFavoriteClick: (String) -> Unit = { poiId ->
+                poiViewModel.toggleFavorite(poiId)
+            }
 
-            val distanceFiltered = userLocation?.let { (lat, lon) ->
-                poiList.filter { poi ->
-                    val result = FloatArray(1)
-                    Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
-                    val distanceInKm = result[0] / 1000
-                    distanceInKm <= radiusValue
+            //ФИЛЬТРАЦИЯ
+            //читаем все типы точек
+            val allTypes by poiViewModel.allTypes.collectAsState()
+
+            // — правильная инициализация selectedTypes
+            var selectedTypes by remember(allTypes) {
+                mutableStateOf(if (allTypes.isNotEmpty()) allTypes else emptyList())
+            }
+
+            // переключение типа
+            val onTypeToggle: (String) -> Unit = { type ->
+                selectedTypes = if (type in selectedTypes) {
+                    selectedTypes - type
+                } else {
+                    selectedTypes + type
                 }
-            } ?: poiList
-
-            distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
-        }
-
-        //один тип
-        val onSelectSingleType: (String) -> Unit = { type ->
-            selectedTypes = listOf(type)
-        }
-
-    // определение итогового списка POI
-        val finalPOIList = remember(
-            filteredPOIList,
-            onSortPOI,
-            showOnlyFavorites,
-            favoriteIds,
-            showVisited,
-            showOnlyVisited,
-            visitedPoiIds
-        ) {
-            var baseList = filteredPOIList
-
-            // 🔹 Только посещённые → фильтруем по visited
-            baseList = when {
-                showOnlyVisited -> baseList.filter { poi -> visitedPoiIds.contains(poi.id) }
-                !showVisited -> baseList.filterNot { poi -> visitedPoiIds.contains(poi.id) }
-                else -> baseList
             }
 
-            // ⭐ Избранные
-            if (showOnlyFavorites) {
-                baseList = baseList.filter { poi -> favoriteIds.contains(poi.id) }
+            //радиус поиска точек
+            var selectedRadius by remember { mutableStateOf("200км") }
+            val radiusValue = when (selectedRadius) {
+                "20км" -> 20
+                "50км" -> 50
+                "100км" -> 100
+                "200км" -> 200
+                "∞" -> Int.MAX_VALUE
+                else -> 200
             }
 
-            // 📍 Сортировка по расстоянию
-            if (onSortPOI) {
-                userLocation?.let { (lat, lon) ->
-                    baseList.sortedBy { poi ->
+            // Фильтрация POI по радиусу и типам
+            val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes, allTypes) {
+                if (allTypes.isEmpty() || selectedTypes.isEmpty()) return@remember emptyList()
+
+                val distanceFiltered = userLocation?.let { (lat, lon) ->
+                    poiList.filter { poi ->
                         val result = FloatArray(1)
                         Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
-                        result[0]
+                        val distanceInKm = result[0] / 1000
+                        distanceInKm <= radiusValue
                     }
-                } ?: baseList
-            } else {
-                baseList
+                } ?: poiList
+
+                distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
             }
-        }
 
-        //очищаем фильтры и окна
-        fun resetFiltersUndScreens() {
-            selectedTypes = allTypes
-            selectedRadius = "200км"
-            showOnlyVisited = false
-            showOnlyFavorites = false
+            //один тип
+            val onSelectSingleType: (String) -> Unit = { type ->
+                selectedTypes = listOf(type)
+            }
 
-            showListPOIScreen = false
-            showStatisticsScreen = false
-            showMapScreen = false
-            showProfileScreen = false
-            showPOIStoreScreen = false
-        }
-
-        // --- НАВИГАЦИЯ ---
-
-        //показ шапки
-        @Composable
-        fun showTopAppBar ()
-        {
-            TopAppBar(
-                currentGP = currentGP, // ➕ добавили
-                onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
-                topBarTitle =
-                    if (showListPOIScreen) {
-                    if (showOnlyFavorites)"favorites"
-                    else  "${finalPOIList.size} мест рядом с $currentCity"
-                }
-                    else if (showStatisticsScreen) "statistic"
-                    else if (showProfileScreen) "profile"
-                    else "main",
-            onDismiss = {resetFiltersUndScreens()},
-        ) }
-
-        //показ меню
-        @Composable
-        fun showNavigationBar() {
-            NavigationBar(
-                selectedItem = selectedItem,
-                onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
-                onShowFavoritesList = {
-                    showOnlyFavorites = true
-                    selectedRadius = "∞"
-                    showListPOIScreen = true
-                },
-                onOpenProfile = {
-                    showOnlyVisited = true
-                    selectedRadius = "∞"
-                    showProfileScreen = true
-                                },
-                onOpenStatistics = {
-                    showOnlyVisited = true
-                    selectedRadius = "∞"
-                    showStatisticsScreen = true
-                },
-                onDismiss = {resetFiltersUndScreens()}
-            )}
-
-        //показ панель локации
-        @Composable
-        fun showLocationPanel() {
-            LocationPanel(
-                onShowScreenType =
-                    if (showMapScreen) "map"
-                    else "main",
-                onLocationSelected = { city, latLng ->
-                    // Распаковываем lat и lng
-                    val (lat, lng) = latLng
-                    locationViewModel.setManualLocation(city, lat, lng)
-                },
-                onRequestGPS = onRequestLocationChange,
-                userCurrentCity = currentCity,
-                onDismiss = {resetFiltersUndScreens()},
-            )}
-
-        //показ кнопки фильтры
-        @Composable
-        fun showFiltersButtons() {
-            FiltersButtons(
-                onShowScreenType =
-                    if (showMapScreen) "map"
-                    else "list",
-                userCurrentCity = currentCity,
-                onRequestGPS = onRequestLocationChange,
-                selectedRadius = selectedRadius,
-                onRadiusChange = { selectedRadius = it },
-                onOpenMapScreen = { showMapScreen = true },
-                onOpenListScreen = {showListPOIScreen = true},
-                onOpenFilters = { showFiltersPanel = true },
-                onDismiss = { showMapScreen = false },
-            )
-        }
-
-        if (showMapScreen) {
-            MapScreen(
-                userPOIList = finalPOIList,
-                userLocation = userLocation,
-                selectedRadius = selectedRadius,
-                onSelectPOI = { poi -> selectedPOI = poi },
-                onOpenPOIinMap = {showPOIInMap = true},
-                isFavorite = { poi -> favoriteIds.contains(poi.id) },
-                isVisited = { poi -> visitedPoiIds.contains(poi.id) },
-                showLocationPanel = { showLocationPanel() },
-                showFiltersButtons = { showFiltersButtons() },
-            )
-        } else if (showListPOIScreen) {
-            ListPOIScreen(
-                userPOIList = finalPOIList,
-                userLocation = userLocation,
-                userCurrentCity = currentCity,
-                onSelectPOI = { poi -> selectedPOI = poi },
-                isFavorite = { poi -> favoriteIds.contains(poi.id) },
-                isVisited = { poi -> visitedPoiIds.contains(poi.id) },
-                onFavoriteClick = onFavoriteClick,
-                onPOIClick = {showFullPOI = true},
-                showTopAppBar = { showTopAppBar () },
-                showNavigationBar = { showNavigationBar() },
-                showFiltersButtons = { showFiltersButtons() },
-            )
-        }
-
-        else {
-            MainContent(
-                userPOIList = finalPOIList,
-                userLocation = userLocation,
-                userCurrentCity = currentCity,
-                onOpenListScreen = {showListPOIScreen = true},
-                onSelectSingleType = onSelectSingleType,
-                isFavorite = { poi -> favoriteIds.contains(poi.id) },
-                isVisited = { poi -> visitedPoiIds.contains(poi.id) },
-                onFavoriteClick = onFavoriteClick,
-                onPOIClick = {showFullPOI = true},
-                onSelectPOI = { poi -> selectedPOI = poi },
-                showNavigationBar = { showNavigationBar() },
-                showTopAppBar = { showTopAppBar () },
-                showLocationPanel = { showLocationPanel() },
-                showFiltersButtons = { showFiltersButtons() },
-                translateViewModel = translateViewModel,
-                )
-        }
-
-        //магазин
-        if (showPOIStoreScreen) {
-            PoiStoreScreen(
-                isInitialSelection = false,
-                translateViewModel = translateViewModel,
-                pointsViewModel = pointsViewModel,
-                onRegionChosen = {
-                    {resetFiltersUndScreens()}
-                },
-                onDismiss = {resetFiltersUndScreens()},
-            )
-        }
-
-        // Экран Статистика
-        if (showStatisticsScreen) {
-            StatisticsScreen(
-                totalGP = totalGP,
-                currentGP = currentGP,
-                spentGP = spentGP,
-                userPOIList = finalPOIList,
-                totalPOIList = poiList,
-                allTypes = allTypes,
-                showNavigationBar = { showNavigationBar() },
-                showTopAppBar = { showTopAppBar () },
-                pointsViewModel = pointsViewModel,
-                translateViewModel = translateViewModel,
-            )
-        }
-
-        // ✅ Экран Профиль
-        if(showProfileScreen) {
-            ProfileScreen(
-                userPOIList = finalPOIList,
-                totalPOIList = poiList,
-                showNavigationBar = { showNavigationBar() },
-                showTopAppBar = { showTopAppBar () },
-                onLoggedOut = onLoggedOut,
-                themeViewModel = themeViewModel,
-                loginViewModel = loginViewModel,
-                translateViewModel = translateViewModel,
-                onOpenStore = {
-                    showProfileScreen = false
-                    showPOIStoreScreen = true}
-            )
-        }
-
-        // ✅ Панель Фильтры
-        if (showFiltersPanel) {
-            ModalBottomSheet(
-                onDismissRequest = {showFiltersPanel = false},
-                sheetState = rememberModalBottomSheetState()
+            // определение итогового списка POI
+            val finalPOIList = remember(
+                filteredPOIList,
+                onSortPOI,
+                showOnlyFavorites,
+                favoriteIds,
+                showVisited,
+                showOnlyVisited,
+                visitedPoiIds
             ) {
-                FiltersPanel(
+                var baseList = filteredPOIList
+
+                // 🔹 Только посещённые → фильтруем по visited
+                baseList = when {
+                    showOnlyVisited -> baseList.filter { poi -> visitedPoiIds.contains(poi.id) }
+                    !showVisited -> baseList.filterNot { poi -> visitedPoiIds.contains(poi.id) }
+                    else -> baseList
+                }
+
+                // ⭐ Избранные
+                if (showOnlyFavorites) {
+                    baseList = baseList.filter { poi -> favoriteIds.contains(poi.id) }
+                }
+
+                // 📍 Сортировка по расстоянию
+                if (onSortPOI) {
+                    userLocation?.let { (lat, lon) ->
+                        baseList.sortedBy { poi ->
+                            val result = FloatArray(1)
+                            Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
+                            result[0]
+                        }
+                    } ?: baseList
+                } else {
+                    baseList
+                }
+            }
+
+            //очищаем фильтры и окна
+            fun resetFiltersUndScreens() {
+                selectedTypes = allTypes
+                selectedRadius = "200км"
+                showOnlyVisited = false
+                showOnlyFavorites = false
+
+                showListPOIScreen = false
+                showStatisticsScreen = false
+                showMapScreen = false
+                showProfileScreen = false
+                showPOIStoreScreen = false
+
+                mainStateViewModel.refreshRegions()
+            }
+
+            // --- НАВИГАЦИЯ ---
+
+            //показ шапки
+            @Composable
+            fun showTopAppBar ()
+            {
+                TopAppBar(
+                    currentGP = currentGP, // ➕ добавили
+                    onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
+                    topBarTitle =
+                        if (showListPOIScreen) {
+                            if (showOnlyFavorites)"favorites"
+                            else  "${finalPOIList.size} мест рядом с $currentCity"
+                        }
+                        else if (showStatisticsScreen) "statistic"
+                        else if (showProfileScreen) "profile"
+                        else "main",
+                    onDismiss = {resetFiltersUndScreens()},
+                ) }
+
+            //показ меню
+            @Composable
+            fun showNavigationBar() {
+                NavigationBar(
+                    selectedItem = selectedItem,
+                    onItemSelected = { selectedItem = it }, // выделяем кнопку меню меню
+                    onShowFavoritesList = {
+                        showOnlyFavorites = true
+                        selectedRadius = "∞"
+                        showListPOIScreen = true
+                    },
+                    onOpenProfile = {
+                        showOnlyVisited = true
+                        selectedRadius = "∞"
+                        showProfileScreen = true
+                    },
+                    onOpenStatistics = {
+                        showOnlyVisited = true
+                        selectedRadius = "∞"
+                        showStatisticsScreen = true
+                    },
+                    onDismiss = {resetFiltersUndScreens()}
+                )}
+
+            //показ панель локации
+            @Composable
+            fun showLocationPanel() {
+                LocationPanel(
+                    onShowScreenType =
+                        if (showMapScreen) "map"
+                        else "main",
+                    onLocationSelected = { city, latLng ->
+                        // Распаковываем lat и lng
+                        val (lat, lng) = latLng
+                        locationViewModel.setManualLocation(city, lat, lng)
+                    },
+                    onRequestGPS = onRequestLocationChange,
+                    userCurrentCity = currentCity,
+                    onDismiss = {resetFiltersUndScreens()},
+                )}
+
+            //показ кнопки фильтры
+            @Composable
+            fun showFiltersButtons() {
+                FiltersButtons(
+                    onShowScreenType =
+                        if (showMapScreen) "map"
+                        else "list",
+                    userCurrentCity = currentCity,
+                    onRequestGPS = onRequestLocationChange,
                     selectedRadius = selectedRadius,
                     onRadiusChange = { selectedRadius = it },
-                    allTypes = poiList.map { it.type }.distinct(),
-                    selectedTypes = selectedTypes,
-                    onTypeToggle = onTypeToggle,
-                    onSelectAllTypes = { selectedTypes = allTypes },
-                    onClearAllTypes = { selectedTypes = emptyList() },
-                    showVisited = showVisited,
-                    onToggleShowVisited = { showVisited = !showVisited },
+                    onOpenMapScreen = { showMapScreen = true },
+                    onOpenListScreen = {showListPOIScreen = true},
+                    onOpenFilters = { showFiltersPanel = true },
+                    onDismiss = { showMapScreen = false },
+                )
+            }
+
+            if (showMapScreen) {
+                MapScreen(
+                    userPOIList = finalPOIList,
+                    userLocation = userLocation,
+                    selectedRadius = selectedRadius,
+                    onSelectPOI = { poi -> selectedPOI = poi },
+                    onOpenPOIinMap = {showPOIInMap = true},
+                    isFavorite = { poi -> favoriteIds.contains(poi.id) },
+                    isVisited = { poi -> visitedPoiIds.contains(poi.id) },
+                    showLocationPanel = { showLocationPanel() },
+                    showFiltersButtons = { showFiltersButtons() },
+                )
+            } else if (showListPOIScreen) {
+                ListPOIScreen(
+                    userPOIList = finalPOIList,
+                    userLocation = userLocation,
+                    userCurrentCity = currentCity,
+                    onSelectPOI = { poi -> selectedPOI = poi },
+                    isFavorite = { poi -> favoriteIds.contains(poi.id) },
+                    isVisited = { poi -> visitedPoiIds.contains(poi.id) },
+                    onFavoriteClick = onFavoriteClick,
+                    onPOIClick = {showFullPOI = true},
+                    showTopAppBar = { showTopAppBar () },
+                    showNavigationBar = { showNavigationBar() },
+                    showFiltersButtons = { showFiltersButtons() },
+                )
+            }
+
+            else {
+                MainContent(
+                    userPOIList = finalPOIList,
+                    userLocation = userLocation,
+                    userCurrentCity = currentCity,
+                    onOpenListScreen = {showListPOIScreen = true},
+                    onSelectSingleType = onSelectSingleType,
+                    isFavorite = { poi -> favoriteIds.contains(poi.id) },
+                    isVisited = { poi -> visitedPoiIds.contains(poi.id) },
+                    onFavoriteClick = onFavoriteClick,
+                    onPOIClick = {showFullPOI = true},
+                    onSelectPOI = { poi -> selectedPOI = poi },
+                    showNavigationBar = { showNavigationBar() },
+                    showTopAppBar = { showTopAppBar () },
+                    showLocationPanel = { showLocationPanel() },
+                    showFiltersButtons = { showFiltersButtons() },
                     translateViewModel = translateViewModel,
                 )
             }
-        }
 
-        // ✅ POI на Карте
-        val poi = selectedPOI
-        if (showPOIInMap && poi != null && !showFullPOI) {
-            ModalBottomSheet(
-                onDismissRequest = {showPOIInMap = false},
-                sheetState = rememberModalBottomSheetState()
-            ) {
+            //магазин
+            if (showPOIStoreScreen) {
+                PoiStoreScreen(
+                    isInitialSelection = false,
+                    translateViewModel = translateViewModel,
+                    pointsViewModel = pointsViewModel,
+                    onRegionChosen = {
+                        {resetFiltersUndScreens()}
+                    },
+                    onDismiss = {resetFiltersUndScreens()},
+                )
+            }
+
+            // Экран Статистика
+            if (showStatisticsScreen) {
+                StatisticsScreen(
+                    totalGP = totalGP,
+                    currentGP = currentGP,
+                    spentGP = spentGP,
+                    userPOIList = finalPOIList,
+                    totalPOIList = poiList,
+                    allTypes = allTypes,
+                    showNavigationBar = { showNavigationBar() },
+                    showTopAppBar = { showTopAppBar () },
+                    pointsViewModel = pointsViewModel,
+                    translateViewModel = translateViewModel,
+                )
+            }
+
+            // ✅ Экран Профиль
+            if(showProfileScreen) {
+                ProfileScreen(
+                    userPOIList = finalPOIList,
+                    totalPOIList = poiList,
+                    showNavigationBar = { showNavigationBar() },
+                    showTopAppBar = { showTopAppBar () },
+                    onLoggedOut = onLoggedOut,
+                    themeViewModel = themeViewModel,
+                    loginViewModel = loginViewModel,
+                    translateViewModel = translateViewModel,
+                    onOpenStore = {
+                        showProfileScreen = false
+                        showPOIStoreScreen = true}
+                )
+            }
+
+            // ✅ Панель Фильтры
+            if (showFiltersPanel) {
+                ModalBottomSheet(
+                    onDismissRequest = {showFiltersPanel = false},
+                    sheetState = rememberModalBottomSheetState()
+                ) {
+                    FiltersPanel(
+                        selectedRadius = selectedRadius,
+                        onRadiusChange = { selectedRadius = it },
+                        allTypes = poiList.map { it.type }.distinct(),
+                        selectedTypes = selectedTypes,
+                        onTypeToggle = onTypeToggle,
+                        onSelectAllTypes = { selectedTypes = allTypes },
+                        onClearAllTypes = { selectedTypes = emptyList() },
+                        showVisited = showVisited,
+                        onToggleShowVisited = { showVisited = !showVisited },
+                        translateViewModel = translateViewModel,
+                    )
+                }
+            }
+
+            // ✅ POI на Карте
+            val poi = selectedPOI
+            if (showPOIInMap && poi != null && !showFullPOI) {
+                ModalBottomSheet(
+                    onDismissRequest = {showPOIInMap = false},
+                    sheetState = rememberModalBottomSheetState()
+                ) {
+                    POIFullScreen (
+                        poi = poi,
+                        isFavorite = favoriteIds.contains(poi.id),
+                        onFavoriteClick = { poiViewModel.toggleFavorite(poi.id) },
+                        isVisited = visitedPoiIds.contains(poi.id),
+                        userLocation = userLocation,
+                        userCurrentCity = currentCity,
+                        onDismiss = {
+                            selectedPOI = null
+                            showFullPOI = false
+                        },
+                        poiViewModel = poiViewModel,
+                        pointsViewModel = pointsViewModel,
+                    )
+                }
+            }
+
+            //✅ POI на весь экран
+            if (showFullPOI && poi != null) {
                 POIFullScreen (
                     poi = poi,
                     isFavorite = favoriteIds.contains(poi.id),
@@ -468,23 +512,7 @@ fun MainScreen(
             }
         }
 
-        //✅ POI на весь экран
-        if (showFullPOI && poi != null) {
-            POIFullScreen (
-                poi = poi,
-                isFavorite = favoriteIds.contains(poi.id),
-                onFavoriteClick = { poiViewModel.toggleFavorite(poi.id) },
-                isVisited = visitedPoiIds.contains(poi.id),
-                userLocation = userLocation,
-                userCurrentCity = currentCity,
-                onDismiss = {
-                    selectedPOI = null
-                    showFullPOI = false
-                },
-                poiViewModel = poiViewModel,
-                pointsViewModel = pointsViewModel,
-            )
-        }
+
         
     } ?: LoadingScreen()
 }

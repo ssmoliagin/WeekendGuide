@@ -20,6 +20,9 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(ThemeViewModel::class.java) -> {
                 ThemeViewModel(app) as T
             }
+            modelClass.isAssignableFrom(MainStateViewModel::class.java) -> {
+                MainStateViewModel(app) as T
+            }
             else -> throw IllegalArgumentException("Unknown ViewModel class: $modelClass")
         }
     }

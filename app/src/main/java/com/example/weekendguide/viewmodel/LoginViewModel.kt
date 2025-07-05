@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.preferences.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.viewmodel.SplashViewModel.Destination
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
@@ -49,8 +50,8 @@ class LoginViewModel(
 
     fun checkRegionAndNavigate() {
         viewModelScope.launch {
-            val region = userPreferences.getHomeRegions()
-            if (region != null) {
+            val regions = userPreferences.getHomeRegions()
+            if (regions.isNotEmpty()) {
                 _navigateDestination.emit(SplashViewModel.Destination.Main)
             } else {
                 _navigateDestination.emit(SplashViewModel.Destination.RegionSelect)
