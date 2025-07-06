@@ -18,7 +18,6 @@ data class UserData(
     val photoUrl: String? = null,
     val language: String? = null,
     val userThema: String? = null,
-
 )
 
 class UserPreferences(private val context: Context) {
@@ -30,7 +29,7 @@ class UserPreferences(private val context: Context) {
         val LANGUAGE = stringPreferencesKey("language_code")
         val THEME = stringPreferencesKey("app_theme")
 
-        val HOME_REGIONS = stringPreferencesKey("home_region") // JSON-строка Region
+        val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
         val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
         val CURRENT_CITY = stringPreferencesKey("current_city")
@@ -43,7 +42,7 @@ class UserPreferences(private val context: Context) {
 
     private val prefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
 
-    //login
+    // Юзер Инфо
     val userDataFlow: Flow<UserData> = context.dataStore.data
         .map { prefs ->
             UserData(
@@ -71,7 +70,7 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    //смена темы
+    // Тема экрана приложения
     suspend fun saveTheme(theme: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.THEME] = theme
@@ -82,7 +81,7 @@ class UserPreferences(private val context: Context) {
         return prefs[Keys.THEME] ?: "light" // по умолчанию светлая тема
     }
 
-    //Методы для получения и сохранения уровней
+    // Достижения по посещениям
 
     suspend fun getCategoryLevels(): Map<String, Int> {
         val prefs = context.dataStore.data.first()
@@ -107,7 +106,7 @@ class UserPreferences(private val context: Context) {
         addGP(rewardPoints)
     }
 
-    //Методы для получения и сохранения очков
+    // Пойнты
 
     suspend fun getCurrentGP(): Int = prefs.getInt("current_gp", 0)
     fun getTotalGP(): Int = prefs.getInt("total_gp", 0)
@@ -159,10 +158,11 @@ class UserPreferences(private val context: Context) {
         return prefs[Keys.LANGUAGE] ?: ""
     }
 
-    suspend fun saveHomeRegion(region: Region) {
+    //коллекция пои
+    suspend fun addRegionInCollection(region: Region) {
         context.dataStore.edit { prefs ->
             // Получаем текущий список регионов из DataStore
-            val currentJson = prefs[Keys.HOME_REGIONS]
+            val currentJson = prefs[Keys.COLLECTION_REGIONS]
             val currentList = if (currentJson != null) {
                 Json.decodeFromString<List<Region>>(currentJson)
             } else {
@@ -177,17 +177,17 @@ class UserPreferences(private val context: Context) {
             }
 
             // Сохраняем обновлённый список обратно
-            prefs[Keys.HOME_REGIONS] = Json.encodeToString(updatedList)
+            prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(updatedList)
         }
     }
 
-    suspend fun getHomeRegions(): List<Region> {
+    suspend fun getCollectionRegions(): List<Region> {
         val prefs = context.dataStore.data.first()
-        val json = prefs[Keys.HOME_REGIONS] ?: return emptyList()
+        val json = prefs[Keys.COLLECTION_REGIONS] ?: return emptyList()
         return Json.decodeFromString(json)
     }
 
-
+    // Список стран и регионов (?)
 
     suspend fun addPurchasedRegion(regionCode: String) {
         context.dataStore.edit { prefs ->
@@ -213,6 +213,8 @@ class UserPreferences(private val context: Context) {
         return prefs[Keys.PURCHASED_REGIONS] ?: emptySet()
     }
 
+    // Локация
+
     suspend fun saveCurrentCity(city: String) {
         context.dataStore.edit { prefs -> prefs[Keys.CURRENT_CITY] = city }
     }
@@ -235,7 +237,11 @@ class UserPreferences(private val context: Context) {
         return if (lat != null && lng != null) Pair(lat, lng) else null
     }
 
-    // Получить текущее множество избранного
+    // избранные ПОИ
+
+    val favoriteIdsFlow: Flow<Set<String>> = context.dataStore.data
+        .map { prefs -> prefs[Keys.FAVORITES] ?: emptySet() }
+
     suspend fun toggleFavorite(id: String) {
         context.dataStore.edit { prefs ->
             val currentFavorites = prefs[Keys.FAVORITES] ?: emptySet()
@@ -247,10 +253,8 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    val favoriteIdsFlow: Flow<Set<String>> = context.dataStore.data
-        .map { prefs -> prefs[Keys.FAVORITES] ?: emptySet() }
+    //посещенные ПОИ
 
-    //посещенные
     val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
         .map { prefs -> prefs[Keys.VISITED] ?: emptySet() }
 
@@ -260,56 +264,4 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.VISITED] = current + id
         }
     }
-
-    /*
-    data class UserSettings(
-    val homeRegion: Region?,
-    val purchasedRegions: Set<String>,
-    val purchasedCountries: Set<String>,
-    val currentCity: String?,
-    val currentLocation: Pair<Double, Double>?,
-    val favoritePoiIds: Set<String>,
-    val visitedPoiIds: Set<String>,
-    val currentGP: Int,
-    val totalGP: Int,
-    val categoryLevels: Map<String, Int>
-)
-
-    suspend fun getAll(): UserSettings {
-        val prefs = context.dataStore.data.first()
-
-        val language = prefs[Keys.LANGUAGE] ?: "de"
-        val homeRegionJson = prefs[Keys.HOME_REGION]
-        val homeRegion = homeRegionJson?.let { Json.decodeFromString<Region>(it) }
-        val purchasedRegions = prefs[Keys.PURCHASED_REGIONS] ?: emptySet()
-        val purchasedCountries = prefs[Keys.PURCHASED_COUNTRIES] ?: emptySet()
-        val currentCity = prefs[Keys.CURRENT_CITY]
-        val lat = prefs[Keys.LAT]
-        val lng = prefs[Keys.LNG]
-        val currentLocation = if (lat != null && lng != null) Pair(lat, lng) else null
-        val favoritePoiIds = prefs[Keys.FAVORITES] ?: emptySet()
-        val visitedPoiIds = prefs[Keys.VISITED] ?: emptySet()
-        val currentGP = getCurrentGP()
-        val totalGP = getTotalGP()
-
-        val categoryLevelsJson = prefs[Keys.CATEGORY_LEVELS]
-        val categoryLevels = categoryLevelsJson?.let { Json.decodeFromString<Map<String, Int>>(it) } ?: emptyMap()
-
-        return UserSettings(
-            language = language,
-            homeRegion = homeRegion,
-            purchasedRegions = purchasedRegions,
-            purchasedCountries = purchasedCountries,
-            currentCity = currentCity,
-            currentLocation = currentLocation,
-            favoritePoiIds = favoritePoiIds,
-            visitedPoiIds = visitedPoiIds,
-            currentGP = currentGP,
-            totalGP = totalGP,
-            categoryLevels = categoryLevels
-        )
-    }
-
-     */
-
 }

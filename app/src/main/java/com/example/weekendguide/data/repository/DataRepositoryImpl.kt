@@ -67,13 +67,19 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         val url = "$path/data/places/countries.json"
         val file = File(context.cacheDir, "countries.json")
         try {
-            if (!file.exists()) {
-                Log.d("DataRepo", "Downloading countries.json")
-                val ref = storage.getReferenceFromUrl(url)
+            val ref = storage.getReferenceFromUrl(url)
+            val metadata = ref.metadata.await()
+            val remoteUpdated = metadata.updatedTimeMillis
+            val localUpdated = if (file.exists()) file.lastModified() else 0L
+
+            if (remoteUpdated > localUpdated) {
+                Log.d("DataRepo", "Remote countries.json is newer, downloading")
                 ref.getFile(file).await()
+                file.setLastModified(remoteUpdated)
             } else {
                 Log.d("DataRepo", "Using cached countries.json")
             }
+
             val jsonString = file.readText()
             json.decodeFromString(jsonString)
         } catch (e: Exception) {
@@ -87,13 +93,19 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         val url = "$path/data/places/$lowerCode/regions.json"
         val file = File(context.cacheDir, "regions_$lowerCode.json")
         try {
-            if (!file.exists()) {
-                Log.d("DataRepo", "Downloading regions.json for $countryCode")
-                val ref = storage.getReferenceFromUrl(url)
+            val ref = storage.getReferenceFromUrl(url)
+            val metadata = ref.metadata.await()
+            val remoteUpdated = metadata.updatedTimeMillis
+            val localUpdated = if (file.exists()) file.lastModified() else 0L
+
+            if (remoteUpdated > localUpdated) {
+                Log.d("DataRepo", "Remote regions.json for $countryCode is newer, downloading")
                 ref.getFile(file).await()
+                file.setLastModified(remoteUpdated)
             } else {
                 Log.d("DataRepo", "Using cached regions.json for $countryCode")
             }
+
             val jsonString = file.readText()
             json.decodeFromString(jsonString)
         } catch (e: Exception) {
@@ -170,6 +182,4 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 }
             }
     }
-
-
 }

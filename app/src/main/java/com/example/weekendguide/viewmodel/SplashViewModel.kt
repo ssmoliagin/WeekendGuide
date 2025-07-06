@@ -1,7 +1,6 @@
 package com.example.weekendguide.viewmodel
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -19,7 +18,7 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
 
     sealed class Destination {
         object Login : Destination()
-        object RegionSelect : Destination()
+        object Store : Destination()
         object Main : Destination()
         object Loading : Destination()
     }
@@ -36,10 +35,8 @@ class SplashViewModel(app: Application) : AndroidViewModel(app) {
         if (user == null) {
             _uiState.value = Destination.Login
         } else {
-            val regions = preferences.getHomeRegions()
-            _uiState.value = if (regions.isNotEmpty()) Destination.Main else Destination.RegionSelect
-
-            Log.d("DEBUG", "regions count: ${regions.size}")
+            val regions = preferences.getCollectionRegions()
+            _uiState.value = if (regions.isNotEmpty()) Destination.Main else Destination.Store
         }
     }
 }

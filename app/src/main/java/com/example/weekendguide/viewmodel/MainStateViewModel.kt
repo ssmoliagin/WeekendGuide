@@ -22,7 +22,7 @@ class MainStateViewModel(private val context: Context) : ViewModel() {
     }
 
     suspend fun loadRegions() {
-        _regions.value = prefs.getHomeRegions()
+        _regions.value = prefs.getCollectionRegions()
     }
 
     fun refreshRegions() {

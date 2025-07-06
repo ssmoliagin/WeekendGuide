@@ -8,7 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.main.MainScreen
-import com.example.weekendguide.ui.store.PoiStoreScreen
+import com.example.weekendguide.ui.store.StoreScreen
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
@@ -37,7 +37,7 @@ fun AppNavigation(
                     SplashViewModel.Destination.Login -> navController.navigate("login") {
                         popUpTo("splash") { inclusive = true }
                     }
-                    SplashViewModel.Destination.RegionSelect -> navController.navigate("region") {
+                    SplashViewModel.Destination.Store -> navController.navigate("store") {
                         popUpTo("splash") { inclusive = true }
                     }
                     SplashViewModel.Destination.Main -> navController.navigate("main") {
@@ -53,7 +53,7 @@ fun AppNavigation(
                 loginViewModel = loginViewModel,
                 onNavigate = { destination ->
                 when (destination) {
-                    SplashViewModel.Destination.RegionSelect -> navController.navigate("region") {
+                    SplashViewModel.Destination.Store -> navController.navigate("store") {
                         popUpTo("login") { inclusive = true }
                     }
                     SplashViewModel.Destination.Main -> navController.navigate("main") {
@@ -64,12 +64,12 @@ fun AppNavigation(
             })
         }
 
-        composable("region") {
-            PoiStoreScreen(
+        composable("store") {
+            StoreScreen(
                 isInitialSelection = true,
                 onRegionChosen = {
                     navController.navigate("main") {
-                        popUpTo("region") { inclusive = true }
+                        popUpTo("store") { inclusive = true }
                     }
                 },
                 translateViewModel = translateViewModel,

@@ -47,14 +47,6 @@ class POIViewModel(
     val favoriteIds: StateFlow<Set<String>> = userPreferences.favoriteIdsFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    // --- Отфильтрованные POI по запросу и расстоянию ---
-    val filteredPOIs: StateFlow<List<POI>> = combine(_poiList, _searchQuery, _maxDistance) { pois, query, _ ->
-        if (query.isBlank()) pois
-        else pois.filter {
-            it.title.contains(query, ignoreCase = true) || it.description.contains(query, ignoreCase = true)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     // --- Типы POI и состояние загрузки ---
     private val _typesIsLoading = MutableStateFlow(false)
     val typesIsLoading: StateFlow<Boolean> = _typesIsLoading
@@ -76,9 +68,6 @@ class POIViewModel(
     }
 
     // --- Функции работы с посещёнными POI ---
-    fun isPoiVisited(poiId: String): Boolean {
-        return visitedPoiIds.value.contains(poiId)
-    }
 
     fun markPoiVisited(poiId: String) {
         viewModelScope.launch {
@@ -153,19 +142,5 @@ class POIViewModel(
         viewModelScope.launch {
             userPreferences.toggleFavorite(poiId)
         }
-    }
-
-    // --- Обновление параметров поиска ---
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun updateMaxDistance(distance: Int) {
-        _maxDistance.value = distance
-    }
-
-    // --- Получение POI по ID ---
-    fun getPOIById(poiId: String): POI? {
-        return _poiList.value.find { it.id == poiId }
     }
 }

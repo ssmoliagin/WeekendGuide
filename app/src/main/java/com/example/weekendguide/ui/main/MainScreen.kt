@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -24,8 +23,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
-import com.example.weekendguide.data.model.Region
-import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.ui.components.FiltersButtons
 import com.example.weekendguide.ui.components.LoadingScreen
 import com.example.weekendguide.ui.components.LocationPanel
@@ -37,7 +34,7 @@ import com.example.weekendguide.ui.map.MapScreen
 import com.example.weekendguide.ui.poi.POIFullScreen
 import com.example.weekendguide.ui.profile.ProfileScreen
 import com.example.weekendguide.ui.statistics.StatisticsScreen
-import com.example.weekendguide.ui.store.PoiStoreScreen
+import com.example.weekendguide.ui.store.StoreScreen
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
@@ -404,7 +401,7 @@ fun MainScreen(
 
             //магазин
             if (showPOIStoreScreen) {
-                PoiStoreScreen(
+                StoreScreen(
                     isInitialSelection = false,
                     translateViewModel = translateViewModel,
                     pointsViewModel = pointsViewModel,

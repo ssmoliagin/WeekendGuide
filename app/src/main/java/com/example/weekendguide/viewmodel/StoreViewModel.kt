@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class RegionViewModel(application: Application) : AndroidViewModel(application) {
+class StoreViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = DataRepositoryImpl(application)
     private val userPreferences = UserPreferences(application)
 
@@ -36,34 +36,18 @@ class RegionViewModel(application: Application) : AndroidViewModel(application) 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _poiList = MutableStateFlow<List<POI>>(emptyList())
+    val poiList: StateFlow<List<POI>> = _poiList
+
     init {
         loadCountriesAndRegions()
         loadPurchased()
     }
 
-    private fun loadPurchased() {
+    private fun loadPurchased() { //?
         viewModelScope.launch {
             _purchasedRegions.value = userPreferences.getPurchasedRegions()
             _purchasedCountries.value = userPreferences.getPurchasedCountries()
-        }
-    }
-
-    fun purchaseRegion(region: Region, translateViewModel: TranslateViewModel) {
-        viewModelScope.launch {
-            userPreferences.addPurchasedRegion(region.region_code)
-            userPreferences.addPurchasedCountries(region.country_code)
-            loadPurchased()
-            downloadAndCacheRegionPOI(region, translateViewModel)
-        }
-    }
-
-    fun downloadAndCacheRegionPOI(region: Region, translateViewModel: TranslateViewModel) {
-        viewModelScope.launch {
-            try {
-                repository.downloadAndCachePOI(region, translateViewModel)
-            } catch (e: Exception) {
-                _error.value = "Ошибка загрузки POI: ${e.localizedMessage}"
-            }
         }
     }
 
@@ -75,7 +59,7 @@ class RegionViewModel(application: Application) : AndroidViewModel(application) 
                 val regionsMap = mutableMapOf<String, List<Region>>()
                 for (country in countriesList) {
                     val regionsList = repository.getRegions(country.countryCode)
-                    regionsMap[country.countryCode] = regionsList
+                    regionsMap[country.countryCode] = regionsList // просто добавляем как есть
                 }
                 _countries.value = countriesList
                 _regionsByCountry.value = regionsMap
@@ -87,12 +71,6 @@ class RegionViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
-
-
-//
-
-    private val _poiList = MutableStateFlow<List<POI>>(emptyList())
-    val poiList: StateFlow<List<POI>> = _poiList
 
     // Функция покупки региона с загрузкой POI и обновлением списка
     fun purchaseRegionAndLoadPOI(region: Region, translateViewModel: TranslateViewModel) {
@@ -118,5 +96,4 @@ class RegionViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
-
 }
