@@ -41,6 +41,7 @@ import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.MainStateViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
+import com.example.weekendguide.viewmodel.ProfileViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.example.weekendguide.viewmodel.ViewModelFactory
@@ -82,15 +83,12 @@ fun MainScreen(
     )
     val regions by mainStateViewModel.regions.collectAsState()
 
+    val profileViewModel: ProfileViewModel = viewModel(
+        key = "ProfileViewModel",
+        factory = ViewModelFactory(context.applicationContext as Application)
+    )
+    val currentUnits by profileViewModel.units.collectAsState()
 
-
-    /*
-    val prefs = UserPreferences(context)
-    val regions by produceState<List<Region>?>(initialValue = null) {
-        value = prefs.getHomeRegions()
-    }
-
-     */
 
     //обновление очков
     val currentGP by pointsViewModel.currentGP.collectAsState()
@@ -150,9 +148,6 @@ fun MainScreen(
 
     // --- ОСНОВНАЯ ЛОГИКА ---
     regions?.let { reg ->
-        //val poiViewModel: POIViewModel = viewModel(factory = POIViewModelFactory(context, reg, translateViewModel))
-
-       // val poiList by poiViewModel.poiList.collectAsState()
 
         if (regions.isNotEmpty()) {
             val poiViewModel: POIViewModel = remember(regions) {
@@ -187,12 +182,13 @@ fun MainScreen(
             }
 
             //радиус поиска точек
-            var selectedRadius by remember { mutableStateOf("200км") }
+            val radiusValues = listOf("20","50","100","200","∞")
+            var selectedRadius by remember { mutableStateOf("200") }
             val radiusValue = when (selectedRadius) {
-                "20км" -> 20
-                "50км" -> 50
-                "100км" -> 100
-                "200км" -> 200
+                "20" -> 20
+                "50" -> 50
+                "100" -> 100
+                "200" -> 200
                 "∞" -> Int.MAX_VALUE
                 else -> 200
             }
@@ -259,7 +255,7 @@ fun MainScreen(
             //очищаем фильтры и окна
             fun resetFiltersUndScreens() {
                 selectedTypes = allTypes
-                selectedRadius = "200км"
+                selectedRadius = "200"
                 showOnlyVisited = false
                 showOnlyFavorites = false
 
@@ -348,6 +344,8 @@ fun MainScreen(
                     onOpenListScreen = {showListPOIScreen = true},
                     onOpenFilters = { showFiltersPanel = true },
                     onDismiss = { showMapScreen = false },
+                    radiusValues = radiusValues,
+                    currentUnits = currentUnits
                 )
             }
 
@@ -439,6 +437,7 @@ fun MainScreen(
                     themeViewModel = themeViewModel,
                     loginViewModel = loginViewModel,
                     translateViewModel = translateViewModel,
+                    profileViewModel = profileViewModel,
                     onOpenStore = {
                         showProfileScreen = false
                         showPOIStoreScreen = true}
@@ -462,6 +461,8 @@ fun MainScreen(
                         showVisited = showVisited,
                         onToggleShowVisited = { showVisited = !showVisited },
                         translateViewModel = translateViewModel,
+                        radiusValues = radiusValues,
+                        currentUnits = currentUnits
                     )
                 }
             }

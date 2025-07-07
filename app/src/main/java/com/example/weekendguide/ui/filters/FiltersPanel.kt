@@ -59,12 +59,11 @@ fun FiltersPanel(
     showVisited: Boolean,
     onToggleShowVisited: () -> Unit,
     translateViewModel: TranslateViewModel,
+    radiusValues: List<String>,
+    currentUnits: String
 ) {
     val currentLanguage by translateViewModel.language.collectAsState()
-    val radiusValues = listOf("20", "50", "100", "200", "∞")
-    val radiusSliderPosition = radiusValues.indexOfFirst {
-        it.removeSuffix("км") == selectedRadius.removeSuffix("км")
-    }.coerceAtLeast(0)
+    val radiusSliderPosition = radiusValues.indexOf(selectedRadius).coerceAtLeast(0)
 
     val typeIcons = mapOf(
         "castle" to Icons.Default.Castle,
@@ -98,14 +97,14 @@ fun FiltersPanel(
                 value = radiusSliderPosition.toFloat(),
                 onValueChange = {
                     val selected = radiusValues[it.toInt()]
-                    onRadiusChange(if (selected == "∞") selected else "${selected}км")
+                    onRadiusChange(selected)
                 },
                 steps = radiusValues.size - 2,
                 valueRange = 0f..(radiusValues.size - 1).toFloat()
             )
 
             Text(
-                text = "Выбрано: $selectedRadius",
+                text = "Выбрано: $selectedRadius $currentUnits",
                 modifier = Modifier.padding(bottom = 12.dp),
                 style = MaterialTheme.typography.bodySmall
             )

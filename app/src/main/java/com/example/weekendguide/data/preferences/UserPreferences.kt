@@ -1,5 +1,6 @@
 package com.example.weekendguide.data.preferences
 
+import android.app.Notification
 import android.content.Context
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
@@ -17,7 +18,9 @@ data class UserData(
     val displayName: String? = null,
     val photoUrl: String? = null,
     val language: String? = null,
-    val userThema: String? = null,
+    val userThema: String? = "light",
+    val userMeasurement: String? = "km",
+    val notification: Boolean? = true
 )
 
 class UserPreferences(private val context: Context) {
@@ -28,6 +31,8 @@ class UserPreferences(private val context: Context) {
         val PHOTO_URL = stringPreferencesKey("user_photo_url")
         val LANGUAGE = stringPreferencesKey("language_code")
         val THEME = stringPreferencesKey("app_theme")
+        val MEASURED = stringPreferencesKey("user_measurement")
+        val NOTIFICATIONS = booleanPreferencesKey("notifications")
 
         val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
@@ -49,7 +54,11 @@ class UserPreferences(private val context: Context) {
                 email = prefs[Keys.EMAIL],
                 displayName = prefs[Keys.DISPLAY_NAME],
                 photoUrl = prefs[Keys.PHOTO_URL],
-                language = prefs[Keys.LANGUAGE]
+                language = prefs[Keys.LANGUAGE],
+                userThema = prefs[Keys.THEME],
+                userMeasurement = prefs[Keys.MEASURED],
+                notification = prefs[Keys.NOTIFICATIONS]
+
             )
         }
 
@@ -59,6 +68,9 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.DISPLAY_NAME] = userData.displayName ?: ""
             prefs[Keys.PHOTO_URL] = userData.photoUrl ?: ""
             prefs[Keys.LANGUAGE] = userData.language ?: ""
+            prefs[Keys.THEME] = userData.userThema ?: "light"
+            prefs[Keys.MEASURED] = userData.userMeasurement ?: "km"
+            prefs[Keys.NOTIFICATIONS] = userData.notification != false
         }
     }
 
@@ -70,6 +82,28 @@ class UserPreferences(private val context: Context) {
         }
     }
 
+    // Уведомления вкл/выкл
+    suspend fun setNotification(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.NOTIFICATIONS] = enabled
+        }
+    }
+    suspend fun getNotification(): Boolean {
+        val prefs = context.dataStore.data.first()
+        return prefs[Keys.NOTIFICATIONS] != false
+    }
+
+    // Единицы измерения
+    suspend fun saveMeasurement(units: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.MEASURED] = units
+        }
+    }
+    suspend fun getMeasurement(): String {
+        val prefs = context.dataStore.data.first()
+        return prefs[Keys.MEASURED] ?: "km"
+    }
+
     // Тема экрана приложения
     suspend fun saveTheme(theme: String) {
         context.dataStore.edit { prefs ->
@@ -78,7 +112,7 @@ class UserPreferences(private val context: Context) {
     }
     suspend fun getTheme(): String {
         val prefs = context.dataStore.data.first()
-        return prefs[Keys.THEME] ?: "light" // по умолчанию светлая тема
+        return prefs[Keys.THEME] ?: "light"
     }
 
     // Достижения по посещениям

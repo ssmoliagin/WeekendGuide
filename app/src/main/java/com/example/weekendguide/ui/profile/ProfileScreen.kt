@@ -48,9 +48,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.weekendguide.Constants.EMAIL
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.ProfileViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -71,6 +73,7 @@ fun ProfileScreen(
     themeViewModel: ThemeViewModel,
     loginViewModel: LoginViewModel,
     translateViewModel: TranslateViewModel,
+    profileViewModel: ProfileViewModel,
     onOpenStore: () -> Unit,
 ) {
 
@@ -120,8 +123,23 @@ fun ProfileScreen(
     }
 
 
-    // Единицы — заглушка
-    var selectedUnits by remember { mutableStateOf("Метры") }
+    // Единицы измерения
+    val currentUnits by profileViewModel.units.collectAsState()
+    val unitsOptions = listOf("Метрическая", "Британская имперская")
+    val unitsValues = listOf("km", "mi")
+    var selectedUnitsIndex by remember {
+        mutableStateOf(unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0)
+    }
+    var selectedUnits by remember { mutableStateOf(unitsOptions[selectedUnitsIndex]) }
+
+    LaunchedEffect(currentUnits) {
+        val idx = unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0
+        selectedUnitsIndex = idx
+        selectedUnits = unitsOptions[idx]
+    }
+
+    // Уведомления вкл/выкл
+    val notificationEnabled by profileViewModel.notification.collectAsState()
 
     // Прочее
     val totalPOIs = totalPOIList.size
@@ -217,7 +235,7 @@ fun ProfileScreen(
                     Column(Modifier.padding(16.dp)) {
                         SettingRow("🌐 Язык", selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
                         SettingRow("🌓 Экран", selectedTheme) { openSheet(SettingsType.THEME) }
-                        SettingRow("📏 Измерения", "Метры") { openSheet(SettingsType.UNITS) }
+                        SettingRow("📏 Измерения", selectedUnits) { openSheet(SettingsType.UNITS) }
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -226,7 +244,10 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("🔔 Уведомления")
-                            Switch(checked = true, onCheckedChange = { /*TODO*/ })
+                            Switch(
+                                checked = notificationEnabled,
+                                onCheckedChange = { profileViewModel.setNotificationsEnabled(it) }
+                            )
                         }
                     }
                 }
@@ -320,60 +341,61 @@ fun ProfileScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
 
+                        // — Заголовок с названием и версией —
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Weekend Guide",
+                                fontSize = 24.sp,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Text(
+                                text = "v1.0.0",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        // — Автор —
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("\uD83D\uDC64", fontSize = 18.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Разработчик: SSmoliagin", style = MaterialTheme.typography.bodyMedium)
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
                         // — Обратная связь —
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:smoliagin@example.com")
+                                        data = Uri.parse("mailto:$EMAIL")
                                     }
                                     context.startActivity(intent)
                                 },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("📧", fontSize = 24.sp)
+                            Text("📧", fontSize = 20.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = "Обратная связь",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            )
+                            Text("Обратная связь", color = MaterialTheme.colorScheme.primary)
                         }
 
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(16.dp))
 
-                        // — Политика —
-                        Text(
-                            text = "Политика конфиденциальности",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.clickable {
-                                // TODO: открыть ссылку
-                            }
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        // — Политика —
-                        Text(
-                            text = "Условия использования",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.clickable {
-                                // TODO: открыть ссылку
-                            }
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        // — Автор и версия —
+                        // — Политика конфиденциальности —
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { /* TODO: открыть ссылку */ },
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("©SSmoliagin", style = MaterialTheme.typography.bodySmall)
-                            Text("v1.0.0", style = MaterialTheme.typography.bodySmall)
+                            Text("Условия использования и Политика конфиденциальности", color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -409,9 +431,11 @@ fun ProfileScreen(
                 }
 
                 SettingsType.UNITS -> Quad(
-                    "Единицы измерения", listOf("Метры", "Мили"), selectedUnits
+                    "Единицы измерения", unitsOptions, selectedUnits
                 ) { selected: String ->
                     selectedUnits = selected
+                    val idx = unitsOptions.indexOf(selected)
+                    profileViewModel.setUserMeasurement(unitsValues[idx])
                     sheetVisible = false
                 }
 

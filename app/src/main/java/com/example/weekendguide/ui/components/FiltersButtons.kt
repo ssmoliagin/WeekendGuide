@@ -51,6 +51,8 @@ fun FiltersButtons(
     onOpenFilters: () -> Unit,
     onShowScreenType: String? = null,
     onDismiss: () -> Unit,
+    radiusValues: List<String>,
+    currentUnits: String
 ) {
     val sound = LocalView.current
 
@@ -144,7 +146,7 @@ fun FiltersButtons(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(" + $selectedRadius", fontSize = 13.sp, maxLines = 1)
+                Text(" + $selectedRadius $currentUnits", fontSize = 13.sp, maxLines = 1)
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
@@ -162,9 +164,9 @@ fun FiltersButtons(
                     .wrapContentWidth()
                     .align(Alignment.TopCenter)
             ) {
-                listOf("20км", "50км", "100км", "200км", "∞").forEach { radius ->
+                radiusValues.forEach { radius ->
                     DropdownMenuItem(
-                        text = { Text(radius) },
+                        text = { Text("$radius $currentUnits") },
                         onClick = {
                             sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                             onRadiusChange(radius)

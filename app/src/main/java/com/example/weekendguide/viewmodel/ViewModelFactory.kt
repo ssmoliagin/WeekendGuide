@@ -23,6 +23,9 @@ class ViewModelFactory(
             modelClass.isAssignableFrom(MainStateViewModel::class.java) -> {
                 MainStateViewModel(app) as T
             }
+            modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
+                ProfileViewModel(app) as T
+            }
             else -> throw IllegalArgumentException("Unknown ViewModel class: $modelClass")
         }
     }
