@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 
 class StoreViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = DataRepositoryImpl(application)
@@ -56,11 +58,13 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
             _loading.value = true
             try {
                 val countriesList = repository.getCountries()
-                val regionsMap = mutableMapOf<String, List<Region>>()
-                for (country in countriesList) {
-                    val regionsList = repository.getRegions(country.countryCode)
-                    regionsMap[country.countryCode] = regionsList // просто добавляем как есть
+                val deferredRegions = countriesList.map { country ->
+                    async {
+                        country.countryCode to repository.getRegions(country.countryCode)
+                    }
                 }
+                val regionsMap = deferredRegions.awaitAll().toMap()
+
                 _countries.value = countriesList
                 _regionsByCountry.value = regionsMap
                 _error.value = null

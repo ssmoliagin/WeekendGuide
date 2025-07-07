@@ -68,5 +68,10 @@
     "en": "Miles",
     "de": "Meilen",
     "ru": "Мили"
+  },
+  "noregions": {
+    "en": "No available regions for this country",
+    "de": "Keine verfügbaren Regionen für dieses Land",
+    "ru": "Нет доступных регионов для этой страны"
   }
 }
