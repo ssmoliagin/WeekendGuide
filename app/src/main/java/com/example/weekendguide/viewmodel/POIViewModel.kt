@@ -31,6 +31,7 @@ class POIViewModel(
     // --- Википедия ---
     private val _wikiDescription = MutableStateFlow<String?>(null)
     val wikiDescription: StateFlow<String?> = _wikiDescription
+    private var lastWikiTitle: String? = null
 
     // --- Список POI и состояние загрузки ---
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
@@ -38,10 +39,6 @@ class POIViewModel(
 
     private val _poisIsLoading = MutableStateFlow(false)
     val poisIsLoading: StateFlow<Boolean> = _poisIsLoading
-
-    // --- Поисковые параметры ---
-    private val _searchQuery = MutableStateFlow("")
-    private val _maxDistance = MutableStateFlow(100)
 
     // --- Избранное ---
     val favoriteIds: StateFlow<Set<String>> = userPreferences.favoriteIdsFlow
@@ -56,26 +53,28 @@ class POIViewModel(
 
     // --- Инициализация ---
     init {
-        // Подписка на изменения посещённых POI из UserPreferences
+        // Слушаем изменения посещённых
         viewModelScope.launch {
             userPreferences.visitedIdsFlow.collect {
                 _visitedPoiIds.value = it
             }
         }
-        // Загрузка POI и типов
+
+        // Слушаем смену языка и перезагружаем POI и переводы
+        viewModelScope.launch {
+            translateViewModel.language.collect {
+                loadTypePOITranslations()
+                loadPOIs()
+            }
+        }
+
+        // Начальная загрузка
         loadTypePOITranslations()
         loadPOIs()
+        observeLanguageChanges()
     }
 
-    // --- Функции работы с посещёнными POI ---
-
-    fun markPoiVisited(poiId: String) {
-        viewModelScope.launch {
-            userPreferences.markVisited(poiId)
-        }
-    }
-
-    // --- Функции загрузки и обновления данных ---
+    // --- Функции загрузки и обновления данных POI ---
 
     fun loadPOIs() {
         viewModelScope.launch {
@@ -97,12 +96,6 @@ class POIViewModel(
             } finally {
                 _poisIsLoading.value = false
             }
-        }
-    }
-
-    fun loadWikipediaDescription(title: String) {
-        viewModelScope.launch {
-            _wikiDescription.value = wikiRepository.fetchWikipediaDescription(title, language)
         }
     }
 
@@ -137,10 +130,46 @@ class POIViewModel(
         }
     }
 
-    // --- Работа с избранным ---
+    // --- Функции работы с Wikipedia API ---
+
+    fun loadWikipediaDescription(title: String) {
+        lastWikiTitle = title
+        _wikiDescription.value = null // <--- очищаем перед загрузкой
+
+        viewModelScope.launch {
+            val result = wikiRepository.fetchWikipediaDescription(title, translateViewModel.language.value)
+            // Обновляем только если это всё ещё актуальный запрос
+            if (lastWikiTitle == title) {
+                _wikiDescription.value = result
+            }
+        }
+    }
+
+    private fun observeLanguageChanges() {
+        viewModelScope.launch {
+            translateViewModel.language.collect { newLang ->
+                lastWikiTitle?.let { title ->
+                    _wikiDescription.value = null // очищаем перед загрузкой
+                    val result = wikiRepository.fetchWikipediaDescription(title, newLang)
+                    if (lastWikiTitle == title) {
+                        _wikiDescription.value = result
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Функции работы с избранными POI ---
     fun toggleFavorite(poiId: String) {
         viewModelScope.launch {
             userPreferences.toggleFavorite(poiId)
+        }
+    }
+
+    // --- Функции работы с посещёнными POI ---
+    fun markPoiVisited(poiId: String) {
+        viewModelScope.launch {
+            userPreferences.markVisited(poiId)
         }
     }
 }
