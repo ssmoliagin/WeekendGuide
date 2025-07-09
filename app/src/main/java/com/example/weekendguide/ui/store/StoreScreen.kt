@@ -1,5 +1,6 @@
 package com.example.weekendguide.ui.store
 
+import android.app.Application
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -49,7 +50,11 @@ import androidx.compose.ui.unit.sp
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.model.Country
+import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.DataRepositoryImpl
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.ui.components.LoadingOverlay
+import com.example.weekendguide.viewmodel.StoreViewModelFactory
 import kotlinx.coroutines.launch
 fun countryCodeToFlagEmoji(code: String): String {
     return if (code.length == 2) {
@@ -66,11 +71,19 @@ fun countryCodeToFlagEmoji(code: String): String {
 fun StoreScreen(
     isInitialSelection: Boolean,
     onRegionChosen: () -> Unit,
-    storeViewModel: StoreViewModel = viewModel(),
     translateViewModel: TranslateViewModel,
     pointsViewModel: PointsViewModel,
     onDismiss: () -> Unit? = {},
+    userPreferences: UserPreferences,
+    dataRepository: DataRepositoryImpl,
+    userRemoteDataSource: UserRemoteDataSource
 ) {
+
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val factory = remember { StoreViewModelFactory(application, userPreferences, userRemoteDataSource, dataRepository) }
+    val storeViewModel: StoreViewModel = viewModel(factory = factory)
+
     val countries by storeViewModel.countries.collectAsState()
     val regionsByCountry by storeViewModel.regionsByCountry.collectAsState()
     val purchasedRegions by storeViewModel.purchasedRegions.collectAsState()
@@ -82,8 +95,6 @@ fun StoreScreen(
     var showDialog by remember { mutableStateOf(false) }
     var showInsufficientGPDialog by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
-    val userPreferences = UserPreferences(context)
     val coroutineScope = rememberCoroutineScope()
     val sound = LocalView.current
     val COST = 1

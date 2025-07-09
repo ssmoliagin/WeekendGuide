@@ -5,8 +5,9 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.Constants
-import com.example.weekendguide.data.preferences.UserData
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
@@ -23,7 +24,8 @@ import kotlinx.coroutines.launch
 class LoginViewModel(
     private val auth: FirebaseAuth,
     private val oneTapClient: SignInClient,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val userRemoteDataSource: UserRemoteDataSource
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -41,12 +43,6 @@ class LoginViewModel(
     private val _navigateDestination = MutableSharedFlow<SplashViewModel.Destination>()
     val navigateDestination = _navigateDestination.asSharedFlow()
 
-    fun saveLanguage(language: String) {
-        viewModelScope.launch {
-            userPreferences.saveLanguage(language)
-        }
-    }
-
     fun checkRegionAndNavigate() {
         viewModelScope.launch {
             val regions = userPreferences.getCollectionRegions()
@@ -63,21 +59,28 @@ class LoginViewModel(
         _errorMessage.value = null
 
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { authResult ->
+            .addOnSuccessListener {
                 viewModelScope.launch {
-                    saveUserToPreferences(auth.currentUser)
+                    val res = userRemoteDataSource.syncOnLogin()
+                    if (res.isSuccess) {
+                        checkRegionAndNavigate()
+                    } else {
+                        _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
+                    }
                     _isLoading.value = false
-                    checkRegionAndNavigate()
                 }
             }
             .addOnFailureListener {
-                // Если не найден — регистрируем
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnSuccessListener {
                         viewModelScope.launch {
-                            saveUserToPreferences(auth.currentUser)
+                            val res = userRemoteDataSource.syncOnLogin()
+                            if (res.isSuccess) {
+                                checkRegionAndNavigate()
+                            } else {
+                                _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
+                            }
                             _isLoading.value = false
-                            checkRegionAndNavigate()
                         }
                     }
                     .addOnFailureListener { error ->
@@ -123,8 +126,12 @@ class LoginViewModel(
                     _isLoading.value = false
                     if (task.isSuccessful) {
                         viewModelScope.launch {
-                            saveUserToPreferences(auth.currentUser)
-                            checkRegionAndNavigate()
+                            val res = userRemoteDataSource.syncOnLogin()
+                            if (res.isSuccess) {
+                                checkRegionAndNavigate()
+                            } else {
+                                _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
+                            }
                         }
                     } else {
                         _errorMessage.value = "Google sign-in failed"
@@ -138,20 +145,28 @@ class LoginViewModel(
 
     private suspend fun saveUserToPreferences(user: FirebaseUser?) {
         if (user == null) return
+
+        // 🔁 Обновляем также в Firestore
         val data = UserData(
             email = user.email,
             displayName = user.displayName,
             photoUrl = user.photoUrl?.toString()
         )
-        userPreferences.saveUserInfo(data)
+        userPreferences.saveUserData(data)
+        userRemoteDataSource.syncLocalToRemote()
     }
+
 
     fun checkAlreadyLoggedIn() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             viewModelScope.launch {
-                saveUserToPreferences(currentUser)
-                checkRegionAndNavigate()
+                val res = userRemoteDataSource.syncOnLogin()
+                if (res.isSuccess) {
+                    checkRegionAndNavigate()
+                } else {
+                    _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.weekendguide.ui.poi
 
 import android.location.Location
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -76,7 +77,8 @@ fun POIFullScreen(
     userCurrentCity: String? = null,
     onDismiss: () -> Unit,
     poiViewModel: POIViewModel,
-    pointsViewModel: PointsViewModel
+    pointsViewModel: PointsViewModel,
+    locationViewModel: LocationViewModel
 ) {
     val distanceKm = remember(poi, userLocation) {
         userLocation?.let { (userLat, userLng) ->
@@ -89,11 +91,12 @@ fun POIFullScreen(
     val wikiDescription by poiViewModel.wikiDescription.collectAsState()
 
     val context = LocalContext.current
-    val locationViewModel: LocationViewModel = viewModel()
+    //val locationViewModel: LocationViewModel = viewModel()
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(poi.title) {
         poiViewModel.loadWikipediaDescription(poi.title)
+        Log.d("POIViewModel", "Got wiki: ${poi.title}")
     }
 
     Scaffold(

@@ -78,6 +78,7 @@ dependencies {
     // 🔥 Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-firestore")
 
     // 🔥 Firebase GoogleAuth
     implementation("com.google.firebase:firebase-auth-ktx")
@@ -111,5 +112,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     implementation("com.google.android.gms:play-services-auth:21.0.0")
+
+    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
 
 }

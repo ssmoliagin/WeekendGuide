@@ -1,23 +1,23 @@
 package com.example.weekendguide.viewmodel
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
-import com.google.android.gms.auth.api.identity.SignInClient
-import com.google.firebase.auth.FirebaseAuth
 
-class LoginViewModelFactory(
-    private val auth: FirebaseAuth,
-    private val oneTapClient: SignInClient,
+class StoreViewModelFactory(
+    private val application: Application,
     private val userPreferences: UserPreferences,
-    private val userRemoteDataSource: UserRemoteDataSource
+    private val userRemote: UserRemoteDataSource,
+    private val dataRepository: DataRepositoryImpl,
 ) : ViewModelProvider.Factory {
 
-    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            return LoginViewModel(auth, oneTapClient, userPreferences, userRemoteDataSource) as T
+        if (modelClass.isAssignableFrom(StoreViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return StoreViewModel(application, userPreferences, userRemote, dataRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

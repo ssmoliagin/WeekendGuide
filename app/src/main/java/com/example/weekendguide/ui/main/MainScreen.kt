@@ -13,6 +13,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +24,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.DataRepositoryImpl
+import com.example.weekendguide.data.repository.UserRemoteDataSource
+import com.example.weekendguide.data.repository.WikiRepository
 import com.example.weekendguide.ui.components.FiltersButtons
 import com.example.weekendguide.ui.components.LoadingScreen
 import com.example.weekendguide.ui.components.LocationPanel
@@ -42,6 +48,8 @@ import com.example.weekendguide.viewmodel.MainStateViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.ProfileViewModel
+import com.example.weekendguide.viewmodel.StatisticsViewModel
+import com.example.weekendguide.viewmodel.StatisticsViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.example.weekendguide.viewmodel.ViewModelFactory
@@ -60,6 +68,10 @@ fun MainScreen(
     pointsViewModel: PointsViewModel,
     context: Context = LocalContext.current,
     onLoggedOut: () -> Unit,
+    userPreferences: UserPreferences,
+    dataRepository: DataRepositoryImpl,
+    userRemoteDataSource: UserRemoteDataSource,
+    //wikiRepository: WikiRepository,
 ) {
     //состояние окон
     var showMapScreen by remember { mutableStateOf(false) }
@@ -79,18 +91,27 @@ fun MainScreen(
 
     val mainStateViewModel: MainStateViewModel = viewModel(
         key = "MainStateViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
+        factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource )
     )
+
     val regions by mainStateViewModel.regions.collectAsState()
 
     val profileViewModel: ProfileViewModel = viewModel(
         key = "ProfileViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
+        factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource)
     )
     val currentUnits by profileViewModel.units.collectAsState()
 
+    val statisticsViewModel: StatisticsViewModel = viewModel(
+        factory = StatisticsViewModelFactory(userPreferences, userRemoteDataSource)
+    )
 
-    //обновление очков
+    //обновление моделей один раз
+    LaunchedEffect(Unit) {
+        //translateViewModel.refreshLang() // обновляем язык
+        pointsViewModel.refreshGP() // обновляем очки
+    }
+
     val currentGP by pointsViewModel.currentGP.collectAsState()
     val totalGP by pointsViewModel.totalGP.collectAsState()
     val spentGP by pointsViewModel.spentGP.collectAsState()
@@ -150,15 +171,21 @@ fun MainScreen(
     regions?.let { reg ->
 
         if (regions.isNotEmpty()) {
-            val poiViewModel: POIViewModel = remember(regions) {
-                // Здесь важный момент — ViewModel пересоздаётся при изменении regions
-                POIViewModelFactory(context, regions, translateViewModel).create(POIViewModel::class.java)
+            val poiViewModel: POIViewModel = remember(regions) { //!ViewModel пересоздаётся при изменении regions
+                POIViewModelFactory(
+                    context = context,
+                    region = regions,
+                    translateViewModel = translateViewModel,
+                    dataRepository = dataRepository,
+                    userPreferences = userPreferences,
+                    userRemote = userRemoteDataSource
+                ).create(POIViewModel::class.java)
             }
 
             val poiList by poiViewModel.poiList.collectAsState()
 
-            val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState() //посещенные пои
-            val favoriteIds by poiViewModel.favoriteIds.collectAsState() //  ИЗБРАННЫЕ ПОИ
+            val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
+            val favoriteIds by poiViewModel.favoriteIds.collectAsState()
             val onFavoriteClick: (String) -> Unit = { poiId ->
                 poiViewModel.toggleFavorite(poiId)
             }
@@ -407,15 +434,15 @@ fun MainScreen(
                         {resetFiltersUndScreens()}
                     },
                     onDismiss = {resetFiltersUndScreens()},
+                    userPreferences = userPreferences,
+                    dataRepository = dataRepository,
+                    userRemoteDataSource = userRemoteDataSource
                 )
             }
 
             // Экран Статистика
             if (showStatisticsScreen) {
                 StatisticsScreen(
-                    totalGP = totalGP,
-                    currentGP = currentGP,
-                    spentGP = spentGP,
                     userPOIList = finalPOIList,
                     totalPOIList = poiList,
                     allTypes = allTypes,
@@ -423,6 +450,7 @@ fun MainScreen(
                     showTopAppBar = { showTopAppBar () },
                     pointsViewModel = pointsViewModel,
                     translateViewModel = translateViewModel,
+                    statisticsViewModel = statisticsViewModel
                 )
             }
 
@@ -487,6 +515,7 @@ fun MainScreen(
                         },
                         poiViewModel = poiViewModel,
                         pointsViewModel = pointsViewModel,
+                        locationViewModel = locationViewModel
                     )
                 }
             }
@@ -506,11 +535,12 @@ fun MainScreen(
                     },
                     poiViewModel = poiViewModel,
                     pointsViewModel = pointsViewModel,
+                    locationViewModel = locationViewModel
                 )
             }
         }
 
 
-        
+
     } ?: LoadingScreen()
 }

@@ -405,7 +405,7 @@ fun ProfileScreen(
 
             // ——— Выйти / Удалить аккаунт ———
             item {
-                AccountActionsSection(onLoggedOut)
+                AccountActionsSection(onLoggedOut, profileViewModel)
             }
         }
 
@@ -541,17 +541,17 @@ fun SettingsBottomSheet(
 }
 
 @Composable
-fun AccountActionsSection(onLoggedOut: () -> Unit) {
+fun AccountActionsSection(
+    onLoggedOut: () -> Unit,
+    profileViewModel: ProfileViewModel,
+) {
     val context = LocalContext.current
     var showSignOutDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Column {
-        // ——— Выйти из аккаунта ———
         Button(
-            onClick = {
-                showSignOutDialog = true
-            },
+            onClick = { showSignOutDialog = true },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Выйти из аккаунта", color = Color.White)
@@ -559,7 +559,6 @@ fun AccountActionsSection(onLoggedOut: () -> Unit) {
 
         Spacer(Modifier.height(8.dp))
 
-        // ——— Удалить аккаунт ———
         Text(
             text = "⚠ Удалить аккаунт",
             color = Color.Red,
@@ -569,7 +568,6 @@ fun AccountActionsSection(onLoggedOut: () -> Unit) {
             }
         )
 
-        // ——— Диалог выхода ———
         if (showSignOutDialog) {
             AlertDialog(
                 onDismissRequest = { showSignOutDialog = false },
@@ -578,8 +576,9 @@ fun AccountActionsSection(onLoggedOut: () -> Unit) {
                 confirmButton = {
                     TextButton(onClick = {
                         showSignOutDialog = false
-                        FirebaseAuth.getInstance().signOut()
-                        onLoggedOut()
+                        profileViewModel.signOut {
+                            onLoggedOut()
+                        }
                     }) {
                         Text("Выйти")
                     }
@@ -592,7 +591,6 @@ fun AccountActionsSection(onLoggedOut: () -> Unit) {
             )
         }
 
-        // ——— Диалог удаления аккаунта ———
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
@@ -601,9 +599,8 @@ fun AccountActionsSection(onLoggedOut: () -> Unit) {
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteDialog = false
-                        val user = FirebaseAuth.getInstance().currentUser
-                        user?.delete()?.addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
+                        profileViewModel.deleteAccount { success ->
+                            if (success) {
                                 Toast.makeText(context, "Аккаунт удалён", Toast.LENGTH_SHORT).show()
                                 onLoggedOut()
                             } else {

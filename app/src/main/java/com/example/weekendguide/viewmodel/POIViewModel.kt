@@ -8,6 +8,7 @@ import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.data.repository.WikiRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -18,7 +19,8 @@ class POIViewModel(
     private val dataRepository: DataRepository,
     private val wikiRepository: WikiRepository,
     private val region: List<Region>,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
 ) : ViewModel() {
 
     // Язык для переводов и запросов (текущая выбранная локаль)
@@ -134,13 +136,17 @@ class POIViewModel(
 
     fun loadWikipediaDescription(title: String) {
         lastWikiTitle = title
-        _wikiDescription.value = null // <--- очищаем перед загрузкой
+        _wikiDescription.value = null
+
+        Log.d("POIViewModel", "Запрос описания для: $title на языке ${translateViewModel.language.value}")
 
         viewModelScope.launch {
             val result = wikiRepository.fetchWikipediaDescription(title, translateViewModel.language.value)
-            // Обновляем только если это всё ещё актуальный запрос
             if (lastWikiTitle == title) {
                 _wikiDescription.value = result
+                Log.d("POIViewModel", "Результат описания с Wikipedia: ${result?.take(200) ?: "null"}")
+            } else {
+                Log.d("POIViewModel", "Пропускаем обновление, title уже изменился")
             }
         }
     }
@@ -148,11 +154,13 @@ class POIViewModel(
     private fun observeLanguageChanges() {
         viewModelScope.launch {
             translateViewModel.language.collect { newLang ->
+                Log.d("POIViewModel", "Язык изменён на: $newLang")
                 lastWikiTitle?.let { title ->
-                    _wikiDescription.value = null // очищаем перед загрузкой
+                    _wikiDescription.value = null
                     val result = wikiRepository.fetchWikipediaDescription(title, newLang)
                     if (lastWikiTitle == title) {
                         _wikiDescription.value = result
+                        Log.d("POIViewModel", "Описание после смены языка: ${result?.take(200) ?: "null"}")
                     }
                 }
             }
@@ -163,6 +171,13 @@ class POIViewModel(
     fun toggleFavorite(poiId: String) {
         viewModelScope.launch {
             userPreferences.toggleFavorite(poiId)
+
+            // 🔁 Берём обновлённые избранные точки из DataStore и сохраняем на сервер
+            val favorites = userPreferences.favoriteIdsFlow.first()
+            val currentData = userPreferences.userDataFlow.first()
+            val updatedData = currentData.copy(favorites = favorites.toList())
+            userPreferences.saveUserData(updatedData)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
 
@@ -170,6 +185,13 @@ class POIViewModel(
     fun markPoiVisited(poiId: String) {
         viewModelScope.launch {
             userPreferences.markVisited(poiId)
+
+            // 🔁 Берём обновлённый список посещённых и сохраняем на сервер
+            val visited = userPreferences.visitedIdsFlow.first()
+            val currentData = userPreferences.userDataFlow.first()
+            val updatedData = currentData.copy(visited = visited.toList())
+            userPreferences.saveUserData(updatedData)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
 }

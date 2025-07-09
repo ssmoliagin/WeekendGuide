@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -15,10 +16,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
+import kotlinx.coroutines.flow.first
 
-class LocationViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val prefs = UserPreferences(application.applicationContext)
+class LocationViewModel(
+    application: Application,
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : AndroidViewModel(application) {
 
     private val _currentCity = MutableStateFlow<String?>(null)
     val currentCity = _currentCity.asStateFlow()
@@ -31,6 +35,13 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
 
     init {
         loadSavedLocation()
+    }
+
+    private fun loadSavedLocation() {
+        viewModelScope.launch {
+            _currentCity.value = userPreferences.getCurrentCity()
+            _location.value = userPreferences.getCurrentLocation()
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -47,13 +58,19 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
                     val lat = location.latitude
                     val lng = location.longitude
                     _location.value = lat to lng
-                    prefs.saveCurrentLocation(lat, lng)
+                    userPreferences.saveCurrentLocation(lat, lng)
 
                     // Используем обратное геокодирование
                     val cityName = getCityName(lat, lng)
                     cityName?.let {
                         _currentCity.value = it
-                        prefs.saveCurrentCity(it)
+                        userPreferences.saveCurrentCity(it)
+
+                        // 🔁 Обновляем также в Firestore
+                        val currentData = userPreferences.userDataFlow.first()
+                        val updatedData = currentData.copy(currentCity = it)
+                        userPreferences.saveUserData(updatedData)
+                        userRemote.launchSyncLocalToRemote(viewModelScope)
                     }
                 } else {
                     Log.e("LocationViewModel", "Не удалось получить местоположение")
@@ -75,29 +92,18 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun loadSavedLocation() {
-        viewModelScope.launch {
-            _currentCity.value = prefs.getCurrentCity()
-            _location.value = prefs.getCurrentLocation()
-        }
-    }
-
-    fun updateCityManually(city: String, lat: Double, lng: Double) {
-        viewModelScope.launch {
-            prefs.saveCurrentCity(city)
-            prefs.saveCurrentLocation(lat, lng)
-            _currentCity.value = city
-            _location.value = lat to lng
-        }
-    }
-
     fun setManualLocation(city: String, lat: Double, lng: Double) {
         viewModelScope.launch {
             _location.value = lat to lng
             _currentCity.emit(city)
-            prefs.saveCurrentCity(city)
-            prefs.saveCurrentLocation(lat, lng)
+            userPreferences.saveCurrentCity(city)
+            userPreferences.saveCurrentLocation(lat, lng)
+
+            // 🔁 Обновляем также в Firestore
+            val currentData = userPreferences.userDataFlow.first()
+            val updatedData = currentData.copy(currentCity = city)
+            userPreferences.saveUserData(updatedData)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
-
 }

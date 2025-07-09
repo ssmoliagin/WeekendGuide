@@ -5,6 +5,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.DataRepositoryImpl
+import com.example.weekendguide.data.repository.UserRemoteDataSource
+import com.example.weekendguide.data.repository.WikiRepository
 import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.main.MainScreen
@@ -24,6 +29,10 @@ fun AppNavigation(
     translateViewModel: TranslateViewModel,
     locationViewModel: LocationViewModel,
     pointsViewModel: PointsViewModel,
+    userPreferences: UserPreferences,
+    dataRepository: DataRepositoryImpl,
+    userRemoteDataSource: UserRemoteDataSource
+    //wikiRepository: WikiRepository,
 ) {
     val navController = rememberNavController()
 
@@ -73,7 +82,10 @@ fun AppNavigation(
                     }
                 },
                 translateViewModel = translateViewModel,
-                pointsViewModel = pointsViewModel
+                pointsViewModel = pointsViewModel,
+                userPreferences = userPreferences,
+                dataRepository = dataRepository,
+                userRemoteDataSource = userRemoteDataSource,
             )
         }
 
@@ -88,7 +100,11 @@ fun AppNavigation(
                 themeViewModel = themeViewModel,
                 translateViewModel = translateViewModel,
                 locationViewModel = locationViewModel,
-                pointsViewModel = pointsViewModel
+                pointsViewModel = pointsViewModel,
+                userPreferences = userPreferences,
+                dataRepository = dataRepository,
+                userRemoteDataSource = userRemoteDataSource,
+                //wikiRepository = wikiRepository,
             )
         }
 

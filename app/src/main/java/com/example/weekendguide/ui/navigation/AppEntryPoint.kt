@@ -1,11 +1,7 @@
 package com.example.weekendguide.ui.navigation
 
 import android.app.Application
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,23 +13,21 @@ import com.example.weekendguide.viewmodel.ViewModelFactory
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import com.example.weekendguide.R
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.LocalesRepoImpl
+import com.example.weekendguide.data.repository.UserRemoteDataSource
+import com.example.weekendguide.data.repository.WikiRepositoryImp
 import com.example.weekendguide.viewmodel.LocationViewModel
+import com.example.weekendguide.viewmodel.LocationViewModelFactory
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
-import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModelFactory
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 @Composable
@@ -41,17 +35,28 @@ fun AppEntryPoint() {
 
     val context = LocalContext.current.applicationContext
     val app = context as Application
+    val auth = FirebaseAuth.getInstance()
 
-    // ✅ создаём репозиторий
-    val localesRepo = remember { LocalesRepoImpl(context) }
-    val dataRepo = remember { DataRepositoryImpl(context) }
+
+    // ✅ инициализировать UserRepository
+    val firestore = FirebaseFirestore.getInstance()
+    val userPreferences = remember { UserPreferences(context.applicationContext) }
+    val userRemoteDataSource = remember {
+        UserRemoteDataSource(auth, firestore, userPreferences)
+    }
+
+    // ✅ создаём репозитории
+    val dataRepository = remember { DataRepositoryImpl(context.applicationContext) }
+    val localesRepo = remember { LocalesRepoImpl(context.applicationContext) }
+    //val wikiRepository = remember { WikiRepositoryImp(context.applicationContext) } // создадим в POIViewModelFactory
 
     // ✅ создаём ViewModels
     val loginViewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(
-            auth = FirebaseAuth.getInstance(),
+            auth = auth,
             oneTapClient = Identity.getSignInClient(context),
-            userPreferences = UserPreferences(context)
+            userPreferences = userPreferences,
+            userRemoteDataSource = userRemoteDataSource
         )
     )
 
@@ -60,23 +65,27 @@ fun AppEntryPoint() {
         factory = TranslateViewModelFactory(
             app = app,
             localesRepo = localesRepo,
-            dataRepo = dataRepo
+            userRemote = userRemoteDataSource
         )
     )
 
     val themeViewModel: ThemeViewModel = viewModel(
         key = "ThemeViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
+        factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource)
     )
 
     val locationViewModel: LocationViewModel = viewModel(
         key = "LocationViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
+        factory = LocationViewModelFactory(
+            app = app,
+            userPreferences = userPreferences,
+            userRemoteDataSource = userRemoteDataSource
+        )
     )
 
     val pointsViewModel: PointsViewModel = viewModel(
         key = "PointsViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application)
+        factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource)
     )
 
     //
@@ -105,8 +114,10 @@ fun AppEntryPoint() {
             loginViewModel = loginViewModel,
             translateViewModel = translateViewModel,
             locationViewModel = locationViewModel,
-            pointsViewModel = pointsViewModel
-
+            pointsViewModel = pointsViewModel,
+            userPreferences = userPreferences,
+            dataRepository = dataRepository,
+            userRemoteDataSource = userRemoteDataSource
         )
     }
 }

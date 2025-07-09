@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
@@ -47,6 +49,9 @@ import com.example.weekendguide.R
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalFocusManager
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +59,8 @@ fun LoginScreen(
     loginViewModel: LoginViewModel,
     onNavigate: (SplashViewModel.Destination) -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
+
     val isLoading by loginViewModel.isLoading.collectAsState()
     val errorMessage by loginViewModel.errorMessage.collectAsState()
 
@@ -208,8 +215,16 @@ fun LoginScreen(
                                 visualTransformation = PasswordVisualTransformation(),
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 14.sp),
-                                modifier = Modifier
-                                    .fillMaxWidth(0.9f)
+                                modifier = Modifier.fillMaxWidth(0.9f),
+                                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        focusManager.clearFocus()
+                                        if (email.isNotBlank() && password.isNotBlank()) {
+                                            loginViewModel.loginWithEmail(email, password)
+                                        }
+                                    }
+                                )
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -217,7 +232,8 @@ fun LoginScreen(
                             TextButton(
                                 onClick = {
                                     loginViewModel.loginWithEmail(email, password)
-                                }
+                                },
+                                enabled = email.isNotBlank() && password.isNotBlank()
                             ) {
                                 Text("Продолжить с Email", fontSize = 14.sp)
                             }

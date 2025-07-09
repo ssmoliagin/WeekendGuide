@@ -8,16 +8,18 @@ import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.LocalesRepo
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 class TranslateViewModel(
     application: Application,
     private val repo: LocalesRepo,
-    private  val dataRepo: DataRepository
+    private val userRemote: UserRemoteDataSource
 ) : AndroidViewModel(application) {
 
     private val prefs = UserPreferences(application)
@@ -51,6 +53,12 @@ class TranslateViewModel(
         viewModelScope.launch {
             prefs.saveLanguage(newLang)
             _lang.value = newLang
+
+            // 🔁 Обновляем также в Firestore
+            val currentData = prefs.userDataFlow.first()
+            val updatedData = currentData.copy(language = newLang)
+            prefs.saveUserData(updatedData)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
 

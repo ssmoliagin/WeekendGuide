@@ -8,17 +8,23 @@ import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
+import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.DataRepositoryImpl
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.first
 
-class StoreViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = DataRepositoryImpl(application)
-    private val userPreferences = UserPreferences(application)
+class StoreViewModel(
+    application: Application,
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource,
+    private val dataRepository: DataRepository,
+) : AndroidViewModel(application) {
 
     private val _countries = MutableStateFlow<List<Country>>(emptyList())
     val countries: StateFlow<List<Country>> = _countries.asStateFlow()
@@ -57,10 +63,10 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _loading.value = true
             try {
-                val countriesList = repository.getCountries()
+                val countriesList = dataRepository.getCountries()
                 val deferredRegions = countriesList.map { country ->
                     async {
-                        country.countryCode to repository.getRegions(country.countryCode)
+                        country.countryCode to dataRepository.getRegions(country.countryCode)
                     }
                 }
                 val regionsMap = deferredRegions.awaitAll().toMap()
@@ -80,23 +86,31 @@ class StoreViewModel(application: Application) : AndroidViewModel(application) {
     fun purchaseRegionAndLoadPOI(region: Region, translateViewModel: TranslateViewModel) {
         viewModelScope.launch {
             try {
+                // Сохраняем регион и страну локально
                 userPreferences.addPurchasedRegion(region.region_code)
                 userPreferences.addPurchasedCountries(region.country_code)
 
+                // 🔁 Обновляем Firestore
+                val currentData = userPreferences.userDataFlow.first()
+                val updatedData = currentData.copy(
+                    purchasedRegions = currentData.purchasedRegions + region.region_code,
+                    purchasedCountries = currentData.purchasedCountries + region.country_code
+                )
+                userPreferences.saveUserData(updatedData)
+                userRemote.launchSyncLocalToRemote(viewModelScope)
+
                 // Скачиваем файл POI
-                repository.downloadAndCachePOI(region, translateViewModel)
+                dataRepository.downloadAndCachePOI(region, translateViewModel)
 
                 // Загружаем POI из файла
-                val pois = repository.getPOIs(region.region_code, translateViewModel)
-
-                // Обновляем
+                val pois = dataRepository.getPOIs(region.region_code, translateViewModel)
                 _poiList.value = pois
 
-                // Также можно обновить купленные регионы
+                // Обновляем список купленных
                 loadPurchased()
+
             } catch (e: Exception) {
-                // Обработка ошибок
-                Log.e("RegionViewModel", "Ошибка при покупке региона и загрузке POI", e)
+                Log.e("StoreViewModel", "Ошибка при покупке региона и загрузке POI", e)
             }
         }
     }
