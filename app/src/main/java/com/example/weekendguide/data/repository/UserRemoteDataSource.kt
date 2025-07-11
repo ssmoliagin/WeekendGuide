@@ -45,13 +45,6 @@ class UserRemoteDataSource(
         }
     }
 
-    suspend fun syncLocalToRemote() {
-        val user = auth.currentUser ?: throw Exception("User not logged in")
-        val userId = user.uid
-        val localData = userPreferences.userDataFlow.first()
-        usersCollection.document(userId).set(localData).await()
-    }
-
     /**
      * Вызывать при изменении настроек локально,
      * чтобы сразу синхронизировать с Firestore.
@@ -61,9 +54,16 @@ class UserRemoteDataSource(
             try {
                 syncLocalToRemote()
             } catch (e: Exception) {
-                // Логировать ошибку, например
+
             }
         }
+    }
+
+    suspend fun syncLocalToRemote() {
+        val user = auth.currentUser ?: throw Exception("User not logged in")
+        val userId = user.uid
+        val localData = userPreferences.userDataFlow.first()
+        usersCollection.document(userId).set(localData).await()
     }
 
     suspend fun deleteUserFromFirestore(userId: String) {

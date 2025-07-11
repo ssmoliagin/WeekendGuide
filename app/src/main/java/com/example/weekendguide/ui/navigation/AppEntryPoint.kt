@@ -37,7 +37,6 @@ fun AppEntryPoint() {
     val app = context as Application
     val auth = FirebaseAuth.getInstance()
 
-
     // ✅ инициализировать UserRepository
     val firestore = FirebaseFirestore.getInstance()
     val userPreferences = remember { UserPreferences(context.applicationContext) }
@@ -110,6 +109,7 @@ fun AppEntryPoint() {
 
     WeekendGuideTheme(darkTheme = isDarkTheme) {
         AppNavigation(
+            app = app,
             themeViewModel = themeViewModel,
             loginViewModel = loginViewModel,
             translateViewModel = translateViewModel,

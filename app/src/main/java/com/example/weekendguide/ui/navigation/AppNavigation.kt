@@ -1,5 +1,6 @@
 package com.example.weekendguide.ui.navigation
 
+import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -24,6 +25,7 @@ import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @Composable
 fun AppNavigation(
+    app: Application,
     themeViewModel: ThemeViewModel,
     loginViewModel: LoginViewModel,
     translateViewModel: TranslateViewModel,
@@ -40,8 +42,11 @@ fun AppNavigation(
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
-            val splashViewModel: SplashViewModel = viewModel()
-            SplashScreen(viewModel = splashViewModel, onNavigate = { destination ->
+            SplashScreen(
+                app = app,
+                userPreferences = userPreferences,
+                userRemote = userRemoteDataSource,
+                onNavigate = { destination ->
                 when (destination) {
                     SplashViewModel.Destination.Login -> navController.navigate("login") {
                         popUpTo("splash") { inclusive = true }
@@ -91,6 +96,7 @@ fun AppNavigation(
 
         composable("main") {
             MainScreen(
+                app = app,
                 onLoggedOut = {
                 navController.navigate("splash") {
                     popUpTo(0) { inclusive = true } // Удаляет всю навигационную историю

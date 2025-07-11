@@ -53,8 +53,7 @@ class PointsViewModel(
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(
                 current_GP = _current_gp.value,
-                total_GP = _total_gp.value,
-                spent_GP = _spent_gp.value
+                total_GP = _total_gp.value
             )
             userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)
@@ -73,13 +72,12 @@ class PointsViewModel(
                 val currentData = userPreferences.userDataFlow.first()
                 val updatedData = currentData.copy(
                     current_GP = _current_gp.value,
-                    total_GP = _total_gp.value,
                     spent_GP = _spent_gp.value
                 )
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
             } else {
-                // Можно добавить LiveData/Event для UI: "Недостаточно очков"
+                // "Недостаточно очков"
             }
         }
     }

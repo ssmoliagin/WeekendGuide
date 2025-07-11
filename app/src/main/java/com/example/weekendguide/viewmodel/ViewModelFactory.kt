@@ -16,8 +16,8 @@ class ViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return when {
 
-            modelClass.isAssignableFrom(PointsViewModel::class.java) -> {
-                PointsViewModel(app, userPreferences, userRemote) as T
+            modelClass.isAssignableFrom(SplashViewModel::class.java) -> {
+                SplashViewModel(app, userPreferences, userRemote) as T
             }
             modelClass.isAssignableFrom(ThemeViewModel::class.java) -> {
                 ThemeViewModel(app, userPreferences, userRemote) as T
@@ -27,6 +27,9 @@ class ViewModelFactory(
             }
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
                 ProfileViewModel(app, userPreferences, userRemote) as T
+            }
+            modelClass.isAssignableFrom(PointsViewModel::class.java) -> {
+                PointsViewModel(app, userPreferences, userRemote) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: $modelClass")
         }

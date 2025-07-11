@@ -43,7 +43,7 @@ class LoginViewModel(
     private val _navigateDestination = MutableSharedFlow<SplashViewModel.Destination>()
     val navigateDestination = _navigateDestination.asSharedFlow()
 
-    fun checkRegionAndNavigate() {
+    fun appNavigation() {
         viewModelScope.launch {
             val regions = userPreferences.getCollectionRegions()
             if (regions.isNotEmpty()) {
@@ -61,9 +61,9 @@ class LoginViewModel(
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 viewModelScope.launch {
-                    val res = userRemoteDataSource.syncOnLogin()
+                    val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
                     if (res.isSuccess) {
-                        checkRegionAndNavigate()
+                        appNavigation()
                     } else {
                         _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
                     }
@@ -74,9 +74,9 @@ class LoginViewModel(
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnSuccessListener {
                         viewModelScope.launch {
-                            val res = userRemoteDataSource.syncOnLogin()
+                            val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
                             if (res.isSuccess) {
-                                checkRegionAndNavigate()
+                                appNavigation()
                             } else {
                                 _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
                             }
@@ -126,9 +126,9 @@ class LoginViewModel(
                     _isLoading.value = false
                     if (task.isSuccessful) {
                         viewModelScope.launch {
-                            val res = userRemoteDataSource.syncOnLogin()
+                            val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
                             if (res.isSuccess) {
-                                checkRegionAndNavigate()
+                                appNavigation()
                             } else {
                                 _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
                             }
@@ -143,27 +143,13 @@ class LoginViewModel(
         }
     }
 
-    private suspend fun saveUserToPreferences(user: FirebaseUser?) {
-        if (user == null) return
-
-        // 🔁 Обновляем также в Firestore
-        val data = UserData(
-            email = user.email,
-            displayName = user.displayName,
-            photoUrl = user.photoUrl?.toString()
-        )
-        userPreferences.saveUserData(data)
-        userRemoteDataSource.syncLocalToRemote()
-    }
-
-
     fun checkAlreadyLoggedIn() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             viewModelScope.launch {
-                val res = userRemoteDataSource.syncOnLogin()
+                val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
                 if (res.isSuccess) {
-                    checkRegionAndNavigate()
+                    appNavigation()
                 } else {
                     _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
                 }

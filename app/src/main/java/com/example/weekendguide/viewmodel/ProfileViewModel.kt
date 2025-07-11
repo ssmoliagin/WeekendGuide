@@ -36,6 +36,7 @@ class ProfileViewModel(
         }
     }
 
+    //единицы измерения
     fun setUserMeasurement(newMeas: String) {
         viewModelScope.launch {
             userPreferences.saveMeasurement(newMeas)
@@ -49,6 +50,7 @@ class ProfileViewModel(
         }
     }
 
+    //уведомления вкл/выкл
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferences.setNotification(enabled)
@@ -62,6 +64,7 @@ class ProfileViewModel(
         }
     }
 
+    //выход из аккаунта
     fun signOut(onFinished: () -> Unit) {
         viewModelScope.launch {
             // Очистка кэша и локальных данных
@@ -71,6 +74,7 @@ class ProfileViewModel(
         }
     }
 
+    //удаление акк
     fun deleteAccount(onResult: (success: Boolean) -> Unit) {
         val user = FirebaseAuth.getInstance().currentUser
         val userId = user?.uid

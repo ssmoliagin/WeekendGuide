@@ -25,22 +25,12 @@ class StatisticsViewModel(
     val purchasedCountriesCount: StateFlow<Int> = _purchasedCountriesCount
 
     init {
-        loadData()
-    }
-
-    fun loadData() {
         viewModelScope.launch {
-            val levels = userPreferences.getCategoryLevels()
-            _categoryLevels.value = levels
-
-            _purchasedRegionsCount.value = userPreferences.getPurchasedRegions().size
-            _purchasedCountriesCount.value = userPreferences.getPurchasedCountries().size
-
-            // 🔁 Обновляем также в Firestore
-            val currentData = userPreferences.userDataFlow.first()
-            val updatedData = currentData.copy(categoryLevels = levels)
-            userPreferences.saveUserData(updatedData)
-            userRemoteDataSource.launchSyncLocalToRemote(viewModelScope)
+            userPreferences.userDataFlow.collect { userData ->
+                _purchasedRegionsCount.value = userData.purchasedRegions.size
+                _purchasedCountriesCount.value = userData.purchasedCountries.size
+                _categoryLevels.value = userData.categoryLevels
+            }
         }
     }
 }

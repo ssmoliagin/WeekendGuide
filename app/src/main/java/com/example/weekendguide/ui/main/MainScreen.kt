@@ -61,6 +61,7 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    app: Application,
     loginViewModel: LoginViewModel,
     themeViewModel: ThemeViewModel,
     translateViewModel: TranslateViewModel,
@@ -91,14 +92,14 @@ fun MainScreen(
 
     val mainStateViewModel: MainStateViewModel = viewModel(
         key = "MainStateViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource )
+        factory = ViewModelFactory(app, userPreferences, userRemoteDataSource )
     )
 
     val regions by mainStateViewModel.regions.collectAsState()
 
     val profileViewModel: ProfileViewModel = viewModel(
         key = "ProfileViewModel",
-        factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource)
+        factory = ViewModelFactory(app, userPreferences, userRemoteDataSource)
     )
     val currentUnits by profileViewModel.units.collectAsState()
 
@@ -123,7 +124,7 @@ fun MainScreen(
             if (isGranted) {
                 locationViewModel.detectLocationFromGPS()
             } else {
-                Toast.makeText(context, "Разрешение не предоставлено", Toast.LENGTH_SHORT).show()
+                Toast.makeText(app, "Разрешение не предоставлено", Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -133,7 +134,7 @@ fun MainScreen(
 
     var onRequestLocationChange = {
         when {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+            ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
                 locationViewModel.detectLocationFromGPS()
             }
             else -> {
@@ -148,9 +149,9 @@ fun MainScreen(
     val api = Constants.GOOGLE_MAP_API
     val placesClient = remember {
         if (!Places.isInitialized()) {
-            Places.initialize(context, api)
+            Places.initialize(app, api)
         }
-        Places.createClient(context)
+        Places.createClient(app)
     }
 
     fun fetchPredictions(query: String) {
@@ -173,7 +174,7 @@ fun MainScreen(
         if (regions.isNotEmpty()) {
             val poiViewModel: POIViewModel = remember(regions) { //!ViewModel пересоздаётся при изменении regions
                 POIViewModelFactory(
-                    context = context,
+                    context = app,
                     region = regions,
                     translateViewModel = translateViewModel,
                     dataRepository = dataRepository,
