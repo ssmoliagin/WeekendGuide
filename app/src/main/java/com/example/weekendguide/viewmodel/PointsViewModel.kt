@@ -8,6 +8,7 @@ import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class PointsViewModel(
     private val application: Application,
@@ -49,7 +51,7 @@ class PointsViewModel(
 
             // 🔁 Обновляем также в Firestore
             val currentData = userPreferences.userDataFlow.first()
-            val updatedData = UserData(
+            val updatedData = currentData.copy(
                 current_GP = _current_gp.value,
                 total_GP = _total_gp.value,
                 spent_GP = _spent_gp.value
@@ -69,7 +71,7 @@ class PointsViewModel(
 
                 // 🔁 Обновляем также в Firestore
                 val currentData = userPreferences.userDataFlow.first()
-                val updatedData = UserData(
+                val updatedData = currentData.copy(
                     current_GP = _current_gp.value,
                     total_GP = _total_gp.value,
                     spent_GP = _spent_gp.value
@@ -92,7 +94,7 @@ class PointsViewModel(
 
             // 🔁 Обновляем также в Firestore
             val currentData = userPreferences.userDataFlow.first()
-            val updatedData = UserData(
+            val updatedData = currentData.copy(
                 current_GP = _current_gp.value,
                 total_GP = _total_gp.value,
                 spent_GP = _spent_gp.value
@@ -111,19 +113,33 @@ class PointsViewModel(
         locationViewModel: LocationViewModel,
         onResult: (Boolean) -> Unit
     ) {
+        val minDuration = 2000L      // минимальное время ожидания в миллисекундах
+        val maxTimeout = 6000L      // максимальный таймаут для обновления локации
+
+        val startTime = System.currentTimeMillis()
         try {
             val oldLocation = locationViewModel.location.value
 
-            // Запрашиваем новую GPS-локацию
-            locationViewModel.detectLocationFromGPS()
+            // Пытаемся обновить координаты с таймаутом maxTimeout
+            val timedOut = withTimeoutOrNull(maxTimeout) {
+                locationViewModel.detectLocationFromGPS()
+                // Ждём обновления локации, отличной от старой
+                locationViewModel.location
+                    .filterNotNull()
+                    .dropWhile { it == oldLocation }
+                    .first()
+            } == null
 
-            // Ждём изменения координат
-            val newLocation = locationViewModel.location
-                .filterNotNull()
-                .dropWhile { it == oldLocation }
-                .first()
+            if (timedOut) {
+                onResult(false)
+                return
+            }
 
-            // Считаем дистанцию
+            val newLocation = locationViewModel.location.value ?: run {
+                onResult(false)
+                return
+            }
+
             val result = FloatArray(1)
             Location.distanceBetween(
                 newLocation.first,
@@ -134,15 +150,28 @@ class PointsViewModel(
             )
             val distanceMeters = result[0]
 
-            if (distanceMeters < 100_000_000) {
+            val success = distanceMeters < 200_000_000 // твой порог проверки
+
+            if (success) {
                 addGP(100)
-                onResult(true)
-            } else {
-                onResult(false)
             }
+
+            val elapsed = System.currentTimeMillis() - startTime
+            val remainingTime = minDuration - elapsed
+
+            // Если операция прошла быстрее минимального времени — ждём оставшееся время
+            if (remainingTime > 0) {
+                delay(remainingTime)
+            }
+
+            onResult(success)
         } catch (e: Exception) {
+            val elapsed = System.currentTimeMillis() - startTime
+            val remainingTime = minDuration - elapsed
+            if (remainingTime > 0) {
+                delay(remainingTime)
+            }
             onResult(false)
-            e.printStackTrace()
         }
     }
 }

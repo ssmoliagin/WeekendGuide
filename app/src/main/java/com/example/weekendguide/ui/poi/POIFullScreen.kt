@@ -279,29 +279,16 @@ fun POIFullScreen(
             // Кнопка чекпоинта
             Button(
                 onClick = {
+                    isChecking = true
                     coroutineScope.launch {
-                        isChecking = true
-
-                        // Показать "Сканирование..." минимум 2 секунды
-                        val scanStart = System.currentTimeMillis()
-                        delay(2000L)
-
-                        // Только после этого — запускаем основную проверку
                         pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
-                            coroutineScope.launch {
-                                // Гарантируем, что прошло минимум 2 секунды
-                                val elapsed = System.currentTimeMillis() - scanStart
-                                if (elapsed < 2000L) delay(2000L - elapsed)
-
-                                if (success) {
-                                    poiViewModel.markPoiVisited(poi.id)
-                                    Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
-                                }
-
-                                isChecking = false
+                            if (success) {
+                                poiViewModel.markPoiVisited(poi.id)
+                                Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
                             }
+                            isChecking = false
                         }
                     }
                 },
@@ -324,6 +311,7 @@ fun POIFullScreen(
                     color = Color.White
                 )
             }
+
 
             // Оверлей "Сканирование местности..."
             if (isChecking) {

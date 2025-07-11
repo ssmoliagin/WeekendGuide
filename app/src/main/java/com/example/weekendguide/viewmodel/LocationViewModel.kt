@@ -66,9 +66,13 @@ class LocationViewModel(
                         _currentCity.value = it
                         userPreferences.saveCurrentCity(it)
 
-                        // 🔁 Обновляем также в Firestore
-                        val currentData = userPreferences.userDataFlow.first()
-                        val updatedData = currentData.copy(currentCity = it)
+                        //Обновляем и записываем данные
+                        val currentData = userPreferences.userDataFlow.first() // Получаем полные данные
+                        val updatedData = currentData.copy( // Важно использовать !.copy
+                            currentCity = it,
+                            currentLat = lat,
+                            currentLng = lng
+                        )
                         userPreferences.saveUserData(updatedData)
                         userRemote.launchSyncLocalToRemote(viewModelScope)
                     }
@@ -96,12 +100,14 @@ class LocationViewModel(
         viewModelScope.launch {
             _location.value = lat to lng
             _currentCity.emit(city)
-            userPreferences.saveCurrentCity(city)
-            userPreferences.saveCurrentLocation(lat, lng)
 
-            // 🔁 Обновляем также в Firestore
-            val currentData = userPreferences.userDataFlow.first()
-            val updatedData = currentData.copy(currentCity = city)
+            //Обновляем и записываем данные
+            val currentData = userPreferences.userDataFlow.first() // Получаем полные данные
+            val updatedData = currentData.copy(
+                currentCity = city,
+                currentLat = lat,
+                currentLng = lng
+            )
             userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }
