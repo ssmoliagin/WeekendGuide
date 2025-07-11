@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
@@ -63,6 +64,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +100,8 @@ fun POIFullScreen(
         poiViewModel.loadWikipediaDescription(poi.title)
         Log.d("POIViewModel", "Got wiki: ${poi.title}")
     }
+
+    var isChecking by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -273,19 +277,31 @@ fun POIFullScreen(
             }
 
             // Кнопка чекпоинта
-            var isChecking by remember { mutableStateOf(false) }
             Button(
                 onClick = {
-                    isChecking = true
                     coroutineScope.launch {
+                        isChecking = true
+
+                        // Показать "Сканирование..." минимум 2 секунды
+                        val scanStart = System.currentTimeMillis()
+                        delay(2000L)
+
+                        // Только после этого — запускаем основную проверку
                         pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
-                            if (success) {
-                                poiViewModel.markPoiVisited(poi.id)
-                                Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                            coroutineScope.launch {
+                                // Гарантируем, что прошло минимум 2 секунды
+                                val elapsed = System.currentTimeMillis() - scanStart
+                                if (elapsed < 2000L) delay(2000L - elapsed)
+
+                                if (success) {
+                                    poiViewModel.markPoiVisited(poi.id)
+                                    Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                                }
+
+                                isChecking = false
                             }
-                            isChecking = false
                         }
                     }
                 },
@@ -307,6 +323,11 @@ fun POIFullScreen(
                     },
                     color = Color.White
                 )
+            }
+
+            // Оверлей "Сканирование местности..."
+            if (isChecking) {
+                LoadingOverlay(title = "Сканирование местности...")
             }
         }
     }

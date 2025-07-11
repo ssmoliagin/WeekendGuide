@@ -134,7 +134,7 @@ class PointsViewModel(
             )
             val distanceMeters = result[0]
 
-            if (distanceMeters < 200000000) {
+            if (distanceMeters < 100_000_000) {
                 addGP(100)
                 onResult(true)
             } else {
