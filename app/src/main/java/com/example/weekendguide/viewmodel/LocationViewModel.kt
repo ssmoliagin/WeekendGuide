@@ -37,7 +37,7 @@ class LocationViewModel(
         loadSavedLocation()
     }
 
-    private fun loadSavedLocation() {
+    fun loadSavedLocation() {
         viewModelScope.launch {
             _currentCity.value = userPreferences.getCurrentCity()
             _location.value = userPreferences.getCurrentLocation()

@@ -23,13 +23,19 @@ class TranslateViewModel(
 ) : AndroidViewModel(application) {
 
     private val prefs = UserPreferences(application)
-    private val _lang = MutableStateFlow("")
+    private val _lang = MutableStateFlow("en")
     val language: StateFlow<String> = _lang.asStateFlow()
 
     init {
         viewModelScope.launch {
             _lang.value = prefs.getLanguage()
             loadUITranslations()
+        }
+    }
+
+    fun refreshLang () {
+        viewModelScope.launch {
+            _lang.value = prefs.getLanguage()
         }
     }
 

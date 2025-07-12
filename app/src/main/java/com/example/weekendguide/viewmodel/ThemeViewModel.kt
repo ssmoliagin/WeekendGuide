@@ -26,6 +26,12 @@ class ThemeViewModel(
         }
     }
 
+    fun refreshTheme () {
+        viewModelScope.launch {
+            _theme.value = userPreferences.getTheme()
+        }
+    }
+
     fun setTheme(newTheme: String) {
         viewModelScope.launch {
             userPreferences.saveTheme(newTheme)

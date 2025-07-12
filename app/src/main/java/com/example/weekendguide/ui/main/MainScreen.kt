@@ -109,7 +109,9 @@ fun MainScreen(
 
     //обновление моделей один раз
     LaunchedEffect(Unit) {
-        //translateViewModel.refreshLang() // обновляем язык
+        locationViewModel.loadSavedLocation() //обновляем локацию
+        themeViewModel.refreshTheme() // обновляем тему
+        translateViewModel.refreshLang() // обновляем язык
         pointsViewModel.refreshGP() // обновляем очки
     }
 
@@ -516,7 +518,7 @@ fun MainScreen(
                         },
                         poiViewModel = poiViewModel,
                         pointsViewModel = pointsViewModel,
-                        locationViewModel = locationViewModel
+                        locationViewModel = locationViewModel,
                     )
                 }
             }
@@ -536,7 +538,7 @@ fun MainScreen(
                     },
                     poiViewModel = poiViewModel,
                     pointsViewModel = pointsViewModel,
-                    locationViewModel = locationViewModel
+                    locationViewModel = locationViewModel,
                 )
             }
         }

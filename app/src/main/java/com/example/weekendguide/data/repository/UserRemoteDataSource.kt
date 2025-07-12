@@ -34,7 +34,8 @@ class UserRemoteDataSource(
                 val newUserData = UserData(
                     email = user.email,
                     displayName = user.displayName,
-                    photoUrl = user.photoUrl?.toString()
+                    photoUrl = user.photoUrl?.toString(),
+                    language = userPreferences.getLanguage() //автоопределился при старте
                 )
                 usersCollection.document(userId).set(newUserData).await()
                 userPreferences.saveUserData(newUserData)
