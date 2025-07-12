@@ -1,5 +1,6 @@
 package com.example.weekendguide.ui.statistics
 
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -141,6 +142,7 @@ fun StatisticsScreen(
                 val count = typeStats[type] ?: 0
                 val level = typeGoals.indexOfFirst { count < it }.let { if (it == -1) typeGoals.size else it }
                 val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()
+                val nextGoal = currentGoal - count
                 val percent = (count * 100 / currentGoal).coerceAtMost(100)
                 val icon = typeIcons[type] ?: Icons.Default.Star
 
@@ -208,6 +210,44 @@ fun StatisticsScreen(
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(8.dp))
                         )
+
+                        Text(
+                            text = "$nextGoal до следующего уровня",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (isNewLevelReached) {
+                            Button(
+                                onClick = {
+                                    showCongrats = true
+                                    statisticsViewModel.updateCategoryLevel(type, level)
+                                    pointsViewModel.addGP(1000)
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.End)
+                                    .padding(top = 12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.EmojiEvents, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Level Up!", color = MaterialTheme.colorScheme.onPrimary)
+                            }
+                        }
+
+                        if (showCongrats) {
+                            Text(
+                                text = "🎉 +1000 GP!",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.ExtraBold
+                                ),
+                                modifier = Modifier
+                                    .align(Alignment.End)
+                                    .padding(top = 10.dp)
+                            )
+                        }
                     }
                 }
             }

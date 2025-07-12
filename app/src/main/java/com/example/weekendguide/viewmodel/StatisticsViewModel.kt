@@ -33,4 +33,25 @@ class StatisticsViewModel(
             }
         }
     }
+
+    fun updateCategoryLevel(category: String, level: Int) {
+        viewModelScope.launch {
+            userPreferences.levelUpCategory(category, level)
+
+            // Обновляем локальный state
+            val updatedMap = _categoryLevels.value.toMutableMap().apply {
+                put(category, level)
+            }
+            _categoryLevels.value = updatedMap
+
+            // Сохраняем в userData (для синхронизации с Firestore)
+            val currentData = userPreferences.userDataFlow.first()
+            val updatedData = currentData.copy(categoryLevels = updatedMap)
+            userPreferences.saveUserData(updatedData)
+
+            // Синхронизируем с Firestore
+            userRemoteDataSource.launchSyncLocalToRemote(viewModelScope)
+        }
+    }
+
 }

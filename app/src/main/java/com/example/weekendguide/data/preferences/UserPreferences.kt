@@ -149,11 +149,10 @@ class UserPreferences(private val context: Context) {
         }
     }
 
-    suspend fun levelUpCategory(category: String, newLevel: Int, rewardPoints: Int) {
+    suspend fun levelUpCategory(category: String, newLevel: Int) {
         val levels = getCategoryLevels().toMutableMap()
         levels[category] = newLevel
         saveCategoryLevels(levels)
-        addGP(rewardPoints)
     }
 
     // --- Функции работы с GuidePoints ---
