@@ -111,33 +111,25 @@ class PointsViewModel(
         locationViewModel: LocationViewModel,
         onResult: (Boolean) -> Unit
     ) {
-        val minDuration = 2000L      // минимальное время ожидания в миллисекундах
-        val maxTimeout = 6000L      // максимальный таймаут для обновления локации
-
+        val minDuration = 2000L     // минимальное время, которое должна занимать операция
+        val maxTimeout = 6000L      // максимум ожидания локации
         val startTime = System.currentTimeMillis()
-        try {
-            val oldLocation = locationViewModel.location.value
 
-            // Пытаемся обновить координаты с таймаутом maxTimeout
-            val timedOut = withTimeoutOrNull(maxTimeout) {
+        try {
+            // Запрашиваем обновление локации и ждём первое ненулевое значение
+            val newLocation = withTimeoutOrNull(maxTimeout) {
                 locationViewModel.detectLocationFromGPS()
-                // Ждём обновления локации, отличной от старой
                 locationViewModel.location
                     .filterNotNull()
-                    .dropWhile { it == oldLocation }
                     .first()
-            } == null
+            }
 
-            if (timedOut) {
+            if (newLocation == null) {
                 onResult(false)
                 return
             }
 
-            val newLocation = locationViewModel.location.value ?: run {
-                onResult(false)
-                return
-            }
-
+            // Проверка расстояния до POI
             val result = FloatArray(1)
             Location.distanceBetween(
                 newLocation.first,
@@ -148,28 +140,26 @@ class PointsViewModel(
             )
             val distanceMeters = result[0]
 
-            val success = distanceMeters < 200_000_000 // твой порог проверки
+            val success = distanceMeters < 200_000_000.0 // <= 200 метров — считается достигнутым
 
             if (success) {
                 addGP(100)
             }
 
+            // Гарантируем минимальное время выполнения
             val elapsed = System.currentTimeMillis() - startTime
-            val remainingTime = minDuration - elapsed
-
-            // Если операция прошла быстрее минимального времени — ждём оставшееся время
-            if (remainingTime > 0) {
-                delay(remainingTime)
-            }
+            val remaining = minDuration - elapsed
+            if (remaining > 0) delay(remaining)
 
             onResult(success)
         } catch (e: Exception) {
+            // В случае ошибки — тоже выдерживаем минимальное время
             val elapsed = System.currentTimeMillis() - startTime
-            val remainingTime = minDuration - elapsed
-            if (remainingTime > 0) {
-                delay(remainingTime)
-            }
+            val remaining = minDuration - elapsed
+            if (remaining > 0) delay(remaining)
+
             onResult(false)
         }
     }
+
 }

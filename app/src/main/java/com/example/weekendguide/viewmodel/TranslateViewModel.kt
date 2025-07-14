@@ -36,6 +36,8 @@ class TranslateViewModel(
     fun refreshLang () {
         viewModelScope.launch {
             _lang.value = prefs.getLanguage()
+            if (_lang.value.isBlank()) detectLanguage()
+
         }
     }
 
@@ -52,6 +54,12 @@ class TranslateViewModel(
                 _lang.value = saved // ✅ если язык есть, обновляем сразу
             }
             loadUITranslations()
+
+            // 🔁 Обновляем также в Firestore
+            val currentData = prefs.userDataFlow.first()
+            val updatedData = currentData.copy(language = _lang.value)
+            prefs.saveUserData(updatedData)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
 

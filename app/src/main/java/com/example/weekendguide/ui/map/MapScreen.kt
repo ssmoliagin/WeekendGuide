@@ -21,6 +21,10 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlin.collections.forEach
+import androidx.compose.runtime.LaunchedEffect
+import com.google.android.gms.maps.CameraUpdateFactory
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,19 +41,20 @@ fun MapScreen(
 ) {
 
     val radiusValue = when (selectedRadius) {
-        "20км" -> 20_000.0
-        "50км" -> 50_000.0
-        "100км" -> 100_000.0
-        "200км" -> 200_000.0
+        "20" -> 20_000.0
+        "50" -> 50_000.0
+        "100" -> 100_000.0
+        "200" -> 200_000.0
         "∞" -> 0.0
         else -> 200_000.0
     }
     val zoom = when (selectedRadius) {
-        "20км" -> 10f
-        "50км" -> 9f
-        "100км" -> 8f
+        "20" -> 10f
+        "50" -> 9f
+        "100" -> 8f
         else -> 7f
     }
+
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
@@ -57,6 +62,22 @@ fun MapScreen(
             zoom
         )
     }
+    LaunchedEffect(selectedRadius, userLocation) {
+        val newZoom = when (selectedRadius) {
+            "20" -> 10f
+            "50" -> 9f
+            "100" -> 8f
+            else -> 7f
+        }
+
+        userLocation?.let {
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngZoom(LatLng(it.first, it.second), newZoom),
+                durationMs = 1000
+            )
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

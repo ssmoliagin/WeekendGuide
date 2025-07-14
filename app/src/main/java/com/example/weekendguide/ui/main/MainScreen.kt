@@ -18,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -30,6 +31,7 @@ import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.data.repository.WikiRepository
 import com.example.weekendguide.ui.components.FiltersButtons
+import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.ui.components.LoadingScreen
 import com.example.weekendguide.ui.components.LocationPanel
 import com.example.weekendguide.ui.components.NavigationBar
@@ -57,6 +59,8 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.TypeFilter
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,6 +94,10 @@ fun MainScreen(
     var selectedItem by remember { mutableStateOf("main") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
 
+    val currentGP by pointsViewModel.currentGP.collectAsState()
+    val totalGP by pointsViewModel.totalGP.collectAsState()
+    val spentGP by pointsViewModel.spentGP.collectAsState()
+
     val mainStateViewModel: MainStateViewModel = viewModel(
         key = "MainStateViewModel",
         factory = ViewModelFactory(app, userPreferences, userRemoteDataSource )
@@ -107,19 +115,12 @@ fun MainScreen(
         factory = StatisticsViewModelFactory(userPreferences, userRemoteDataSource)
     )
 
-    //обновление моделей один раз
-    LaunchedEffect(Unit) {
-        locationViewModel.loadSavedLocation() //обновляем локацию
-        themeViewModel.refreshTheme() // обновляем тему
-        translateViewModel.refreshLang() // обновляем язык
-        pointsViewModel.refreshGP() // обновляем очки
-    }
-
-    val currentGP by pointsViewModel.currentGP.collectAsState()
-    val totalGP by pointsViewModel.totalGP.collectAsState()
-    val spentGP by pointsViewModel.spentGP.collectAsState()
-
     // --- ОПРЕДЕЛЯЕМ ЛОКАЦИЮ ---
+    val userLocation by locationViewModel.location.collectAsState()
+    val currentCity by locationViewModel.currentCity.collectAsState()
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -131,13 +132,15 @@ fun MainScreen(
         }
     )
 
-    val userLocation by locationViewModel.location.collectAsState()
-    val currentCity by locationViewModel.currentCity.collectAsState()
-
-    var onRequestLocationChange = {
+    fun onRequestLocationChange()
+    {
         when {
             ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
-                locationViewModel.detectLocationFromGPS()
+                isLoading = true
+                coroutineScope.launch {
+                    locationViewModel.detectLocationFromGPS()
+                    isLoading = false
+                }
             }
             else -> {
                 locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -145,6 +148,18 @@ fun MainScreen(
         }
     }
 
+    //обновление моделей один раз
+    LaunchedEffect(Unit) {
+        locationViewModel.loadSavedLocation() //обновляем локацию
+
+        if (currentCity.isNullOrEmpty()) onRequestLocationChange() // автоопределение локации, если у пользователя еще не выбран город
+
+        themeViewModel.refreshTheme() // обновляем тему
+        translateViewModel.refreshLang() // обновляем язык
+        pointsViewModel.refreshGP() // обновляем очки
+    }
+
+// непонятный кусок кода
     var cityQuery by remember { mutableStateOf("") }
     var predictions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
 
@@ -300,6 +315,11 @@ fun MainScreen(
 
             // --- НАВИГАЦИЯ ---
 
+            // Оверлей "Сканирование местности..."
+            if (isLoading) {
+                LoadingOverlay(title = "Определение локации...")
+            }
+
             //показ шапки
             @Composable
             fun showTopAppBar ()
@@ -354,7 +374,7 @@ fun MainScreen(
                         val (lat, lng) = latLng
                         locationViewModel.setManualLocation(city, lat, lng)
                     },
-                    onRequestGPS = onRequestLocationChange,
+                    onRequestGPS = { onRequestLocationChange() },
                     userCurrentCity = currentCity,
                     onDismiss = {resetFiltersUndScreens()},
                 )}
@@ -367,7 +387,7 @@ fun MainScreen(
                         if (showMapScreen) "map"
                         else "list",
                     userCurrentCity = currentCity,
-                    onRequestGPS = onRequestLocationChange,
+                    onRequestGPS = { onRequestLocationChange() },
                     selectedRadius = selectedRadius,
                     onRadiusChange = { selectedRadius = it },
                     onOpenMapScreen = { showMapScreen = true },
