@@ -71,6 +71,9 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,6 +141,8 @@ fun POIFullScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
+
+                //ФОТО
                 item {
                     Box(
                         modifier = Modifier
@@ -152,7 +157,6 @@ fun POIFullScreen(
                                 contentScale = ContentScale.Crop
                             )
                         }
-
                         if(isVisited) {
                             Icon(
                                 modifier = Modifier
@@ -163,7 +167,6 @@ fun POIFullScreen(
                                 tint = Color.Green
                             )
                         }
-
                         IconButton(
                             onClick = onFavoriteClick,
                             modifier = Modifier
@@ -180,7 +183,7 @@ fun POIFullScreen(
                     }
                 }
 
-                // *** Новый блок: Средний рейтинг и количество отзывов под фото ***
+                // РЕЙТИНГ
                 item {
                     val allReviews by poiViewModel.reviews.collectAsState()
                     val reviews = allReviews[poi.id] ?: emptyList()
@@ -212,8 +215,8 @@ fun POIFullScreen(
                     }
                 }
 
+                // ОПИСАНИЕ
                 item {
-                    // Описание
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = poi.title,
@@ -237,34 +240,77 @@ fun POIFullScreen(
                     }
                 }
 
-                // Карта, как есть (без изменений)...
-
+                // КАРТА
                 item {
                     Text(
-                        text = "Отзывы",
+                        text = "На карте:",
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
+                    GoogleMap(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .padding(horizontal = 16.dp),
+                        cameraPositionState = rememberCameraPositionState {
+                            position = CameraPosition.fromLatLngZoom(
+                                LatLng(poi.lat, poi.lng), 14f
+                            )
+                        }
+                    ) {
+                        Marker(
+                            state = MarkerState(position = LatLng(poi.lat, poi.lng)),
+                            title = poi.title
+                        )
+                    }
+                }
+
+                // ОТЗЫВЫ
+                item {
+
+                    val userReviews by poiViewModel.userReviews.collectAsState()
+                    val alreadyReviewed = userReviews[poi.id] == true
+
+                    LaunchedEffect(poi.id) {
+                        val currentUser = FirebaseAuth.getInstance().currentUser
+                        if (currentUser != null) {
+                            poiViewModel.checkIfUserReviewed(poi.id, currentUser.uid)
+                        }
+                    }
 
                     val reviewsMap by poiViewModel.reviews.collectAsState()
                     val poiReviews = reviewsMap[poi.id] ?: emptyList()
 
-                    // *** Добавляем состояние для выбранного рейтинга перед отзывом ***
                     var selectedRating by remember { mutableStateOf(0) }
                     var reviewText by remember { mutableStateOf("") }
+                    var showReviewForm by remember { mutableStateOf(true) }
+
                     val context = LocalContext.current
 
+                    Text(
+                        text = "Отзывы",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(16.dp)
+                    )
+
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+
+                        // ===== СПИСОК ОТЗЫВОВ =====
                         if (poiReviews.isEmpty()) {
-                            Text("Нет отзывов. Будьте первым!", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "Нет отзывов. Будьте первым!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
                         } else {
                             poiReviews.forEach { review ->
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                                        .padding(8.dp)
+                                        .padding(vertical = 6.dp)
+                                        .background(Color(0xFFF9F9F9), RoundedCornerShape(12.dp))
+                                        .padding(12.dp)
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         if (!review.userPhotoUrl.isNullOrEmpty()) {
@@ -272,177 +318,191 @@ fun POIFullScreen(
                                                 painter = rememberAsyncImagePainter(review.userPhotoUrl),
                                                 contentDescription = null,
                                                 modifier = Modifier
-                                                    .size(32.dp)
-                                                    .background(Color.Gray, shape = CircleShape)
+                                                    .size(36.dp)
                                                     .clip(CircleShape)
                                             )
                                         } else {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(32.dp)
-                                                    .background(Color.Gray, shape = CircleShape),
+                                                    .size(36.dp)
+                                                    .background(Color.Gray, CircleShape),
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
                                                     text = review.userName.take(1).uppercase(),
                                                     color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 16.sp
+                                                    fontWeight = FontWeight.Bold
                                                 )
                                             }
                                         }
 
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(10.dp))
+
                                         Column {
                                             Text(review.userName, fontWeight = FontWeight.Bold)
                                             Text(
-                                                text = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
-                                                    .format(java.util.Date(review.timestamp)),
+                                                text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(review.timestamp)),
                                                 fontSize = 12.sp,
                                                 color = Color.Gray
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                                    // Звёзды рейтинга отзыва
                                     Row {
                                         repeat(5) { starIndex ->
                                             Icon(
                                                 imageVector = Icons.Default.Star,
                                                 contentDescription = null,
                                                 tint = if (starIndex < review.rating) Color(0xFFFFD700) else Color.LightGray,
-                                                modifier = Modifier.size(16.dp)
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
                                     Text(review.text)
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                        // *** Выбор рейтинга перед отзывом ***
-                        Text("Оцените POI:", style = MaterialTheme.typography.bodyMedium)
-                        Row {
-                            for (i in 1..5) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "Рейтинг $i",
-                                    tint = if (i <= selectedRating) Color(0xFFFFD700) else Color.LightGray,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clickable { selectedRating = i }
+                        // ===== ФОРМА ОТЗЫВА =====
+                        if (isVisited && !alreadyReviewed) {
+                            Text(
+                                text = "Оставьте ваш отзыв",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+
+                            Row(modifier = Modifier.padding(bottom = 8.dp)) {
+                                for (i in 1..5) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = "Рейтинг $i",
+                                        tint = if (i <= selectedRating) Color(0xFFFFD700) else Color.LightGray,
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clickable { selectedRating = i }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = reviewText,
+                                onValueChange = {
+                                    if (it.length <= 500) reviewText = it
+                                },
+                                placeholder = { Text("Напишите ваш отзыв (до 500 символов)...") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                maxLines = 4,
+                                isError = reviewText.length > 500
+                            )
+
+                            if (reviewText.length > 500) {
+                                Text(
+                                    "Максимум 500 символов",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
                                 )
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    val currentUser = FirebaseAuth.getInstance().currentUser
+                                    if (currentUser != null && reviewText.isNotBlank() && selectedRating > 0) {
+                                        val alreadyReviewed = poiViewModel.hasUserReviewed(poi.id, currentUser.uid)
 
-                        OutlinedTextField(
-                            value = reviewText,
-                            onValueChange = {
-                                if (it.length <= 500) { // *** Ограничение длины отзыва 500 символов ***
-                                    reviewText = it
-                                }
-                            },
-                            placeholder = { Text("Оставьте отзыв (до 500 символов)...") },
-                            modifier = Modifier.fillMaxWidth(),
-                            maxLines = 5,
-                            singleLine = false,
-                            isError = reviewText.length > 500
-                        )
-                        if (reviewText.length > 500) {
+                                        if (alreadyReviewed) {
+                                            Toast.makeText(context, "Вы уже оставляли отзыв к этой точке", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            val review = Review(
+                                                poiId = poi.id,
+                                                userId = currentUser.uid,
+                                                userName = name,
+                                                userPhotoUrl = photoUrl,
+                                                rating = selectedRating,
+                                                text = reviewText,
+                                                timestamp = System.currentTimeMillis()
+                                            )
+
+                                            poiViewModel.submitReview(
+                                                review,
+                                                onSuccess = {
+                                                    reviewText = ""
+                                                    selectedRating = 0
+                                                    poiViewModel.checkIfUserReviewed(poi.id, currentUser.uid) // скрыть форму после отправки
+                                                    Toast.makeText(context, "Отзыв отправлен", Toast.LENGTH_SHORT).show()
+                                                },
+                                                onError = {
+                                                    Toast.makeText(context, "Ошибка: ${it.message}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            )
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                enabled = reviewText.isNotBlank() && selectedRating > 0
+                            ) {
+                                Text("Отправить отзыв")
+                            }
+                        } else if (alreadyReviewed) {
                             Text(
-                                "Максимум 500 символов",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall
+                                "Вы уже оставляли отзыв к этой точке.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        } else {
+                            Text(
+                                "Вы можете оставить отзыв только после посещения этой точки.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(top = 8.dp)
                             )
                         }
-
-                        Button(
-                            onClick = {
-                                val currentUser = FirebaseAuth.getInstance().currentUser
-                                if (currentUser != null && reviewText.isNotBlank() && selectedRating > 0) {
-                                    val alreadyReviewed = poiViewModel.hasUserReviewed(poi.id, currentUser.uid)
-
-                                    if (alreadyReviewed) {
-                                        Toast.makeText(context, "Вы уже оставляли отзыв к этой точке", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        val review = Review(
-                                            poiId = poi.id,
-                                            userId = currentUser.uid,
-                                            userName = name,
-                                            userPhotoUrl = photoUrl,
-                                            rating = selectedRating,
-                                            text = reviewText,
-                                            timestamp = System.currentTimeMillis()
-
-                                        )
-
-                                        poiViewModel.submitReview(
-                                            review,
-                                            onSuccess = {
-                                                reviewText = ""
-                                                selectedRating = 0
-                                                Toast.makeText(context, "Отзыв отправлен", Toast.LENGTH_SHORT).show()
-                                            },
-                                            onError = {
-                                                Toast.makeText(context, "Ошибка: ${it.message}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .padding(vertical = 8.dp)
-                                .align(Alignment.End),
-                            enabled = reviewText.isNotBlank() && selectedRating > 0
-                        ) {
-                            Text("Отправить")
-                        }
                     }
+
                 }
+
             }
 
             // Кнопка чекпоинта
-            Button(
-                onClick = {
-                    isChecking = true
-                    coroutineScope.launch {
-                        pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
-                            if (success) {
-                                poiViewModel.markPoiVisited(poi.id)
-                                Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+            if (!isVisited) {
+                Button(
+                    onClick = {
+                        isChecking = true
+                        coroutineScope.launch {
+                            pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
+                                if (success) {
+                                    poiViewModel.markPoiVisited(poi.id)
+                                    Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                                }
+                                isChecking = false
                             }
-                            isChecking = false
                         }
-                    }
-                },
-                enabled = !isVisited && !isChecking,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isVisited) Color.Gray else Color.Green
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = when {
-                        isVisited -> "Уже посещено"
-                        isChecking -> "Проверка..."
-                        else -> "Чекпоинт"
                     },
-                    color = Color.White
-                )
+                    enabled = !isChecking,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Green),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (isChecking) "Проверка..." else "Чекпоинт",
+                        color = Color.White
+                    )
+                }
             }
 
 

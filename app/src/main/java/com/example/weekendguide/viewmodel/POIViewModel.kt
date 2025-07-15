@@ -57,6 +57,11 @@ class POIViewModel(
     private val _allTypes = MutableStateFlow<List<String>>(emptyList())
     val allTypes: StateFlow<List<String>> = _allTypes
 
+    // --- Отзывы и Рейтинг ---
+
+    private val _userReviews = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val userReviews: StateFlow<Map<String, Boolean>> = _userReviews
+
     // --- Инициализация ---
     init {
         // Слушаем изменения посещённых
@@ -238,5 +243,10 @@ class POIViewModel(
     // Проверка: есть ли у пользователя отзыв на данный POI
     fun hasUserReviewed(poiId: String, userId: String): Boolean {
         return _reviews.value[poiId]?.any { it.userId == userId } == true
+    }
+
+    fun checkIfUserReviewed(poiId: String, userId: String) {
+        val reviewed = hasUserReviewed(poiId, userId)
+        _userReviews.value = _userReviews.value + (poiId to reviewed)
     }
 }
