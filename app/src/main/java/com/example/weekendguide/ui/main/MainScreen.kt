@@ -201,6 +201,8 @@ fun MainScreen(
             }
 
             val poiList by poiViewModel.poiList.collectAsState()
+            val allReviews by poiViewModel.reviews.collectAsState()
+            val reviewsList = allReviews.values.flatten()
 
             val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
             val favoriteIds by poiViewModel.favoriteIds.collectAsState()
@@ -424,6 +426,8 @@ fun MainScreen(
                     showTopAppBar = { showTopAppBar () },
                     showNavigationBar = { showNavigationBar() },
                     showFiltersButtons = { showFiltersButtons() },
+                    allReviews = reviewsList,
+                    poiViewModel = poiViewModel
                 )
             }
 
@@ -444,6 +448,8 @@ fun MainScreen(
                     showLocationPanel = { showLocationPanel() },
                     showFiltersButtons = { showFiltersButtons() },
                     translateViewModel = translateViewModel,
+                    allReviews = reviewsList,
+                    poiViewModel = poiViewModel
                 )
             }
 
@@ -539,6 +545,7 @@ fun MainScreen(
                         poiViewModel = poiViewModel,
                         pointsViewModel = pointsViewModel,
                         locationViewModel = locationViewModel,
+                        loginViewModel = loginViewModel,
                     )
                 }
             }
@@ -559,6 +566,7 @@ fun MainScreen(
                     poiViewModel = poiViewModel,
                     pointsViewModel = pointsViewModel,
                     locationViewModel = locationViewModel,
+                    loginViewModel = loginViewModel,
                 )
             }
         }

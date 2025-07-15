@@ -1,11 +1,13 @@
 package com.example.weekendguide.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -13,6 +15,8 @@ import com.example.weekendguide.data.repository.WikiRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import androidx.compose.runtime.State
+
 
 class POIViewModel(
     private val translateViewModel: TranslateViewModel,
@@ -57,9 +61,11 @@ class POIViewModel(
     init {
         // Слушаем изменения посещённых
         viewModelScope.launch {
+            loadAllReviews()
             userPreferences.visitedIdsFlow.collect {
                 _visitedPoiIds.value = it
             }
+
         }
 
         // Слушаем смену языка и перезагружаем POI и переводы
@@ -193,5 +199,44 @@ class POIViewModel(
             userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }
+    }
+
+    // --- Функции работы с Отзывами ---
+    private val _reviews = MutableStateFlow<Map<String, List<Review>>>(emptyMap())
+    val reviews: StateFlow<Map<String, List<Review>>> = _reviews
+
+    fun loadReviews(poiId: String) {
+        viewModelScope.launch {
+            val loadedReviews = userRemote.getReviewsForPoi(poiId)
+            _reviews.update { current ->
+                current.toMutableMap().apply {
+                    put(poiId, loadedReviews)
+                }
+            }
+        }
+    }
+
+    fun submitReview(review: Review, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch {
+            try {
+                userRemote.submitReview(review)
+                loadReviews(review.poiId)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
+    }
+
+    private fun loadAllReviews() {
+        viewModelScope.launch {
+            val loadedList = userRemote.getAllReviews() // List<Review>
+            _reviews.value = loadedList.groupBy { it.poiId } // Map<String, List<Review>>
+        }
+    }
+
+    // Проверка: есть ли у пользователя отзыв на данный POI
+    fun hasUserReviewed(poiId: String, userId: String): Boolean {
+        return _reviews.value[poiId]?.any { it.userId == userId } == true
     }
 }

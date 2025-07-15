@@ -29,7 +29,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.poi.POICard
+import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +52,8 @@ fun MainContent(
     showLocationPanel: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
     translateViewModel: TranslateViewModel,
+    allReviews: List<Review> = emptyList(),
+    poiViewModel: POIViewModel,
 ) {
     val currentLanguage by translateViewModel.language.collectAsState()
 
@@ -128,6 +132,7 @@ fun MainContent(
                                 modifier = Modifier
                                     .width(screenWidth - 32.dp)
                             ) {
+
                                 POICard(
                                     poi = poi,
                                     isFavorite = isFavorite(poi),
@@ -137,7 +142,9 @@ fun MainContent(
                                     userCurrentCity = userCurrentCity,
                                     cardType = "list",
                                     onClick = onPOIClick,
-                                    onSelectPOI = onSelectPOI
+                                    onSelectPOI = onSelectPOI,
+                                    reviews = allReviews.filter { it.poiId == poi.id },
+                                    poiViewModel = poiViewModel
                                 )
                             }
 
@@ -186,7 +193,9 @@ fun MainContent(
                                     userCurrentCity = userCurrentCity,
                                     cardType = "mini",
                                     onClick = onPOIClick,
-                                    onSelectPOI = onSelectPOI
+                                    onSelectPOI = onSelectPOI,
+                                    reviews = allReviews.filter { it.poiId == poi.id },
+                                    poiViewModel = poiViewModel
                                 )
                             }
                         }

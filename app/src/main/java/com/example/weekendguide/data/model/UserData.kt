@@ -2,6 +2,7 @@ package com.example.weekendguide.data.model
 
 import kotlinx.serialization.Serializable
 
+@OptIn(kotlinx.serialization.InternalSerializationApi::class)
 @Serializable
 data class UserData(
     val email: String? = null,

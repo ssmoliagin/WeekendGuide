@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.poi.POICard
+import com.example.weekendguide.viewmodel.POIViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +33,8 @@ fun ListPOIScreen(
     showTopAppBar: @Composable () -> Unit,
     showNavigationBar: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
+    allReviews: List<Review> = emptyList(),
+    poiViewModel: POIViewModel
 ) {
     val listState = rememberLazyListState()
 
@@ -78,7 +82,9 @@ fun ListPOIScreen(
                         userCurrentCity = userCurrentCity,
                         cardType = "list",
                         onClick = onPOIClick,
-                        onSelectPOI = onSelectPOI
+                        onSelectPOI = onSelectPOI,
+                        reviews = allReviews.filter { it.poiId == poi.id },
+                        poiViewModel = poiViewModel
                     )
                 }
             }
