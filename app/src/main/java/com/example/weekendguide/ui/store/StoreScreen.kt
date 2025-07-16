@@ -97,7 +97,7 @@ fun StoreScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val sound = LocalView.current
-    val COST = 1
+    val COST = 10_000
 
     val isLoading by storeViewModel.loading.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -144,19 +144,29 @@ fun StoreScreen(
                 .padding(paddingValues)) {
 
                 if (selectedCountryCode == null) {
-                    val localizedCountries = countries.map { country ->
+                    val localizedCountries = countries.mapNotNull { country ->
                         val name = when (language) {
                             "ru" -> country.name_ru
                             "de" -> country.name_de
                             else -> country.name_en
                         }
-                        name to country
-                    }.filter { (name, _) -> name.contains(searchQuery, ignoreCase = true) }
-                        .sortedBy { it.first.lowercase() }
+
+                        val allRegions = regionsByCountry[country.countryCode]
+                        if (allRegions.isNullOrEmpty()) return@mapNotNull null // Пропускаем, если нет region.json
+
+                        val purchased = allRegions.count { purchasedRegions.contains(it.region_code) }
+
+                        Triple(name, country, "$purchased/${allRegions.size}")
+                    }
+                        .filter { (name, _, _) -> name.contains(searchQuery, ignoreCase = true) }
+                        .sortedWith(compareByDescending<Triple<String, Country, String>> {
+                            val (purchasedCount, _) = it.third.split("/").map { it.toInt() }
+                            purchasedCount > 0 // сначала страны с купленными регионами
+                        }.thenBy { it.first.lowercase() })
 
                     val grouped = localizedCountries.groupBy { it.first.first().uppercaseChar() }
                     val headers = grouped.keys.sorted()
-                    val indexedList = mutableListOf<Pair<String?, Pair<String, Country>?>>()
+                    val indexedList = mutableListOf<Pair<String?, Triple<String, Country, String>?>>()
 
                     grouped.forEach { (letter, items) ->
                         indexedList.add(letter.toString() to null)
@@ -204,8 +214,9 @@ fun StoreScreen(
                                         .animateItemPlacement()
                                 )
                             } else if (countryData != null) {
-                                val (name, country) = countryData
+                                val (name, country, regionStatus) = countryData
                                 val flag = countryCodeToFlagEmoji(country.countryCode)
+
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -224,14 +235,11 @@ fun StoreScreen(
 
                                         Column {
                                             Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                                            val regionCount = regionsByCountry[country.countryCode]?.size ?: 0
-                                            if (regionCount > 0) {
-                                                Text(
-                                                    text = "$regionCount регионов",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = Color.Gray
-                                                )
-                                            }
+                                            Text(
+                                                text = "$regionStatus регионов открыто",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.Gray
+                                            )
                                         }
                                     }
                                 }
