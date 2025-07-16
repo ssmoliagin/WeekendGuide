@@ -211,7 +211,7 @@ fun StoreScreen(
                                     style = MaterialTheme.typography.titleLarge,
                                     modifier = Modifier
                                         .padding(vertical = 4.dp)
-                                        .animateItemPlacement()
+                                        .animateItem()
                                 )
                             } else if (countryData != null) {
                                 val (name, country, regionStatus) = countryData
@@ -223,7 +223,7 @@ fun StoreScreen(
                                         .clickable {
                                             selectedCountryCode = country.countryCode
                                         }
-                                        .animateItemPlacement()
+                                        .animateItem()
                                 ) {
                                     Row(
                                         modifier = Modifier
