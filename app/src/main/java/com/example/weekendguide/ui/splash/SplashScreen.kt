@@ -2,6 +2,7 @@ package com.example.weekendguide.ui.splash
 
 import android.app.Application
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +15,8 @@ import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.viewmodel.MainStateViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
+import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.example.weekendguide.viewmodel.ViewModelFactory
 
 
@@ -22,7 +25,8 @@ fun SplashScreen(
     app: Application,
     onNavigate: (SplashViewModel.Destination) -> Unit,
     userPreferences: UserPreferences,
-    userRemote: UserRemoteDataSource
+    userRemote: UserRemoteDataSource,
+    translateViewModel: TranslateViewModel,
 ) {
     val viewModel: SplashViewModel = viewModel(
         key = "SplashViewModel",
@@ -31,8 +35,10 @@ fun SplashScreen(
 
     val state by viewModel.uiState.collectAsState()
 
+
     LaunchedEffect(state) {
         if (state != SplashViewModel.Destination.Loading) {
+            translateViewModel.detectLanguage()
             onNavigate(state)
         }
     }

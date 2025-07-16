@@ -15,6 +15,7 @@ import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.main.MainScreen
 import com.example.weekendguide.ui.store.StoreScreen
+import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
@@ -33,8 +34,8 @@ fun AppNavigation(
     pointsViewModel: PointsViewModel,
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
-    userRemoteDataSource: UserRemoteDataSource
-    //wikiRepository: WikiRepository,
+    userRemoteDataSource: UserRemoteDataSource,
+    leaderboardViewModel: LeaderboardViewModel
 ) {
     val navController = rememberNavController()
 
@@ -59,7 +60,9 @@ fun AppNavigation(
                     }
                     SplashViewModel.Destination.Loading -> { /* No-op */ }
                 }
-            })
+            },
+                translateViewModel = translateViewModel,
+                )
         }
 
         composable("login") {
@@ -110,7 +113,7 @@ fun AppNavigation(
                 userPreferences = userPreferences,
                 dataRepository = dataRepository,
                 userRemoteDataSource = userRemoteDataSource,
-                //wikiRepository = wikiRepository,
+                leaderboardViewModel = leaderboardViewModel,
             )
         }
 

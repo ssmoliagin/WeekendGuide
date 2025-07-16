@@ -101,11 +101,4 @@ class ProfileViewModel(
             }
         }
     }
-
-    fun restartApp(context: Context) {
-        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-        context.startActivity(mainIntent)
-        exitProcess(0)
-    }
 }

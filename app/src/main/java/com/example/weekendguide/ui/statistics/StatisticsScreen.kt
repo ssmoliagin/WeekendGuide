@@ -3,6 +3,7 @@ package com.example.weekendguide.ui.statistics
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.StatisticsViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
@@ -34,7 +36,8 @@ fun StatisticsScreen(
     showTopAppBar: @Composable () -> Unit,
     pointsViewModel: PointsViewModel,
     translateViewModel: TranslateViewModel,
-    statisticsViewModel: StatisticsViewModel
+    statisticsViewModel: StatisticsViewModel,
+    leaderboardViewModel: LeaderboardViewModel
 ) {
     val context = LocalContext.current
     val currentLanguage by translateViewModel.language.collectAsState()
@@ -64,6 +67,16 @@ fun StatisticsScreen(
     )
 
     val typeGoals = listOf(5, 10, 20, 50, 100)
+
+    //таблица лидеров
+    val leaderboardVisible by leaderboardViewModel.leaderboardVisible.collectAsState()
+    val userRank by leaderboardViewModel.userRank.collectAsState()
+    val leaderboard by leaderboardViewModel.leaderboard.collectAsState()
+
+    LaunchedEffect(Unit) {
+
+        leaderboardViewModel.loadLeaderboard() // обновляем таблицу рейтинга
+    }
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -98,9 +111,51 @@ fun StatisticsScreen(
                             Text("🔴 Потрачено:", Modifier.weight(1f))
                             Text("$spentGP GP", fontWeight = FontWeight.Bold)
                         }
+                        Row(Modifier.padding(vertical = 4.dp)) {
+                            Text("🏅 Ваше место в рейтинге:", Modifier.weight(1f))
+                            Text(userRank?.toString() ?: "—", fontWeight = FontWeight.Bold)
+                        }
+                        Text(
+                            text = if (leaderboardVisible) "Скрыть таблицу лидеров" else "Показать таблицу лидеров",
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable {
+                                    leaderboardViewModel.toggleLeaderboardVisibility()
+                                    if (!leaderboardVisible) leaderboardViewModel.loadLeaderboard()
+                                }
+                                .padding(vertical = 8.dp)
+                        )
                     }
                 }
 
+                //ТАБЛИЦА ЛИДЕРОВ
+                if (leaderboardVisible) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            Text("📊 ТОП пользователей", style = MaterialTheme.typography.titleMedium)
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            leaderboard.take(10).forEachIndexed { index, (name, gp) ->
+                                Row(
+                                    Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("${index + 1}.", modifier = Modifier.width(24.dp))
+                                    Text(name, modifier = Modifier.weight(1f))
+                                    Text("$gp GP", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                //статистика
                 Text(
                     text = "🧭 Общая статистика",
                     style = MaterialTheme.typography.headlineSmall,

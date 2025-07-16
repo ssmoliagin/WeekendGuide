@@ -43,6 +43,7 @@ import com.example.weekendguide.ui.poi.POIFullScreen
 import com.example.weekendguide.ui.profile.ProfileScreen
 import com.example.weekendguide.ui.statistics.StatisticsScreen
 import com.example.weekendguide.ui.store.StoreScreen
+import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
@@ -76,7 +77,7 @@ fun MainScreen(
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource,
-    //wikiRepository: WikiRepository,
+    leaderboardViewModel: LeaderboardViewModel
 ) {
     //состояние окон
     var showMapScreen by remember { mutableStateOf(false) }
@@ -151,7 +152,6 @@ fun MainScreen(
     //обновление моделей один раз
     LaunchedEffect(Unit) {
         locationViewModel.loadSavedLocation() //обновляем локацию
-
         if (currentCity.isNullOrEmpty()) onRequestLocationChange() // автоопределение локации, если у пользователя еще не выбран город
 
         themeViewModel.refreshTheme() // обновляем тему
@@ -465,7 +465,7 @@ fun MainScreen(
                     onDismiss = {resetFiltersUndScreens()},
                     userPreferences = userPreferences,
                     dataRepository = dataRepository,
-                    userRemoteDataSource = userRemoteDataSource
+                    userRemoteDataSource = userRemoteDataSource,
                 )
             }
 
@@ -479,7 +479,8 @@ fun MainScreen(
                     showTopAppBar = { showTopAppBar () },
                     pointsViewModel = pointsViewModel,
                     translateViewModel = translateViewModel,
-                    statisticsViewModel = statisticsViewModel
+                    statisticsViewModel = statisticsViewModel,
+                    leaderboardViewModel = leaderboardViewModel
                 )
             }
 

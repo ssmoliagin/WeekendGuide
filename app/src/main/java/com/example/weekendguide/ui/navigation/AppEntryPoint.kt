@@ -18,6 +18,8 @@ import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.LocalesRepoImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.data.repository.WikiRepositoryImp
+import com.example.weekendguide.viewmodel.LeaderboardViewModel
+import com.example.weekendguide.viewmodel.LeaderboardViewModelFactory
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LocationViewModelFactory
 import com.example.weekendguide.viewmodel.LoginViewModel
@@ -87,17 +89,13 @@ fun AppEntryPoint() {
         factory = ViewModelFactory(context.applicationContext as Application, userPreferences, userRemoteDataSource)
     )
 
-    //
-    val didCheckLang = remember { mutableStateOf(false) }
+    val leaderboardViewModel: LeaderboardViewModel = viewModel(
+        factory = LeaderboardViewModelFactory(
+            auth = auth,
+            firestore = firestore
+        )
+    )
 
-    if (!didCheckLang.value) {
-        LaunchedEffect(Unit) {
-            translateViewModel.detectLanguage()
-            didCheckLang.value = true
-        }
-    }
-
-    //
     val currentTheme by themeViewModel.theme.collectAsState()
 
     val isDarkTheme = when (currentTheme) {
@@ -117,7 +115,8 @@ fun AppEntryPoint() {
             pointsViewModel = pointsViewModel,
             userPreferences = userPreferences,
             dataRepository = dataRepository,
-            userRemoteDataSource = userRemoteDataSource
+            userRemoteDataSource = userRemoteDataSource,
+            leaderboardViewModel = leaderboardViewModel
         )
     }
 }

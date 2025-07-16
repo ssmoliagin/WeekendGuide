@@ -37,7 +37,7 @@ class UserRemoteDataSource(
                 // Пользователя нет — создать запись на сервере с базовыми данными
                 val newUserData = UserData(
                     email = user.email,
-                    displayName = user.displayName,
+                    displayName = if (user.displayName.isNullOrBlank()) user.email.toString().substringBefore("@") else user.displayName,
                     photoUrl = user.photoUrl?.toString(),
                     language = userPreferences.getLanguage() //автоопределился при старте
                 )
