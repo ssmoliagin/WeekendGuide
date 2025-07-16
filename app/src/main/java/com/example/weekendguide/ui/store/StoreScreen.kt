@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,11 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.model.Country
-import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.ui.components.LoadingOverlay
@@ -87,7 +86,7 @@ fun StoreScreen(
     val countries by storeViewModel.countries.collectAsState()
     val regionsByCountry by storeViewModel.regionsByCountry.collectAsState()
     val purchasedRegions by storeViewModel.purchasedRegions.collectAsState()
-    val language by translateViewModel.language.collectAsState()
+    val currentLanguage by translateViewModel.language.collectAsState()
     val currentGP by pointsViewModel.currentGP.collectAsState()
 
     var selectedCountryCode by remember { mutableStateOf<String?>(null) }
@@ -110,7 +109,7 @@ fun StoreScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {},
+                    title = {Text(LocalizerUI.t("collections_title", currentLanguage), color = Color.White) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
                     actions = {
                         Row(modifier = Modifier.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -145,7 +144,7 @@ fun StoreScreen(
 
                 if (selectedCountryCode == null) {
                     val localizedCountries = countries.mapNotNull { country ->
-                        val name = when (language) {
+                        val name = when (currentLanguage) {
                             "ru" -> country.name_ru
                             "de" -> country.name_de
                             else -> country.name_en
@@ -181,6 +180,16 @@ fun StoreScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        item {
+                            Text(
+                                text = LocalizerUI.t("collections_desc", currentLanguage),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
                         item {
                             Row(
                                 modifier = Modifier
@@ -283,7 +292,7 @@ fun StoreScreen(
                         if (regions.isEmpty()) {
                             item {
                                 Text(
-                                    text = LocalizerUI.t("noregions", language),
+                                    text = LocalizerUI.t("noregions", currentLanguage),
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(16.dp),
@@ -292,8 +301,8 @@ fun StoreScreen(
                             }
                         } else {
                             items(regions) { region ->
-                                val name = region.name[language] ?: region.name["en"] ?: "Без названия"
-                                val description = region.description[language] ?: ""
+                                val name = region.name[currentLanguage] ?: region.name["en"] ?: "Без названия"
+                                val description = region.description[currentLanguage] ?: ""
                                 val isPurchased = purchasedRegions.contains(region.region_code)
                                 val flag = countryCodeToFlagEmoji(region.country_code)
 
@@ -341,7 +350,7 @@ fun StoreScreen(
 
                 // Диалог покупки
                 if (showDialog && selectedRegion != null) {
-                    val regionName = selectedRegion?.name?.get(language) ?: "этот регион"
+                    val regionName = selectedRegion?.name?.get(currentLanguage) ?: "этот регион"
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
                         title = { Text(if (isInitialSelection) "Выбор региона" else "Подтвердите покупку") },
@@ -385,7 +394,7 @@ fun StoreScreen(
                         onDismissRequest = { showInsufficientGPDialog = false },
                         title = { Text("Недостаточно GP") },
                         text = {
-                            Text("Вам не хватает $need GP для покупки. Хотите пополнить счёт или подождать?")
+                            Text("Вам не хватает $need GP для покупки. Продолжайте набирать очки или...")
                         },
                         confirmButton = {
                             TextButton(onClick = {
@@ -404,14 +413,21 @@ fun StoreScreen(
                                 }
 
                             }) {
-                                Text("Купить за 5€")
+                                Text( text = "☕ Угости меня кофем!",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    )
                             }
                         },
+                        /*
                         dismissButton = {
                             TextButton(onClick = { showInsufficientGPDialog = false }) {
                                 Text("Позже")
                             }
                         }
+
+                         */
                     )
                 }
             }

@@ -51,6 +51,7 @@ fun MainContent(
     showTopAppBar: @Composable () -> Unit,
     showLocationPanel: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
+    showStoreBanner: @Composable () -> Unit,
     translateViewModel: TranslateViewModel,
     allReviews: List<Review> = emptyList(),
     poiViewModel: POIViewModel,
@@ -200,6 +201,10 @@ fun MainContent(
                             }
                         }
                     }
+                }
+
+                item {
+                    showStoreBanner() // показываем банер магазина вконце
                 }
             }
         }

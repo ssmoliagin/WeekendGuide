@@ -26,15 +26,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.preferences.UserPreferences
-import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
-import com.example.weekendguide.data.repository.WikiRepository
 import com.example.weekendguide.ui.components.FiltersButtons
 import com.example.weekendguide.ui.components.LoadingOverlay
-import com.example.weekendguide.ui.components.LoadingScreen
 import com.example.weekendguide.ui.components.LocationPanel
 import com.example.weekendguide.ui.components.NavigationBar
+import com.example.weekendguide.ui.components.StoreBanner
 import com.example.weekendguide.ui.components.TopAppBar
 import com.example.weekendguide.ui.filters.FiltersPanel
 import com.example.weekendguide.ui.list.ListPOIScreen
@@ -60,8 +58,8 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.TypeFilter
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,6 +92,8 @@ fun MainScreen(
     var showVisited by remember { mutableStateOf(true) } // показать посещенные
     var selectedItem by remember { mutableStateOf("main") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
+
+    val currentLanguage by translateViewModel.language.collectAsState()
 
     val currentGP by pointsViewModel.currentGP.collectAsState()
     val totalGP by pointsViewModel.totalGP.collectAsState()
@@ -312,15 +312,11 @@ fun MainScreen(
                 showProfileScreen = false
                 showPOIStoreScreen = false
 
+                selectedItem = "main"
                 mainStateViewModel.refreshRegions()
             }
 
             // --- НАВИГАЦИЯ ---
-
-            // Оверлей "Сканирование местности..."
-            if (isLoading) {
-                LoadingOverlay(title = "Определение локации...")
-            }
 
             //показ шапки
             @Composable
@@ -401,6 +397,28 @@ fun MainScreen(
                 )
             }
 
+            //показ банера магазина
+            @Composable
+            fun showStoreBanner () {
+
+                //высчитываем процент посещенных точек
+                val visitedPois = poiList.filter { poi -> visitedPoiIds.contains(poi.id) }
+                val exploredPercentage = if (poiList.isNotEmpty()) {
+                    (visitedPois.size.toDouble() / poiList.size * 100).roundToInt()
+                } else {
+                    0
+                }
+
+                StoreBanner(
+                    totalPOIs = poiList.size,
+                    exploredPercentage = exploredPercentage,
+                    currentLanguage = currentLanguage,
+                    onOpenStore = {
+                        resetFiltersUndScreens()
+                        showPOIStoreScreen = true}
+                )
+            }
+
             if (showMapScreen) {
                 MapScreen(
                     userPOIList = finalPOIList,
@@ -447,6 +465,7 @@ fun MainScreen(
                     showTopAppBar = { showTopAppBar () },
                     showLocationPanel = { showLocationPanel() },
                     showFiltersButtons = { showFiltersButtons() },
+                    showStoreBanner = {showStoreBanner () },
                     translateViewModel = translateViewModel,
                     allReviews = reviewsList,
                     poiViewModel = poiViewModel
@@ -487,18 +506,14 @@ fun MainScreen(
             // ✅ Экран Профиль
             if(showProfileScreen) {
                 ProfileScreen(
-                    userPOIList = finalPOIList,
-                    totalPOIList = poiList,
                     showNavigationBar = { showNavigationBar() },
                     showTopAppBar = { showTopAppBar () },
-                    onLoggedOut = onLoggedOut,
+                    showStoreBanner = {showStoreBanner () },
                     themeViewModel = themeViewModel,
                     loginViewModel = loginViewModel,
                     translateViewModel = translateViewModel,
                     profileViewModel = profileViewModel,
-                    onOpenStore = {
-                        showProfileScreen = false
-                        showPOIStoreScreen = true}
+                    onLoggedOut = onLoggedOut,
                 )
             }
 
@@ -572,7 +587,5 @@ fun MainScreen(
             }
         }
 
-
-
-    } ?: LoadingScreen()
+    } ?: LoadingOverlay()
 }

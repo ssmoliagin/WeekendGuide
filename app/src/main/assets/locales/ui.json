@@ -73,5 +73,15 @@
     "en": "No available regions for this country",
     "de": "Keine verfügbaren Regionen für dieses Land",
     "ru": "Нет доступных регионов для этой страны"
+  },
+  "collections_title": {
+    "en": "Collections",
+    "de": "Kollektionen",
+    "ru": "Коллекции"
+  },
+  "collections_desc": {
+    "en": "Choose a region to discover points of interest and places worth visiting",
+    "de": "Wähle eine Region aus, um sehenswerte Orte und interessante Plätze zu entdecken",
+    "ru": "Выберите регион, чтобы открыть для себя интересные места и достопримечательности"
   }
 }

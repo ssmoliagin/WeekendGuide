@@ -55,8 +55,9 @@ import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.ProfileViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
-import com.google.firebase.auth.FirebaseAuth
 import kotlin.math.roundToInt
+import com.example.weekendguide.BuildConfig
+import androidx.core.net.toUri
 
 enum class SettingsType {
     THEME, LANGUAGE, UNITS
@@ -65,16 +66,14 @@ enum class SettingsType {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    userPOIList: List<POI>,
-    totalPOIList: List<POI>,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    onLoggedOut: () -> Unit,
+    showStoreBanner: @Composable () -> Unit,
     themeViewModel: ThemeViewModel,
     loginViewModel: LoginViewModel,
     translateViewModel: TranslateViewModel,
     profileViewModel: ProfileViewModel,
-    onOpenStore: () -> Unit,
+    onLoggedOut: () -> Unit,
 ) {
 
     var sheetVisible by remember { mutableStateOf(false) }
@@ -140,16 +139,6 @@ fun ProfileScreen(
 
     // Уведомления вкл/выкл
     val notificationEnabled by profileViewModel.notification.collectAsState()
-
-    // Прочее
-    val totalPOIs = totalPOIList.size
-    val visitedPOIs = userPOIList.size
-    val exploredPercentage = if (totalPOIs > 0) {
-        (visitedPOIs.toDouble() / totalPOIs * 100).roundToInt()
-    } else {
-        0
-    }
-
 
     Scaffold(
         topBar = { showTopAppBar() },
@@ -260,68 +249,7 @@ fun ProfileScreen(
                 Text("Моя коллекция", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFFF8E1), RoundedCornerShape(12.dp)) // мягкий фон без внешних отступов
-                        .padding(8.dp) // небольшой отступ вокруг карточки
-                ) {
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onOpenStore()
-                            },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("🗺️", fontSize = 24.sp)
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = "Откройте новые места!",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            }
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("📍 Вам доступно")
-                                Text(
-                                    text = "$totalPOIs точек",
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-
-                            Spacer(Modifier.height(4.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("🎯 Исследовано")
-                                Text(
-                                    text = "$exploredPercentage%",
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-
-                            Text(
-                                text = "Посмотреть новые коллекции...",
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
-                            )
-                        }
-                    }
-                }
+                showStoreBanner() // показ карточки магазина
 
                 Spacer(Modifier.height(24.dp))
             }
@@ -353,7 +281,7 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Text(
-                                text = "v1.0.0",
+                                text = "v.${BuildConfig.VERSION_NAME}",
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
@@ -375,7 +303,7 @@ fun ProfileScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:$EMAIL")
+                                        data = "mailto:$EMAIL".toUri()
                                     }
                                     context.startActivity(intent)
                                 },
