@@ -3,8 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 
-    id("com.google.gms.google-services") // ⬅️ Добавь ЭТО
-    kotlin("plugin.serialization") version "1.9.23" // или актуальную версию Kotlin
+    id("com.google.gms.google-services") // 🔥 Firebase integration
+    kotlin("plugin.serialization") version "1.9.23" // 🔄 Kotlin Serialization
 }
 
 android {
@@ -16,10 +16,10 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1.65"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as? String ?: ""
     }
 
     buildTypes {
@@ -42,79 +42,71 @@ android {
     }
 
     buildFeatures {
-        buildConfig = true // ← добавь эту строку
+        buildConfig = true
         compose = true
     }
 }
 
 dependencies {
+    // 🔷 Base AndroidX
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.firebase.storage.ktx)
+    implementation("androidx.appcompat:appcompat:1.7.1")
 
+    // 🧱 Jetpack Compose
+    implementation(platform(libs.androidx.compose.bom))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("com.google.android.material:material:1.12.0")
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.ui.graphics)
+
+    // 🧪 Compose Preview / Debug
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+
+    // 🧪 Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-
-    implementation("androidx.compose.material:material-icons-extended:1.6.1") // версия может отличаться
-
-
-    // Kotlin coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // 🔥 Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-firestore")
-
-    // 🔥 Firebase GoogleAuth
     implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation(libs.firebase.storage.ktx)
 
-    // 🧭 Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    // 🔐 Google Sign-In & Location
+    implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.google.android.gms:play-services-maps:19.2.0")
+    implementation("com.google.android.libraries.places:places:4.3.1")
 
-    // 🧠 ViewModel (для Compose)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-
-    // ⚙️ DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-    implementation("io.coil-kt:coil-compose:2.4.0")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-
-    implementation("io.coil-kt:coil-compose:2.2.2")
-
-    implementation("com.google.android.gms:play-services-location:21.0.1") // GPS
-
-// Google Maps Compose
+    // 🗺 Google Maps Compose
     implementation("com.google.maps.android:maps-compose:2.11.4")
 
-// Google Maps SDK (если ещё не добавлено)
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    // 🧭 Navigation
+    implementation("androidx.navigation:navigation-compose:2.9.1")
 
-    implementation("com.google.android.libraries.places:places:3.3.0")
+    // 🧠 ViewModel for Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
 
+    // ⚙️ DataStore
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+
+    // ☁️ Networking & JSON
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
-    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    // 🔄 Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
-    implementation(platform("androidx.compose:compose-bom:2024.05.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-
+    // 🖼 Image loading
+    implementation("io.coil-kt:coil-compose:2.4.0")
 }

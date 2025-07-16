@@ -1,38 +1,25 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Ключи и конфигурации
+/gradle.properties
 local.properties
-.kotlin/errors/
-
-# Android Studio
-.idea/
-.gradle/
-build/
-captures/
-output.json
-
-# Firebase/API Keys
-*.keystore
-*.jks
 google-services.json
 keys/
 Constants.kt
+*.keystore
+*.jks
 
-.Firebase/*
-# Manifest — игнорировать только если это не основной файл приложения
-app/src/main/AndroidManifest.xml
+# Студийные файлы
+.idea/
+.gradle/
+*.iml
+.DS_Store
 
+# Билд артефакты
+/build
+captures/
+app/build/
+.externalNativeBuild
+.cxx
+.kotlin/errors/
 
-
-
+# Firebase
+.Firebase/
