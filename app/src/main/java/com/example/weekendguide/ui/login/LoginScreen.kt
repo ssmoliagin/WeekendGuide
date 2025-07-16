@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -149,11 +150,12 @@ fun LoginScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_google),
+                                    painter = painterResource(id = R.drawable.google_logo),
                                     contentDescription = "Google",
                                     modifier = Modifier
-                                        .size(20.dp)
-                                        .align(Alignment.CenterVertically)
+                                        .size(30.dp)
+                                        .align(Alignment.CenterVertically),
+                                    tint = Color.Unspecified
                                 )
 
                                 Spacer(modifier = Modifier.width(12.dp))

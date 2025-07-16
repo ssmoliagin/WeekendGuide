@@ -34,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -304,7 +305,16 @@ fun POIFullScreen(
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
                         } else {
-                            poiReviews.forEach { review ->
+
+                            var showAllReviews by remember { mutableStateOf(false) }
+
+// Сортировка по убыванию времени
+                            val sortedReviews = poiReviews.sortedByDescending { it.timestamp }
+
+// Выбираем, какие отзывы отображать
+                            val reviewsToDisplay = if (showAllReviews) sortedReviews else sortedReviews.take(3)
+
+                            reviewsToDisplay.forEach { review ->
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -363,6 +373,16 @@ fun POIFullScreen(
 
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(review.text)
+                                }
+                            }
+
+// Кнопка Показать все / Скрыть
+                            if (poiReviews.size > 3) {
+                                TextButton(
+                                    onClick = { showAllReviews = !showAllReviews },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text(if (showAllReviews) "Скрыть отзывы" else "Показать все отзывы (${poiReviews.size - 3})")
                                 }
                             }
                         }
