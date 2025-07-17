@@ -39,7 +39,7 @@ fun TopAppBar (
 
     TopAppBar(
         title = { Text(title, color = Color.White) },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         actions = {
             Row(
                 modifier = Modifier

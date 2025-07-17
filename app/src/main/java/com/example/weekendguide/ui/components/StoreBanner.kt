@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,68 +31,89 @@ fun StoreBanner(
     exploredPercentage: Int,
     currentLanguage: String,
     onOpenStore: () -> Unit,
-){
-
-    Box(
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFFFF8E1), RoundedCornerShape(12.dp)) // мягкий фон без внешних отступов
-            .padding(8.dp) // небольшой отступ вокруг карточки
+            .padding(vertical = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary),
+        onClick = { onOpenStore() }
     ) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    onOpenStore()
-                },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                .padding(20.dp) // Внутренние отступы
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🗺️", fontSize = 24.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Откройте новые места!",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("📍 Вам доступно")
-                    Text(
-                        text = "$totalPOIs точек",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                Spacer(Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("🎯 Исследовано")
-                    Text(
-                        text = "$exploredPercentage%",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                Spacer(Modifier.height(8.dp))
-
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("\uD83D\uDDFA\uFE0F", fontSize = 36.sp) // Крупнее эмодзи
+                Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "Посмотреть новые коллекции...",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                    text = "Откройте новые места!",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp // Чуть больше
+                    )
                 )
             }
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "📍 Вам доступно",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 16.sp
+                    )
+                )
+                Text(
+                    text = "$totalPOIs точек",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 17.sp
+                    )
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "🎯 Исследовано",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 16.sp
+                    )
+                )
+                Text(
+                    text = "$exploredPercentage%",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 17.sp
+                    )
+                )
+            }
+
+            Spacer(Modifier.height(18.dp))
+
+            Text(
+                text = "➡ Посмотреть новые коллекции",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 16.sp
+                )
+            )
         }
     }
 }
+

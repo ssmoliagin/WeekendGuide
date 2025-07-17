@@ -224,7 +224,7 @@ fun StatisticsScreen(
                         .padding(vertical = 8.dp),
                     elevation = CardDefaults.cardElevation(8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isNewLevelReached) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                        containerColor = if (isNewLevelReached) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surface
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -250,7 +250,7 @@ fun StatisticsScreen(
                             Text(
                                 text = "Уровень ${level + 1}",
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                color = MaterialTheme.colorScheme.secondary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -281,13 +281,14 @@ fun StatisticsScreen(
                                     pointsViewModel.addGP(1000)
                                 },
                                 modifier = Modifier
-                                    .align(Alignment.End)
+                                    //.align(Alignment.End)
+                                    .fillMaxWidth()
                                     .padding(top = 12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
-                                Icon(Icons.Default.EmojiEvents, contentDescription = null)
+                                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Level Up!", color = MaterialTheme.colorScheme.onPrimary)
+                                Text("Level Up!", color = MaterialTheme.colorScheme.tertiary)
                             }
                         }
 
