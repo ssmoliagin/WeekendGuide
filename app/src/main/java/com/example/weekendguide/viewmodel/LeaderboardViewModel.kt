@@ -1,6 +1,5 @@
 package com.example.weekendguide.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -30,16 +29,15 @@ class LeaderboardViewModel(
     }
 
     fun loadLeaderboard() {
-        val user = auth.currentUser ?: return
-        val userId = user.uid
+        val currentUser = auth.currentUser ?: return
+        val currentUserId = currentUser.uid
 
         viewModelScope.launch {
             try {
-                val snapshot = firestore.collection("users")
-                    .get().await()
+                val snapshot = firestore.collection("users").get().await()
 
                 val users = snapshot.documents.mapNotNull { doc ->
-                    val name = doc.getString("displayName") ?: "Аноним"
+                    val name = doc.getString("displayName") ?: "Anonymous"
                     val gp = doc.getLong("total_GP")?.toInt() ?: 0
                     val id = doc.id
                     Triple(id, name, gp)
@@ -47,11 +45,11 @@ class LeaderboardViewModel(
 
                 _leaderboard.value = users.map { it.second to it.third }
 
-                val rank = users.indexOfFirst { it.first == userId }
+                val rank = users.indexOfFirst { it.first == currentUserId }
                 _userRank.value = if (rank != -1) rank + 1 else null
 
-            } catch (e: Exception) {
-                Log.e("Leaderboard", "Ошибка загрузки: ${e.message}")
+            } catch (_: Exception) {
+                // Silently ignore errors (optional: add error state handling)
             }
         }
     }

@@ -3,15 +3,12 @@ package com.example.weekendguide.data.repository
 import android.content.Context
 import android.util.Log
 import com.example.weekendguide.data.model.WikipediaSummary
-import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.intellij.lang.annotations.Language
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.Protocol
+import okhttp3.Request
 
 class WikiRepositoryImp(private val context: Context) : WikiRepository {
 
@@ -19,10 +16,8 @@ class WikiRepositoryImp(private val context: Context) : WikiRepository {
         val encodedTitle = title.replace(" ", "%20")
         val url = "https://$language.wikipedia.org/api/rest_v1/page/summary/$encodedTitle"
 
-        Log.d("WikiRepository", "Wikipedia request URL: $url")
-
         val client = OkHttpClient.Builder()
-            .protocols(listOf(Protocol.HTTP_1_1)) // <-- ключевая строка
+            .protocols(listOf(Protocol.HTTP_1_1))
             .build()
 
         val request = Request.Builder().url(url).build()

@@ -2,7 +2,6 @@ package com.example.weekendguide.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,20 +37,19 @@ class StatisticsViewModel(
         viewModelScope.launch {
             userPreferences.levelUpCategory(category, level)
 
-            // Обновляем локальный state
+            // Update local state
             val updatedMap = _categoryLevels.value.toMutableMap().apply {
                 put(category, level)
             }
             _categoryLevels.value = updatedMap
 
-            // Сохраняем в userData (для синхронизации с Firestore)
+            // Save updated data for sync
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(categoryLevels = updatedMap)
             userPreferences.saveUserData(updatedData)
 
-            // Синхронизируем с Firestore
+            // Sync with Firestore
             userRemoteDataSource.launchSyncLocalToRemote(viewModelScope)
         }
     }
-
 }

@@ -1,6 +1,5 @@
 package com.example.weekendguide.data.repository
 
-import android.util.Log
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -21,6 +20,7 @@ class UserRemoteDataSource(
     private val usersCollection = firestore.collection("users")
     private val reviewsCollection = firestore.collection("reviews")
 
+    // Sync user data when logging in
     suspend fun syncOnLogin(): Result<Unit> {
         val user = auth.currentUser ?: return Result.failure(Exception("User not logged in"))
         val userId = user.uid
@@ -28,18 +28,20 @@ class UserRemoteDataSource(
         return try {
             val doc = usersCollection.document(userId).get().await()
             if (doc.exists()) {
-                // Пользователь есть на сервере — загрузить данные в локальное хранилище
                 val remoteUserData = doc.toObject(UserData::class.java)
                 if (remoteUserData != null) {
                     userPreferences.saveUserData(remoteUserData)
                 }
             } else {
-                // Пользователя нет — создать запись на сервере с базовыми данными
                 val newUserData = UserData(
                     email = user.email,
-                    displayName = if (user.displayName.isNullOrBlank()) user.email.toString().substringBefore("@") else user.displayName,
+                    displayName = if (user.displayName.isNullOrBlank()) {
+                        user.email.toString().substringBefore("@")
+                    } else {
+                        user.displayName
+                    },
                     photoUrl = user.photoUrl?.toString(),
-                    language = userPreferences.getLanguage() //автоопределился при старте
+                    language = userPreferences.getLanguage()
                 )
                 usersCollection.document(userId).set(newUserData).await()
                 userPreferences.saveUserData(newUserData)
@@ -50,65 +52,52 @@ class UserRemoteDataSource(
         }
     }
 
-    /**
-     * Вызывать при изменении настроек локально,
-     * чтобы сразу синхронизировать с Firestore.
-     */
+    // Launch local-to-remote sync in coroutine scope
     fun launchSyncLocalToRemote(scope: CoroutineScope) {
         scope.launch {
             try {
                 syncLocalToRemote()
-            } catch (e: Exception) {
-
+            } catch (_: Exception) {
             }
         }
     }
 
+    // Upload local preferences to Firestore
     suspend fun syncLocalToRemote() {
         val user = auth.currentUser ?: throw Exception("User not logged in")
-        val userId = user.uid
         val localData = userPreferences.userDataFlow.first()
-        usersCollection.document(userId).set(localData).await()
+        usersCollection.document(user.uid).set(localData).await()
     }
 
     suspend fun deleteUserFromFirestore(userId: String) {
         usersCollection.document(userId).delete().await()
     }
 
-    //ОТЗЫВЫ
+    // Submit new review
     suspend fun submitReview(review: Review) {
         try {
-            reviewsCollection
-                .add(review)
-                .await()
+            reviewsCollection.add(review).await()
         } catch (e: Exception) {
             throw e
         }
     }
 
+    // Get all reviews for a specific POI
     suspend fun getReviewsForPoi(poiId: String): List<Review> {
         return try {
-            val snapshot = firestore
-                .collection("reviews")
+            val snapshot = reviewsCollection
                 .whereEqualTo("poiId", poiId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
-            if (snapshot.isEmpty) {
-                Log.d("FIRESTORE", "Нет отзывов для poiId: $poiId")
-                emptyList()
-            } else {
-                val reviews = snapshot.toObjects(Review::class.java)
-                Log.d("FIRESTORE", "Найдено отзывов: ${reviews.size}")
-                reviews
-            }
+            snapshot.toObjects(Review::class.java)
         } catch (e: Exception) {
-            Log.e("FIRESTORE", "Ошибка при получении отзывов: ${e.localizedMessage}", e)
             emptyList()
         }
     }
 
+    // Get all reviews in the system
     suspend fun getAllReviews(): List<Review> {
         return try {
             val snapshot = reviewsCollection
@@ -116,18 +105,9 @@ class UserRemoteDataSource(
                 .get()
                 .await()
 
-            if (snapshot.isEmpty) {
-                Log.d("FIRESTORE - getAllReviews", "Нет отзывов в коллекции reviews")
-                emptyList()
-            } else {
-                val reviews = snapshot.toObjects(Review::class.java)
-                Log.d("FIRESTORE - getAllReviews", "Найдено отзывов: ${reviews.size}")
-                reviews
-            }
+            snapshot.toObjects(Review::class.java)
         } catch (e: Exception) {
-            Log.e("FIRESTORE - getAllReviews", "Ошибка при получении всех отзывов: ${e.localizedMessage}", e)
             emptyList()
         }
     }
-
 }

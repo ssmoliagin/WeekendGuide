@@ -18,7 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.weekendguide.data.locales.LocalizerTypes
+//import com.example.weekendguide.data.locales.LocalizerTypes
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
@@ -242,7 +243,7 @@ fun StatisticsScreen(
                                 tint = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${LocalizerTypes.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
+                                text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )

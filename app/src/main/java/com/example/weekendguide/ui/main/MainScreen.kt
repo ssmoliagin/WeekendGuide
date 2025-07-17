@@ -154,7 +154,7 @@ fun MainScreen(
         locationViewModel.loadSavedLocation() //обновляем локацию
         if (currentCity.isNullOrEmpty()) onRequestLocationChange() // автоопределение локации, если у пользователя еще не выбран город
 
-        themeViewModel.refreshTheme() // обновляем тему
+        themeViewModel.loadTheme() // обновляем тему
         translateViewModel.refreshLang() // обновляем язык
         pointsViewModel.refreshGP() // обновляем очки
     }

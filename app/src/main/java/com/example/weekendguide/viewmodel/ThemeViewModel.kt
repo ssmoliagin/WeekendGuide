@@ -2,7 +2,6 @@ package com.example.weekendguide.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -13,20 +12,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ThemeViewModel(
-    private val application: Application,
+    application: Application,
     private val userPreferences: UserPreferences,
-    private val userRemote: UserRemoteDataSource) : AndroidViewModel(application) {
+    private val userRemote: UserRemoteDataSource
+) : AndroidViewModel(application) {
 
     private val _theme = MutableStateFlow("light")
     val theme: StateFlow<String> = _theme.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            _theme.value = userPreferences.getTheme()
-        }
-    }
-
-    fun refreshTheme () {
+    fun loadTheme() {
         viewModelScope.launch {
             _theme.value = userPreferences.getTheme()
         }
@@ -37,7 +31,6 @@ class ThemeViewModel(
             userPreferences.saveTheme(newTheme)
             _theme.value = newTheme
 
-            // 🔁 Обновляем также в Firestore
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(userThema = newTheme)
             userPreferences.saveUserData(updatedData)

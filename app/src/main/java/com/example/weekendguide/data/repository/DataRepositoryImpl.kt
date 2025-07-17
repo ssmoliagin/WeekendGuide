@@ -2,13 +2,10 @@ package com.example.weekendguide.data.repository
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
-import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -36,12 +33,10 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             val localUpdated = if (file.exists()) file.lastModified() else 0L
 
             if (remoteUpdated > localUpdated) {
-                Log.d("LocalesRepo", "Remote type.json is newer, downloading")
                 ref.getFile(file).await()
             } else {
                 Log.d("LocalesRepo", "Using cached type.json")
             }
-
             file.readText()
         } catch (e: Exception) {
             Log.e("LocalesRepo", "Error loading type.json", e)
@@ -73,13 +68,11 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             val localUpdated = if (file.exists()) file.lastModified() else 0L
 
             if (remoteUpdated > localUpdated) {
-                Log.d("DataRepo", "Remote countries.json is newer, downloading")
                 ref.getFile(file).await()
                 file.setLastModified(remoteUpdated)
             } else {
                 Log.d("DataRepo", "Using cached countries.json")
             }
-
             val jsonString = file.readText()
             json.decodeFromString(jsonString)
         } catch (e: Exception) {
@@ -99,7 +92,6 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             val localUpdated = if (file.exists()) file.lastModified() else 0L
 
             if (remoteUpdated > localUpdated) {
-                Log.d("DataRepo", "Remote regions.json for $countryCode is newer, downloading")
                 ref.getFile(file).await()
                 file.setLastModified(remoteUpdated)
             } else {
@@ -127,13 +119,11 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 val localLastModified = localFile.lastModified()
 
                 if (!localFile.exists() || remoteLastModified > localLastModified) {
-                    Log.d("DataRepo", "Downloading updated POI file for ${region.region_code}")
                     ref.getFile(localFile).await()
                     localFile.setLastModified(remoteLastModified)
                 } else {
                     Log.d("DataRepo", "Using cached POI file for ${region.region_code}")
                 }
-
             } catch (e: Exception) {
                 Log.e("DataRepo", "Ошибка загрузки POI для региона ${region.region_code}", e)
             }
@@ -147,15 +137,11 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         val file = File(context.cacheDir, "poi_${regionCode}_$language.csv")
 
         if (!file.exists()) {
-            Log.w("DataRepo", "POI file not found: ${file.absolutePath}")
             return@withContext emptyList()
         }
-
         try {
-            Log.d("DataRepo", "Parsing POI file: ${file.absolutePath}")
             parseCsvToPoi(file)
         } catch (e: Exception) {
-            Log.e("DataRepo", "Error parsing POI CSV for $regionCode", e)
             emptyList()
         }
     }

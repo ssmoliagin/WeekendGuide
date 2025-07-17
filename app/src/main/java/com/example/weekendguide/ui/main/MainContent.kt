@@ -27,7 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import com.example.weekendguide.data.locales.LocalizerTypes
+import com.example.weekendguide.data.locales.LocalizerUI
+//import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.poi.POICard
@@ -169,7 +170,7 @@ fun MainContent(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "${LocalizerTypes.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} рядом с ${userCurrentCity ?: "вами"} - $count",
+                                text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} рядом с ${userCurrentCity ?: "вами"} - $count",
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(

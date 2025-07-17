@@ -11,7 +11,6 @@ import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,40 +59,23 @@ class LoginViewModel(
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
-                viewModelScope.launch {
-                    val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
-                    if (res.isSuccess) {
-                        appNavigation()
-                    } else {
-                        _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
-                    }
-                    _isLoading.value = false
-                }
+                postLoginSync()
             }
             .addOnFailureListener {
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnSuccessListener {
-                        viewModelScope.launch {
-                            val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
-                            if (res.isSuccess) {
-                                appNavigation()
-                            } else {
-                                _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
-                            }
-                            _isLoading.value = false
-                        }
+                        postLoginSync()
                     }
                     .addOnFailureListener { error ->
                         _isLoading.value = false
-                        _errorMessage.value = error.localizedMessage ?: "Ошибка входа/регистрации"
+                        _errorMessage.value = error.localizedMessage ?: "Login/registration failed"
                     }
             }
     }
 
-    fun startGoogleSignIn(
-        onIntentSenderReady: (IntentSenderRequest) -> Unit
-    ) {
+    fun startGoogleSignIn(onIntentSenderReady: (IntentSenderRequest) -> Unit) {
         _isLoading.value = true
+
         val signInRequest = BeginSignInRequest.builder()
             .setGoogleIdTokenRequestOptions(
                 BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
@@ -110,7 +92,7 @@ class LoginViewModel(
             }
             .addOnFailureListener {
                 _isLoading.value = false
-                _errorMessage.value = "Не удалось начать вход через Google"
+                _errorMessage.value = "Google sign-in failed to start"
             }
     }
 
@@ -125,14 +107,7 @@ class LoginViewModel(
                 .addOnCompleteListener { task ->
                     _isLoading.value = false
                     if (task.isSuccessful) {
-                        viewModelScope.launch {
-                            val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
-                            if (res.isSuccess) {
-                                appNavigation()
-                            } else {
-                                _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
-                            }
-                        }
+                        postLoginSync()
                     } else {
                         _errorMessage.value = "Google sign-in failed"
                     }
@@ -144,16 +119,20 @@ class LoginViewModel(
     }
 
     fun checkAlreadyLoggedIn() {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            viewModelScope.launch {
-                val res = userRemoteDataSource.syncOnLogin() // синхронизация с Firestore
-                if (res.isSuccess) {
-                    appNavigation()
-                } else {
-                    _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Ошибка синхронизации"
-                }
+        if (auth.currentUser != null) {
+            postLoginSync()
+        }
+    }
+
+    private fun postLoginSync() {
+        viewModelScope.launch {
+            val res = userRemoteDataSource.syncOnLogin()
+            if (res.isSuccess) {
+                appNavigation()
+            } else {
+                _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Sync error"
             }
+            _isLoading.value = false
         }
     }
 }

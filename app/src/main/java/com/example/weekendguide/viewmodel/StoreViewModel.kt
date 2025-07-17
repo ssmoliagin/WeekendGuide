@@ -1,7 +1,6 @@
 package com.example.weekendguide.viewmodel
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.Country
@@ -9,15 +8,14 @@ import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
-import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class StoreViewModel(
     application: Application,
@@ -45,14 +43,14 @@ class StoreViewModel(
     val error: StateFlow<String?> = _error.asStateFlow()
 
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
-    val poiList: StateFlow<List<POI>> = _poiList
+    val poiList: StateFlow<List<POI>> = _poiList.asStateFlow()
 
     init {
         loadCountriesAndRegions()
         loadPurchased()
     }
 
-    private fun loadPurchased() { //?
+    private fun loadPurchased() {
         viewModelScope.launch {
             _purchasedRegions.value = userPreferences.getPurchasedRegions()
             _purchasedCountries.value = userPreferences.getPurchasedCountries()
@@ -75,22 +73,19 @@ class StoreViewModel(
                 _regionsByCountry.value = regionsMap
                 _error.value = null
             } catch (e: Exception) {
-                _error.value = "Ошибка загрузки: ${e.message}"
+                _error.value = "Loading error: ${e.message}"
             } finally {
                 _loading.value = false
             }
         }
     }
 
-    // Функция покупки региона с загрузкой POI и обновлением списка
     fun purchaseRegionAndLoadPOI(region: Region, translateViewModel: TranslateViewModel) {
         viewModelScope.launch {
             try {
-                // Сохраняем регион и страну локально
                 userPreferences.addPurchasedRegion(region.region_code)
                 userPreferences.addPurchasedCountries(region.country_code)
 
-                // 🔁 Обновляем Firestore
                 val currentData = userPreferences.userDataFlow.first()
                 val updatedData = currentData.copy(
                     purchasedRegions = currentData.purchasedRegions + region.region_code,
@@ -99,18 +94,13 @@ class StoreViewModel(
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
 
-                // Скачиваем файл POI
                 dataRepository.downloadAndCachePOI(region, translateViewModel)
-
-                // Загружаем POI из файла
                 val pois = dataRepository.getPOIs(region.region_code, translateViewModel)
                 _poiList.value = pois
 
-                // Обновляем список купленных
                 loadPurchased()
-
-            } catch (e: Exception) {
-                Log.e("StoreViewModel", "Ошибка при покупке региона и загрузке POI", e)
+            } catch (_: Exception) {
+                // Error silently ignored
             }
         }
     }

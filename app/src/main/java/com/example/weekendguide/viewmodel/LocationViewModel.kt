@@ -3,7 +3,6 @@ package com.example.weekendguide.viewmodel
 import android.annotation.SuppressLint
 import android.app.Application
 import android.location.Geocoder
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -13,10 +12,10 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
-import kotlinx.coroutines.flow.first
 
 class LocationViewModel(
     application: Application,
@@ -60,15 +59,13 @@ class LocationViewModel(
                     _location.value = lat to lng
                     userPreferences.saveCurrentLocation(lat, lng)
 
-                    // Используем обратное геокодирование
                     val cityName = getCityName(lat, lng)
                     cityName?.let {
                         _currentCity.value = it
                         userPreferences.saveCurrentCity(it)
 
-                        //Обновляем и записываем данные
-                        val currentData = userPreferences.userDataFlow.first() // Получаем полные данные
-                        val updatedData = currentData.copy( // Важно использовать !.copy
+                        val currentData = userPreferences.userDataFlow.first()
+                        val updatedData = currentData.copy(
                             currentCity = it,
                             currentLat = lat,
                             currentLng = lng
@@ -76,11 +73,9 @@ class LocationViewModel(
                         userPreferences.saveUserData(updatedData)
                         userRemote.launchSyncLocalToRemote(viewModelScope)
                     }
-                } else {
-                    Log.e("LocationViewModel", "Не удалось получить местоположение")
                 }
-            } catch (e: Exception) {
-                Log.e("LocationViewModel", "Ошибка при определении GPS", e)
+            } catch (_: Exception) {
+                // Optionally handle error silently or emit to error state
             }
         }
     }
@@ -90,8 +85,7 @@ class LocationViewModel(
         return try {
             val addresses = geocoder.getFromLocation(lat, lng, 1)
             addresses?.firstOrNull()?.locality
-        } catch (e: Exception) {
-            Log.e("LocationViewModel", "Ошибка при геокодировании", e)
+        } catch (_: Exception) {
             null
         }
     }
@@ -101,8 +95,7 @@ class LocationViewModel(
             _location.value = lat to lng
             _currentCity.emit(city)
 
-            //Обновляем и записываем данные
-            val currentData = userPreferences.userDataFlow.first() // Получаем полные данные
+            val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(
                 currentCity = city,
                 currentLat = lat,

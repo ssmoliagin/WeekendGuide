@@ -4,9 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.locales.LocalizerUI
-import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.preferences.UserPreferences
-import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.LocalesRepo
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +21,7 @@ class TranslateViewModel(
 ) : AndroidViewModel(application) {
 
     private val prefs = UserPreferences(application)
+
     private val _lang = MutableStateFlow("en")
     val language: StateFlow<String> = _lang.asStateFlow()
 
@@ -33,29 +32,30 @@ class TranslateViewModel(
         }
     }
 
-    fun refreshLang () {
+    fun refreshLang() {
         viewModelScope.launch {
             _lang.value = prefs.getLanguage()
-            if (_lang.value.isBlank()) detectLanguage()
-
+            if (_lang.value.isBlank()) {
+                detectLanguage()
+            }
         }
     }
 
     fun detectLanguage() {
         viewModelScope.launch {
-            val saved = prefs.getLanguage()
-            if (saved.isBlank()) {
+            val savedLang = prefs.getLanguage()
+            if (savedLang.isBlank()) {
                 val systemLang = Locale.getDefault().language
                 val supported = listOf("de", "ru")
                 val selected = if (systemLang in supported) systemLang else "en"
                 prefs.saveLanguage(selected)
                 _lang.value = selected
             } else {
-                _lang.value = saved // ✅ если язык есть, обновляем сразу
+                _lang.value = savedLang
             }
+
             loadUITranslations()
 
-            // 🔁 Обновляем также в Firestore
             val currentData = prefs.userDataFlow.first()
             val updatedData = currentData.copy(language = _lang.value)
             prefs.saveUserData(updatedData)
@@ -68,7 +68,6 @@ class TranslateViewModel(
             prefs.saveLanguage(newLang)
             _lang.value = newLang
 
-            // 🔁 Обновляем также в Firestore
             val currentData = prefs.userDataFlow.first()
             val updatedData = currentData.copy(language = newLang)
             prefs.saveUserData(updatedData)
@@ -82,5 +81,4 @@ class TranslateViewModel(
             LocalizerUI.loadFromJson(json)
         }
     }
-
 }

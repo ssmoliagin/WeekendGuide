@@ -3,7 +3,7 @@ package com.example.weekendguide.data.locales
 import org.json.JSONObject
 
 object LocalizerUI {
-    private val translations = mutableMapOf<String, Map<String, String>>() // key -> map(lang -> text)
+    private val translations = mutableMapOf<String, Map<String, String>>()
 
     fun loadFromJson(json: String) {
         val parsed = JSONObject(json)
