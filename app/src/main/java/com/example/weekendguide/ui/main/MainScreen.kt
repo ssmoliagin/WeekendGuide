@@ -93,11 +93,13 @@ fun MainScreen(
     var selectedItem by remember { mutableStateOf("main") }// 🔹 Состояние выбранного пункта меню
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
 
+
     val currentLanguage by translateViewModel.language.collectAsState()
 
     val currentGP by pointsViewModel.currentGP.collectAsState()
     val totalGP by pointsViewModel.totalGP.collectAsState()
     val spentGP by pointsViewModel.spentGP.collectAsState()
+    val isPremium by pointsViewModel.premium.collectAsState()
 
     val mainStateViewModel: MainStateViewModel = viewModel(
         key = "MainStateViewModel",
@@ -514,6 +516,7 @@ fun MainScreen(
                     translateViewModel = translateViewModel,
                     profileViewModel = profileViewModel,
                     onLoggedOut = onLoggedOut,
+                    isPremium = isPremium
                 )
             }
 
@@ -562,6 +565,7 @@ fun MainScreen(
                         pointsViewModel = pointsViewModel,
                         locationViewModel = locationViewModel,
                         loginViewModel = loginViewModel,
+                        isPremium = isPremium
                     )
                 }
             }
@@ -583,6 +587,7 @@ fun MainScreen(
                     pointsViewModel = pointsViewModel,
                     locationViewModel = locationViewModel,
                     loginViewModel = loginViewModel,
+                    isPremium = isPremium
                 )
             }
         }

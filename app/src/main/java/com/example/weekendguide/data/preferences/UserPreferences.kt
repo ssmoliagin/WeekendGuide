@@ -27,6 +27,7 @@ class UserPreferences(private val context: Context) {
         val TOTAL_GP = intPreferencesKey("total_GP")
         val CURRENT_GP = intPreferencesKey("current_GP")
         val SPENT_GP = intPreferencesKey("spent_GP")
+        val PREMIUM_MODE = booleanPreferencesKey("premium_mode")
 
         val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
@@ -58,6 +59,7 @@ class UserPreferences(private val context: Context) {
             total_GP = prefs[Keys.TOTAL_GP] ?: 0,
             current_GP = prefs[Keys.CURRENT_GP] ?: 0,
             spent_GP = prefs[Keys.SPENT_GP] ?: 0,
+            premium_mode = prefs[Keys.PREMIUM_MODE],
             categoryLevels = levelsJson?.let { Json.decodeFromString(it) } ?: emptyMap(),
             collectionRegions = collectionJson?.let { Json.decodeFromString(it) } ?: emptyList(),
             purchasedRegions = prefs[Keys.PURCHASED_REGIONS]?.toList() ?: emptyList(),
@@ -82,6 +84,7 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.TOTAL_GP] = userData.total_GP
             prefs[Keys.CURRENT_GP] = userData.current_GP
             prefs[Keys.SPENT_GP] = userData.spent_GP
+            prefs[Keys.PREMIUM_MODE] = userData.premium_mode ?: false
             prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(userData.categoryLevels)
             prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(userData.collectionRegions)
             prefs[Keys.PURCHASED_REGIONS] = userData.purchasedRegions.toSet()
@@ -96,6 +99,15 @@ class UserPreferences(private val context: Context) {
 
     suspend fun clearAllUserData() {
         context.dataStore.edit { it.clear() }
+    }
+
+    // Premium settings
+    suspend fun setPremium(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.PREMIUM_MODE] = enabled }
+    }
+
+    suspend fun getPremium(): Boolean {
+        return context.dataStore.data.first()[Keys.PREMIUM_MODE] != false
     }
 
     // Notification settings

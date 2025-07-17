@@ -5,7 +5,6 @@ import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.POI
-import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.delay
@@ -30,10 +29,14 @@ class PointsViewModel(
     val totalGP: StateFlow<Int> = _totalGP.asStateFlow()
     val spentGP: StateFlow<Int> = _spentGP.asStateFlow()
 
+    private val _premium = MutableStateFlow(true)
+    val premium: StateFlow<Boolean> = _premium.asStateFlow()
+
     fun refreshGP() = viewModelScope.launch {
         _currentGP.value = userPreferences.getCurrentGP()
         _totalGP.value = userPreferences.getTotalGP()
         _spentGP.value = userPreferences.getSpentGP()
+        _premium.value = userPreferences.getPremium()
     }
 
     fun addGP(amount: Int) = viewModelScope.launch {

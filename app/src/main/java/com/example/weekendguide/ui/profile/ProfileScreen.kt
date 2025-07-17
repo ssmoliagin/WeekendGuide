@@ -19,11 +19,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
@@ -74,6 +77,7 @@ fun ProfileScreen(
     translateViewModel: TranslateViewModel,
     profileViewModel: ProfileViewModel,
     onLoggedOut: () -> Unit,
+    isPremium: Boolean
 ) {
 
     var sheetVisible by remember { mutableStateOf(false) }
@@ -152,10 +156,10 @@ fun ProfileScreen(
         ) {
             // ——— Блок: Личные данные ———
             item {
-                //Text("Личные данные", style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = LocalizerUI.t("personal_data", currentLanguage),
-                    style = MaterialTheme.typography.titleMedium)
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -169,7 +173,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .padding(16.dp)
                     ) {
-                        // Иконка с первой буквой имени
+                        // Иконка с первой буквой имени или фото
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
@@ -195,20 +199,40 @@ fun ProfileScreen(
 
                         Spacer(Modifier.width(16.dp))
 
-                        Column {
-                            Text("Name", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                            Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                        // Контейнер с данными + премиум-значок
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Name", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
 
-                            Spacer(Modifier.height(12.dp))
+                                Spacer(Modifier.height(12.dp))
 
-                            Text("Email", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                            Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text("Email", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                            }
+
+                            if (isPremium) {
+                                Icon(
+                                    imageVector = Icons.Default.Star, // ← Можно заменить на иконку короны
+                                    contentDescription = "Premium",
+                                    tint = Color(0xFFFFD700), // Золотой цвет
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .padding(start = 8.dp)
+                                )
+                            }
                         }
                     }
                 }
 
                 Spacer(Modifier.height(24.dp))
             }
+
 
             // ——— Блок: Настройки ———
             item {

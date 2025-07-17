@@ -15,6 +15,7 @@ data class UserData(
     val total_GP: Int = 0,
     val current_GP: Int = 0,
     val spent_GP: Int = 0,
+    val premium_mode: Boolean? = false,
 
     val categoryLevels: Map<String, Int> = emptyMap(),
     val collectionRegions: List<Region> = emptyList(),

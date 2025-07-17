@@ -82,6 +82,7 @@ fun POIFullScreen(
     poi: POI,
     isFavorite: Boolean,
     isVisited: Boolean,
+    isPremium: Boolean,
 
     onFavoriteClick: () -> Unit,
     userLocation: Pair<Double, Double>? = null,
@@ -497,16 +498,22 @@ fun POIFullScreen(
             if (!isVisited) {
                 Button(
                     onClick = {
-                        isChecking = true
-                        coroutineScope.launch {
-                            pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
-                                if (success) {
-                                    poiViewModel.markPoiVisited(poi.id)
-                                    Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                        if (isPremium){ //временый режим бога
+                            poiViewModel.markPoiVisited(poi.id)
+                            pointsViewModel.addGP(100)
+                            Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            isChecking = true
+                            coroutineScope.launch {
+                                pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
+                                    if (success) {
+                                        poiViewModel.markPoiVisited(poi.id)
+                                        Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                                    }
+                                    isChecking = false
                                 }
-                                isChecking = false
                             }
                         }
                     },
