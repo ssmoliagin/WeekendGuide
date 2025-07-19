@@ -42,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-//import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
@@ -90,8 +89,8 @@ fun FiltersPanel(
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // 🔵 Радиус
-            Text("Дальность (км)", style = MaterialTheme.typography.titleMedium)
+            // 🔵 Radius selector
+            Text("Дальность ($currentUnits)", style = MaterialTheme.typography.titleMedium)
 
             Slider(
                 value = radiusSliderPosition.toFloat(),
@@ -109,7 +108,7 @@ fun FiltersPanel(
                 style = MaterialTheme.typography.bodySmall
             )
 
-            // ✅ Типы мест
+            // ✅ Place types
             Text("Типы мест", style = MaterialTheme.typography.titleMedium)
 
             FlowRow(
@@ -131,13 +130,12 @@ fun FiltersPanel(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        text = LocalizerUI.t(type, currentLanguage),//type,
+                                        text = LocalizerUI.t(type, currentLanguage),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontSize = 10.sp,
                                         maxLines = 1
                                     )
                                 } else {
-                                    //Text(type)
                                     Text(LocalizerUI.t(type, currentLanguage))
                                 }
                             }
@@ -145,7 +143,7 @@ fun FiltersPanel(
                     )
                 }
 
-                // 🔁 Кнопка "Выбрать все / Убрать все"
+                // 🔁 Select all / Clear all
                 AssistChip(
                     onClick = {
                         if (allSelected) onClearAllTypes() else onSelectAllTypes()
@@ -162,7 +160,7 @@ fun FiltersPanel(
                 )
             }
 
-            // ☑️ Показывать посещённые
+            // ☑️ Show visited checkbox
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier

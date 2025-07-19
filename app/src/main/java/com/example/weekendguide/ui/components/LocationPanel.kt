@@ -3,6 +3,8 @@ package com.example.weekendguide.ui.components
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +13,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.input.TextFieldValue
@@ -21,7 +25,6 @@ import com.google.android.libraries.places.api.model.Place
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
 
-// Объекты для элементов списка — чтобы добавить "Рядом со мной" и обычные предсказания
 sealed class SuggestionItem {
     object CurrentLocation : SuggestionItem()
     data class Prediction(val prediction: AutocompletePrediction) : SuggestionItem()
@@ -37,36 +40,43 @@ fun LocationPanel(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val view = LocalView.current
     val imm = context.getSystemService(InputMethodManager::class.java)
+    val view = LocalView.current
     val sound = LocalView.current
+    val focusManager = LocalFocusManager.current
+    val focusRequester = remember { FocusRequester() }
+
     val placesClient = remember { Places.createClient(context) }
 
     var query by remember { mutableStateOf(TextFieldValue("")) }
     var suggestions by remember { mutableStateOf<List<SuggestionItem>>(emptyList()) }
-    var isFocused by remember { mutableStateOf(false) }
 
-    val defaultLabel = userCurrentCity ?: "Город или адрес"
-    val defaultSuggestionText = "Рядом со мной"
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
-    // Запрос подсказок при изменении текста
-    LaunchedEffect(query.text) {
-        if (query.text.isNotBlank()) {
-            val request = FindAutocompletePredictionsRequest.builder()
-                .setQuery(query.text)
-                .build()
+    val defaultLabel = userCurrentCity ?: "City or address"
+    val defaultSuggestionText = "Near me"
 
-            placesClient.findAutocompletePredictions(request)
-                .addOnSuccessListener { response ->
-                    // Добавляем в начало элемент "Рядом со мной"
-                    suggestions = listOf(SuggestionItem.CurrentLocation) +
-                            response.autocompletePredictions.map { SuggestionItem.Prediction(it) }
-                }
-                .addOnFailureListener {
-                    // В случае ошибки показываем только "Рядом со мной"
-                    suggestions = listOf(SuggestionItem.CurrentLocation)
-                    it.printStackTrace()
-                }
+    LaunchedEffect(query.text, isFocused) {
+        val baseSuggestions = listOf(SuggestionItem.CurrentLocation)
+        if (isFocused) {
+            if (query.text.isNotBlank()) {
+                val request = FindAutocompletePredictionsRequest.builder()
+                    .setQuery(query.text)
+                    .build()
+
+                placesClient.findAutocompletePredictions(request)
+                    .addOnSuccessListener { response ->
+                        suggestions = baseSuggestions + response.autocompletePredictions.map {
+                            SuggestionItem.Prediction(it)
+                        }
+                    }
+                    .addOnFailureListener {
+                        suggestions = baseSuggestions
+                    }
+            } else {
+                suggestions = baseSuggestions
+            }
         } else {
             suggestions = emptyList()
         }
@@ -79,20 +89,18 @@ fun LocationPanel(
     ) {
         OutlinedTextField(
             value = query,
-            onValueChange = {
-                query = it
-                isFocused = true
-            },
+            onValueChange = { query = it },
             label = { Text(defaultLabel) },
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
             leadingIcon = {
                 if (onShowScreenType == "map") {
                     IconButton(onClick = {
                         sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                         onDismiss()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 } else {
                     Icon(Icons.Default.Search, contentDescription = null)
@@ -104,11 +112,12 @@ fun LocationPanel(
                         query = TextFieldValue("")
                         suggestions = emptyList()
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Очистить")
+                        Icon(Icons.Default.Close, contentDescription = "Clear")
                     }
                 }
             },
             singleLine = true,
+            interactionSource = interactionSource,
             colors = TextFieldDefaults.colors(
                 focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                 unfocusedIndicatorColor = MaterialTheme.colorScheme.outline,
@@ -122,7 +131,7 @@ fun LocationPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 300.dp)
-                    .background(Color.White.copy(alpha = 0.8f))
+                    .background(Color.White.copy(alpha = 0.9f))
             ) {
                 items(suggestions) { item ->
                     when (item) {
@@ -135,8 +144,8 @@ fun LocationPanel(
                                         onRequestGPS()
                                         query = TextFieldValue(defaultSuggestionText)
                                         suggestions = emptyList()
-                                        isFocused = false
                                         imm.hideSoftInputFromWindow(view.windowToken, 0)
+                                        focusManager.clearFocus()
                                     }
                                     .padding(horizontal = 12.dp, vertical = 10.dp)
                             ) {
@@ -152,6 +161,7 @@ fun LocationPanel(
                                 )
                             }
                         }
+
                         is SuggestionItem.Prediction -> {
                             val prediction = item.prediction
                             Row(
@@ -159,7 +169,6 @@ fun LocationPanel(
                                     .fillMaxWidth()
                                     .clickable {
                                         sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
-
                                         val placeId = prediction.placeId
                                         val placeRequest = FetchPlaceRequest.builder(
                                             placeId,
@@ -173,11 +182,14 @@ fun LocationPanel(
                                                 if (latLng != null) {
                                                     val name = place.name ?: ""
                                                     query = TextFieldValue(name)
-                                                    onLocationSelected(name, Pair(latLng.latitude, latLng.longitude))
+                                                    onLocationSelected(
+                                                        name,
+                                                        Pair(latLng.latitude, latLng.longitude)
+                                                    )
                                                 }
                                                 suggestions = emptyList()
-                                                isFocused = false
                                                 imm.hideSoftInputFromWindow(view.windowToken, 0)
+                                                focusManager.clearFocus()
                                             }
                                     }
                                     .padding(horizontal = 12.dp, vertical = 10.dp)

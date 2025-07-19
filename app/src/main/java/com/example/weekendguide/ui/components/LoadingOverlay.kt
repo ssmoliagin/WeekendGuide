@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LoadingOverlay(
     modifier: Modifier = Modifier,
-    title: String = "Загружаем...",
-    progress: Float? = null // от 0f до 1f, если захочешь добавить прогресс
+    title: String = "Loading...",
+    progress: Float? = null
 ) {
     Box(
         modifier = modifier

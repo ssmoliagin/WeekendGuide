@@ -1,25 +1,12 @@
 package com.example.weekendguide.ui.main
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
-//import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.poi.POICard
@@ -58,42 +44,24 @@ fun MainContent(
     poiViewModel: POIViewModel,
 ) {
     val currentLanguage by translateViewModel.language.collectAsState()
-
     val listState = rememberLazyListState()
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp // ширина экрана
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
     Scaffold(
-
-        //ШАПКА
-        topBar = {
-            showTopAppBar()
-        },
-        //НИЖНЕЕ МЕНЮ
-        bottomBar = {
-            showNavigationBar()
-        }
-
-        // ОСНОВНОЙ ЭКРАН
+        topBar = { showTopAppBar() },
+        bottomBar = { showNavigationBar() }
     ) { paddingValues ->
-
-        Column (
+        Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
                 .padding(horizontal = 4.dp)
         ) {
-            //Поле выбор локации
             showLocationPanel()
-
             Spacer(modifier = Modifier.height(4.dp))
-
-            // кнопки фильтры
             showFiltersButtons()
-
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Основной список
             LazyColumn(
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -102,7 +70,6 @@ fun MainContent(
                 item {
                     val displayedPOIs = userPOIList.shuffled().take(10)
                     val count = userPOIList.size
-
 
                     Row(
                         modifier = Modifier
@@ -119,9 +86,7 @@ fun MainContent(
                             text = "Показать все",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.clickable {
-                                onOpenListScreen()       // и открываем экран со списком
-                            }
+                            modifier = Modifier.clickable { onOpenListScreen() }
                         )
                     }
 
@@ -130,11 +95,7 @@ fun MainContent(
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
                         items(displayedPOIs) { poi ->
-                            Box(
-                                modifier = Modifier
-                                    .width(screenWidth - 32.dp)
-                            ) {
-
+                            Box(modifier = Modifier.width(screenWidth - 32.dp)) {
                                 POICard(
                                     poi = poi,
                                     isFavorite = isFavorite(poi),
@@ -149,12 +110,10 @@ fun MainContent(
                                     poiViewModel = poiViewModel
                                 )
                             }
-
                         }
                     }
                 }
 
-                //группировки по типам
                 val types = userPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
                 types.forEach { type ->
                     item {
@@ -178,8 +137,8 @@ fun MainContent(
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.clickable {
-                                    onSelectSingleType(type) // фильтруем только по одному типу
-                                    onOpenListScreen()       // и открываем экран со списком
+                                    onSelectSingleType(type)
+                                    onOpenListScreen()
                                 }
                             )
                         }
@@ -205,7 +164,7 @@ fun MainContent(
                 }
 
                 item {
-                    showStoreBanner() // показываем банер магазина вконце
+                    showStoreBanner()
                 }
             }
         }

@@ -4,30 +4,15 @@ import android.location.Location
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +24,6 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.viewmodel.POIViewModel
-import androidx.compose.runtime.getValue
 
 @Composable
 fun POICard(
@@ -55,37 +39,17 @@ fun POICard(
     reviews: List<Review> = emptyList(),
     poiViewModel: POIViewModel
 ) {
-    val cardModifier: Modifier
-    val imageModifier: Modifier
-    val isImageLeft: Boolean
-
-    when (cardType) {
-        "mini" -> {
-            cardModifier = Modifier
-                .width(200.dp)
-                .height(310.dp)
-                .clickable {
-                    onSelectPOI(poi)
-                    onClick()
-                }
-            imageModifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-            isImageLeft = false
-        }
-        else -> {
-            cardModifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-                .clickable {
-                    onSelectPOI(poi)
-                    onClick()
-                }
-            imageModifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-            isImageLeft = false
-        }
+    val (cardModifier, imageModifier) = when (cardType) {
+        "mini" -> Modifier
+            .width(200.dp)
+            .height(310.dp) to Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+        else -> Modifier
+            .fillMaxWidth()
+            .height(400.dp) to Modifier
+            .fillMaxWidth()
+            .height(300.dp)
     }
 
     val distanceKm = remember(poi, userLocation) {
@@ -100,10 +64,14 @@ fun POICard(
     val reviewsCount = reviews.size
 
     Card(
-        modifier = cardModifier,
+        modifier = cardModifier.clickable {
+            onSelectPOI(poi)
+            onClick()
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+
             Box(modifier = imageModifier) {
                 poi.imageUrl?.let { imageUrl ->
                     Image(
@@ -120,7 +88,7 @@ fun POICard(
                             .align(Alignment.TopStart)
                             .padding(4.dp),
                         imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Посещенные",
+                        contentDescription = "Visited",
                         tint = Color.Green
                     )
                 }
@@ -134,15 +102,14 @@ fun POICard(
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = "Избранные",
+                        contentDescription = "Favorites",
                         tint = if (isFavorite) Color.Red else Color.Gray
                     )
                 }
             }
 
             Column(modifier = Modifier.padding(8.dp)) {
-
-// ⭐️ Рейтинг — всегда показываем 5 звёзд
+                // ⭐️ Rating row
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 4.dp)
@@ -159,18 +126,11 @@ fun POICard(
 
                     Spacer(modifier = Modifier.width(6.dp))
 
-                    if (reviewsCount > 0) {
-                        Text(
-                            text = String.format(" %.1f (%d)", averageRating, reviewsCount),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    } else {
-                        Text(
-                            text = "5.0 (0)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
-                    }
+                    Text(
+                        text = String.format(" %.1f (%d)", if (reviewsCount > 0) averageRating else 5.0, reviewsCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (reviewsCount > 0) LocalContentColor.current else Color.Gray
+                    )
                 }
 
                 Text(
@@ -179,6 +139,7 @@ fun POICard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 2
                 )
+
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (cardType != "mini") {
@@ -192,7 +153,7 @@ fun POICard(
                 distanceKm?.let {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "$it км от $userCurrentCity",
+                        text = "$it km from $userCurrentCity",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )

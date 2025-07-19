@@ -1,9 +1,6 @@
 package com.example.weekendguide.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,8 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,22 +34,22 @@ fun StoreBanner(
             .fillMaxWidth()
             .padding(vertical = 12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary),
-        onClick = { onOpenStore() }
+        onClick = onOpenStore
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp) // Внутренние отступы
+                .padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("\uD83D\uDDFA\uFE0F", fontSize = 36.sp) // Крупнее эмодзи
+                Text("\uD83D\uDDFA\uFE0F", fontSize = 36.sp)
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "Откройте новые места!",
+                    text = "Discover new places!",
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp // Чуть больше
+                        fontSize = 20.sp
                     )
                 )
             }
@@ -66,13 +61,13 @@ fun StoreBanner(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "📍 Вам доступно",
+                    text = "📍 Available",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontSize = 16.sp
                     )
                 )
                 Text(
-                    text = "$totalPOIs точек",
+                    text = "$totalPOIs points",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -88,7 +83,7 @@ fun StoreBanner(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "🎯 Исследовано",
+                    text = "🎯 Explored",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontSize = 16.sp
                     )
@@ -106,7 +101,7 @@ fun StoreBanner(
             Spacer(Modifier.height(18.dp))
 
             Text(
-                text = "➡ Посмотреть новые коллекции",
+                text = "➡ View new collections",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,
@@ -116,4 +111,3 @@ fun StoreBanner(
         }
     }
 }
-

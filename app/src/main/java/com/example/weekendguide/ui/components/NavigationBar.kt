@@ -34,8 +34,8 @@ fun NavigationBar(
                 onItemSelected("main")
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
             },
-            icon = { Icon(Icons.Default.Search, contentDescription = "Поиск") },
-            label = { Text("Поиск") }
+            icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+            label = { Text("Search") }
         )
 
         NavigationBarItem(
@@ -46,8 +46,8 @@ fun NavigationBar(
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
                 onShowFavoritesList()
             },
-            icon = { Icon(Icons.Default.Bookmarks, contentDescription = "Избранное") },
-            label = { Text("Избранное") }
+            icon = { Icon(Icons.Default.Bookmarks, contentDescription = "Favorites") },
+            label = { Text("Favorites") }
         )
 
         NavigationBarItem(
@@ -58,8 +58,8 @@ fun NavigationBar(
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
                 onOpenStatistics()
             },
-            icon = { Icon(Icons.Default.BarChart, contentDescription = "Достижения") },
-            label = { Text("Достижения") }
+            icon = { Icon(Icons.Default.BarChart, contentDescription = "Achievements") },
+            label = { Text("Achievements") }
         )
 
         NavigationBarItem(
@@ -70,8 +70,8 @@ fun NavigationBar(
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
                 onOpenProfile()
             },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Профиль") },
-            label = { Text("Профиль") }
+            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+            label = { Text("Profile") }
         )
     }
 }

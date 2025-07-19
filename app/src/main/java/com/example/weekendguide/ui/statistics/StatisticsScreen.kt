@@ -1,6 +1,5 @@
 package com.example.weekendguide.ui.statistics
 
-import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -18,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-//import com.example.weekendguide.data.locales.LocalizerTypes
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.viewmodel.LeaderboardViewModel
@@ -40,9 +38,7 @@ fun StatisticsScreen(
     statisticsViewModel: StatisticsViewModel,
     leaderboardViewModel: LeaderboardViewModel
 ) {
-    val context = LocalContext.current
     val currentLanguage by translateViewModel.language.collectAsState()
-
     val totalGP by pointsViewModel.totalGP.collectAsState()
     val spentGP by pointsViewModel.spentGP.collectAsState()
     val purchasedRegionsCount by statisticsViewModel.purchasedRegionsCount.collectAsState()
@@ -69,14 +65,12 @@ fun StatisticsScreen(
 
     val typeGoals = listOf(5, 10, 20, 50, 100)
 
-    //таблица лидеров
     val leaderboardVisible by leaderboardViewModel.leaderboardVisible.collectAsState()
     val userRank by leaderboardViewModel.userRank.collectAsState()
     val leaderboard by leaderboardViewModel.leaderboard.collectAsState()
 
     LaunchedEffect(Unit) {
-
-        leaderboardViewModel.loadLeaderboard() // обновляем таблицу рейтинга
+        leaderboardViewModel.loadLeaderboard()
     }
 
     Scaffold(
@@ -89,10 +83,9 @@ fun StatisticsScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-
             item {
                 Text(
-                    text = "🏆 Всего очков",
+                    text = "🏆 Total Points",
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
@@ -105,19 +98,19 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🟢 Набрано:", Modifier.weight(1f))
+                            Text("🟢 Earned:", Modifier.weight(1f))
                             Text("$totalGP GP", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🔴 Потрачено:", Modifier.weight(1f))
+                            Text("🔴 Spent:", Modifier.weight(1f))
                             Text("$spentGP GP", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🏅 Ваше место в рейтинге:", Modifier.weight(1f))
+                            Text("🏅 Your rank:", Modifier.weight(1f))
                             Text(userRank?.toString() ?: "—", fontWeight = FontWeight.Bold)
                         }
                         Text(
-                            text = if (leaderboardVisible) "Скрыть таблицу лидеров" else "Показать таблицу лидеров",
+                            text = if (leaderboardVisible) "Hide Leaderboard" else "Show Leaderboard",
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .clickable {
@@ -129,7 +122,6 @@ fun StatisticsScreen(
                     }
                 }
 
-                //ТАБЛИЦА ЛИДЕРОВ
                 if (leaderboardVisible) {
                     Card(
                         modifier = Modifier
@@ -138,13 +130,13 @@ fun StatisticsScreen(
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("📊 ТОП пользователей", style = MaterialTheme.typography.titleMedium)
-
+                            Text("📊 Top Users", style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
-
                             leaderboard.take(10).forEachIndexed { index, (name, gp) ->
                                 Row(
-                                    Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("${index + 1}.", modifier = Modifier.width(24.dp))
@@ -156,9 +148,8 @@ fun StatisticsScreen(
                     }
                 }
 
-                //статистика
                 Text(
-                    text = "🧭 Общая статистика",
+                    text = "🧭 General Statistics",
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -171,15 +162,15 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("\uD83C\uDF0D Стран посещено:", Modifier.weight(1f))
+                            Text("🌍 Countries visited:", Modifier.weight(1f))
                             Text("$purchasedCountriesCount", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🚩 Регионов открыто:", Modifier.weight(1f))
+                            Text("🚩 Regions unlocked:", Modifier.weight(1f))
                             Text("$purchasedRegionsCount", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("✅ Посещено мест:", Modifier.weight(1f))
+                            Text("✅ Places visited:", Modifier.weight(1f))
                             Text("$visitedPOIs / $totalPOIs", fontWeight = FontWeight.Bold)
                         }
                     }
@@ -188,7 +179,7 @@ fun StatisticsScreen(
 
             item {
                 Text(
-                    text = "🎯 Достижения по категориям",
+                    text = "🎯 Category Achievements",
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -249,7 +240,7 @@ fun StatisticsScreen(
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "Уровень ${level + 1}",
+                                text = "Level ${level + 1}",
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -268,7 +259,7 @@ fun StatisticsScreen(
                         )
 
                         Text(
-                            text = "$nextGoal до следующего уровня",
+                            text = "$nextGoal to next level",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -282,7 +273,6 @@ fun StatisticsScreen(
                                     pointsViewModel.addGP(1000)
                                 },
                                 modifier = Modifier
-                                    //.align(Alignment.End)
                                     .fillMaxWidth()
                                     .padding(top = 12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

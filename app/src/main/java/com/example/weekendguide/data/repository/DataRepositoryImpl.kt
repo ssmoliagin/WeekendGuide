@@ -125,7 +125,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                     Log.d("DataRepo", "Using cached POI file for ${region.region_code}")
                 }
             } catch (e: Exception) {
-                Log.e("DataRepo", "Ошибка загрузки POI для региона ${region.region_code}", e)
+                Log.e("DataRepo", "Error loading POI for ${region.region_code}", e)
             }
         }
     }

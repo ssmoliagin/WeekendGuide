@@ -1,11 +1,6 @@
 package com.example.weekendguide.ui.list
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,16 +34,8 @@ fun ListPOIScreen(
     val listState = rememberLazyListState()
 
     Scaffold(
-
-        //ШАПКА
-        topBar = {
-            showTopAppBar()
-        },
-        //НИЖНЕЕ МЕНЮ
-        bottomBar = {
-            showNavigationBar()
-        }
-
+        topBar = { showTopAppBar() },
+        bottomBar = { showNavigationBar() }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -56,16 +43,9 @@ fun ListPOIScreen(
                 .fillMaxSize()
                 .padding(horizontal = 4.dp)
         ) {
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            // кнопки фильтры
-
             showFiltersButtons()
-
             Spacer(modifier = Modifier.height(12.dp))
-
-            // 📋 Список POI
 
             LazyColumn(
                 state = listState,

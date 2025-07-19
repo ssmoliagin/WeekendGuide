@@ -4,44 +4,20 @@ import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,10 +25,6 @@ import androidx.compose.ui.unit.sp
 import com.example.weekendguide.R
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.example.weekendguide.viewmodel.TranslateViewModel
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.platform.LocalFocusManager
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +33,6 @@ fun LoginScreen(
     onNavigate: (SplashViewModel.Destination) -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
-
     val isLoading by loginViewModel.isLoading.collectAsState()
     val errorMessage by loginViewModel.errorMessage.collectAsState()
 
@@ -76,7 +47,6 @@ fun LoginScreen(
         }
     }
 
-    // Навигация при изменении destination
     val navigateDestination = remember { mutableStateOf<SplashViewModel.Destination?>(null) }
     LaunchedEffect(Unit) {
         loginViewModel.navigateDestination.collect { destination ->
@@ -84,7 +54,6 @@ fun LoginScreen(
         }
     }
 
-    // При старте проверяем залогинен ли пользователь
     LaunchedEffect(Unit) {
         loginViewModel.checkAlreadyLoggedIn()
     }
@@ -100,36 +69,29 @@ fun LoginScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // Верх: логотип и текст
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Image(
                             painter = painterResource(id = R.drawable.logo),
-                            contentDescription = "Логотип",
-                            modifier = Modifier
-                                .size(160.dp)
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(160.dp)
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
                             text = "Зарегистрируйтесь или войдите,\nчтобы начать исследовать достопримечательности",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.SemiBold
-                            ),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                             textAlign = TextAlign.Center
                         )
                     }
 
-                    // Центр: Google вход + Email блок
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Spacer(modifier = Modifier.height(32.dp))
 
@@ -143,7 +105,7 @@ fun LoginScreen(
                                 .fillMaxWidth()
                                 .height(56.dp),
                             shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(start = 16.dp) // сдвигаем всё вправо, чтобы иконка была у края
+                            contentPadding = PaddingValues(start = 16.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -160,19 +122,16 @@ fun LoginScreen(
 
                                 Spacer(modifier = Modifier.width(12.dp))
 
-                                // Центрируем текст вручную через Spacer’ы
                                 Box(
-                                    modifier = Modifier
-                                        .weight(1f),
+                                    modifier = Modifier.weight(1f),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text("Продолжить с Google")
                                 }
 
-                                Spacer(modifier = Modifier.width(20.dp)) // визуально уравновешиваем правый край
+                                Spacer(modifier = Modifier.width(20.dp))
                             }
                         }
-
 
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -190,8 +149,8 @@ fun LoginScreen(
                             Divider(modifier = Modifier.weight(1f))
                         }
 
-                        // Email login block: компактно
                         Spacer(modifier = Modifier.height(12.dp))
+
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -204,8 +163,7 @@ fun LoginScreen(
                                 label = { Text("Email") },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 14.sp),
-                                modifier = Modifier
-                                    .fillMaxWidth(0.9f)
+                                modifier = Modifier.fillMaxWidth(0.9f)
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -251,7 +209,6 @@ fun LoginScreen(
                         }
                     }
 
-                    // Низ: условия
                     Text(
                         text = "Продолжая, вы соглашаетесь с нашими условиями использования",
                         style = MaterialTheme.typography.labelSmall,

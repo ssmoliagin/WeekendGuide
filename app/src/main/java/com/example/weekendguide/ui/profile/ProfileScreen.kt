@@ -79,7 +79,6 @@ fun ProfileScreen(
     onLoggedOut: () -> Unit,
     isPremium: Boolean
 ) {
-
     var sheetVisible by remember { mutableStateOf(false) }
     var sheetType by remember { mutableStateOf<SettingsType?>(null) }
 
@@ -88,16 +87,14 @@ fun ProfileScreen(
         sheetVisible = true
     }
 
-    //Персональные данные
     val userInfo by loginViewModel.userData.collectAsState()
     val email = userInfo.email ?: ""
     val displayName = userInfo.displayName ?: ""
     val photoUrl = userInfo.photoUrl
     val name = displayName.ifBlank { email.substringBefore("@") }
 
-    // ТЕМА
     val currentTheme by themeViewModel.theme.collectAsState()
-    val themeOptions = listOf("Светлая", "Тёмная", "Настройки устройства")
+    val themeOptions = listOf("Light", "Dark", "System")
     val themeValues = listOf("light", "dark", "system")
     var selectedThemeIndex by remember {
         mutableStateOf(themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0)
@@ -110,25 +107,22 @@ fun ProfileScreen(
         selectedTheme = themeOptions[idx]
     }
 
-    // ЯЗЫК
     val currentLanguage by translateViewModel.language.collectAsState()
-    val languagesOptions = listOf("Русский", "English", "Deutsch")
-    val languageValues =  listOf("ru", "en", "de")
+    val languageOptions = listOf("English", "Deutsch", "Русский")
+    val languageValues = listOf("en", "de", "ru")
     var selectedLanguageIndex by remember {
         mutableStateOf(languageValues.indexOf(currentLanguage).takeIf { it >= 0 } ?: 0)
     }
-    var selectedLanguage by remember { mutableStateOf(languagesOptions[selectedLanguageIndex]) }
+    var selectedLanguage by remember { mutableStateOf(languageOptions[selectedLanguageIndex]) }
 
     LaunchedEffect(currentLanguage) {
         val idx = languageValues.indexOf(currentLanguage).takeIf { it >= 0 } ?: 0
         selectedLanguageIndex = idx
-        selectedLanguage = languagesOptions[idx]
+        selectedLanguage = languageOptions[idx]
     }
 
-
-    // Единицы измерения
     val currentUnits by profileViewModel.units.collectAsState()
-    val unitsOptions = listOf("Метрическая", "Британская имперская")
+    val unitsOptions = listOf("Metric", "Imperial")
     val unitsValues = listOf("km", "mi")
     var selectedUnitsIndex by remember {
         mutableStateOf(unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0)
@@ -141,7 +135,6 @@ fun ProfileScreen(
         selectedUnits = unitsOptions[idx]
     }
 
-    // Уведомления вкл/выкл
     val notificationEnabled by profileViewModel.notification.collectAsState()
 
     Scaffold(
@@ -154,7 +147,6 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // ——— Блок: Личные данные ———
             item {
                 Text(
                     text = LocalizerUI.t("personal_data", currentLanguage),
@@ -170,10 +162,8 @@ fun ProfileScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(16.dp)
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        // Иконка с первой буквой имени или фото
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
@@ -199,7 +189,6 @@ fun ProfileScreen(
 
                         Spacer(Modifier.width(16.dp))
 
-                        // Контейнер с данными + премиум-значок
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f)
@@ -209,34 +198,27 @@ fun ProfileScreen(
                             ) {
                                 Text("Name", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                                 Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-
                                 Spacer(Modifier.height(12.dp))
-
                                 Text("Email", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                                 Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                             }
 
                             if (isPremium) {
                                 Icon(
-                                    imageVector = Icons.Default.Star, // ← Можно заменить на иконку короны
+                                    imageVector = Icons.Default.Star,
                                     contentDescription = "Premium",
-                                    tint = Color(0xFFFFD700), // Золотой цвет
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .padding(start = 8.dp)
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(24.dp).padding(start = 8.dp)
                                 )
                             }
                         }
                     }
                 }
-
                 Spacer(Modifier.height(24.dp))
             }
 
-
-            // ——— Блок: Настройки ———
             item {
-                Text("Настройки", style = MaterialTheme.typography.titleMedium)
+                Text("Settings", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -246,9 +228,9 @@ fun ProfileScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        SettingRow("🌐 Язык", selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
-                        SettingRow("🌓 Экран", selectedTheme) { openSheet(SettingsType.THEME) }
-                        SettingRow("📏 Измерения", selectedUnits) { openSheet(SettingsType.UNITS) }
+                        SettingRow("🌐 Language", selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
+                        SettingRow("🌓 Theme", selectedTheme) { openSheet(SettingsType.THEME) }
+                        SettingRow("📏 Units", selectedUnits) { openSheet(SettingsType.UNITS) }
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -256,7 +238,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("🔔 Уведомления")
+                            Text("🔔 Notifications")
                             Switch(
                                 checked = notificationEnabled,
                                 onCheckedChange = { profileViewModel.setNotificationsEnabled(it) }
@@ -264,25 +246,22 @@ fun ProfileScreen(
                         }
                     }
                 }
-
                 Spacer(Modifier.height(24.dp))
             }
 
-            // ——— Моя коллекция ———
             item {
-                Text("Моя коллекция", style = MaterialTheme.typography.titleMedium)
+                Text("My Collection", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
-                showStoreBanner() // показ карточки магазина
+                showStoreBanner()
 
                 Spacer(Modifier.height(24.dp))
             }
 
-            // ——— Блок: О приложении ———
             item {
                 val context = LocalContext.current
 
-                Text("О приложении", style = MaterialTheme.typography.titleMedium)
+                Text("About", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -292,8 +271,6 @@ fun ProfileScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-
-                        // — Заголовок с названием и версией —
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -312,16 +289,14 @@ fun ProfileScreen(
 
                         Spacer(Modifier.height(12.dp))
 
-                        // — Автор —
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("\uD83D\uDC64", fontSize = 18.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("Разработчик: SSmoliagin", style = MaterialTheme.typography.bodyMedium)
+                            Text("Developer: SSmoliagin", style = MaterialTheme.typography.bodyMedium)
                         }
 
                         Spacer(Modifier.height(12.dp))
 
-                        // — Обратная связь —
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -335,37 +310,33 @@ fun ProfileScreen(
                         ) {
                             Text("📧", fontSize = 20.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("Обратная связь", color = MaterialTheme.colorScheme.primary)
+                            Text("Feedback", color = MaterialTheme.colorScheme.primary)
                         }
 
                         Spacer(Modifier.height(16.dp))
 
-                        // — Политика конфиденциальности —
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { /* TODO: открыть ссылку */ },
+                                .clickable { /* TODO: open link */ },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Условия использования и Политика конфиденциальности", color = MaterialTheme.colorScheme.primary)
+                            Text("Terms of Use and Privacy Policy", color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
-
                 Spacer(Modifier.height(24.dp))
             }
 
-            // ——— Выйти / Удалить аккаунт ———
             item {
                 AccountActionsSection(onLoggedOut, profileViewModel)
             }
         }
 
-        // ⬇️ Вызов шторки
         if (sheetVisible && sheetType != null) {
             val (title, options, selected, onSelect) = when (sheetType) {
                 SettingsType.THEME -> Quad(
-                    "Тема", themeOptions, selectedTheme
+                    "Theme", themeOptions, selectedTheme
                 ) { selected: String ->
                     selectedTheme = selected
                     val idx = themeOptions.indexOf(selected)
@@ -374,16 +345,16 @@ fun ProfileScreen(
                 }
 
                 SettingsType.LANGUAGE -> Quad(
-                    "Язык", languagesOptions, selectedLanguage
+                    "Language", languageOptions, selectedLanguage
                 ) { selected: String ->
                     selectedLanguage = selected
-                    val idx = languagesOptions.indexOf(selected)
+                    val idx = languageOptions.indexOf(selected)
                     translateViewModel.setLanguage(languageValues[idx])
                     sheetVisible = false
                 }
 
                 SettingsType.UNITS -> Quad(
-                    "Единицы измерения", unitsOptions, selectedUnits
+                    "Units", unitsOptions, selectedUnits
                 ) { selected: String ->
                     selectedUnits = selected
                     val idx = unitsOptions.indexOf(selected)
@@ -391,16 +362,35 @@ fun ProfileScreen(
                     sheetVisible = false
                 }
 
-                else -> return@Scaffold
-            }
+                else -> null
+            } ?: return@Scaffold
 
-            SettingsBottomSheet(
-                sheetTitle = title,
-                options = options,
-                selectedOption = selected,
-                onOptionSelected = onSelect,
+            ModalBottomSheet(
                 onDismissRequest = { sheetVisible = false }
-            )
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.height(16.dp))
+                    options.forEach { option ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelect(option)
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = option == selected,
+                                onClick = { onSelect(option) }
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(option, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
         }
     }
 }

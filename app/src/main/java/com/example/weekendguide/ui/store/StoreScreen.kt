@@ -55,15 +55,7 @@ import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.viewmodel.StoreViewModelFactory
 import kotlinx.coroutines.launch
-fun countryCodeToFlagEmoji(code: String): String {
-    return if (code.length == 2) {
-        code.uppercase().map {
-            Character.toChars(0x1F1E6 + (it.code - 'A'.code)).concatToString()
-        }.joinToString("")
-    } else {
-        "🏳️"
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -72,12 +64,11 @@ fun StoreScreen(
     onRegionChosen: () -> Unit,
     translateViewModel: TranslateViewModel,
     pointsViewModel: PointsViewModel,
-    onDismiss: () -> Unit? = {},
+    onDismiss: () -> Unit = {},
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource
 ) {
-
     val context = LocalContext.current
     val application = context.applicationContext as Application
     val factory = remember { StoreViewModelFactory(application, userPreferences, userRemoteDataSource, dataRepository) }
@@ -104,12 +95,12 @@ fun StoreScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    if (isLoading) LoadingOverlay() // процесс загрузки
+    if (isLoading) LoadingOverlay()
     else {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = {Text(LocalizerUI.t("collections_title", currentLanguage), color = Color.White) },
+                    title = { Text(LocalizerUI.t("collections_title", currentLanguage), color = Color.White) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
                     actions = {
                         Row(modifier = Modifier.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -120,17 +111,13 @@ fun StoreScreen(
                         IconButton(onClick = {
                             sound.playSoundEffect(SoundEffectConstants.CLICK)
                             if (selectedCountryCode == null) {
-                                scope.launch {
-                                    listState.animateScrollToItem(0)
-                                }
+                                scope.launch { listState.animateScrollToItem(0) }
                                 onDismiss()
-                            } else {
-                                selectedCountryCode = null
-                            }
+                            } else selectedCountryCode = null
                         }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Назад",
+                                contentDescription = "Back",
                                 tint = Color.White
                             )
                         }
@@ -138,10 +125,11 @@ fun StoreScreen(
                 )
             }
         ) { paddingValues ->
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)) {
-
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
                 if (selectedCountryCode == null) {
                     val localizedCountries = countries.mapNotNull { country ->
                         val name = when (currentLanguage) {
@@ -149,29 +137,25 @@ fun StoreScreen(
                             "de" -> country.name_de
                             else -> country.name_en
                         }
-
                         val allRegions = regionsByCountry[country.countryCode]
-                        if (allRegions.isNullOrEmpty()) return@mapNotNull null // Пропускаем, если нет region.json
+                        if (allRegions.isNullOrEmpty()) return@mapNotNull null
 
                         val purchased = allRegions.count { purchasedRegions.contains(it.region_code) }
-
                         Triple(name, country, "$purchased/${allRegions.size}")
                     }
-                        .filter { (name, _, _) -> name.contains(searchQuery, ignoreCase = true) }
-                        .sortedWith(compareByDescending<Triple<String, Country, String>> {
-                            val (purchasedCount, _) = it.third.split("/").map { it.toInt() }
-                            purchasedCount > 0 // сначала страны с купленными регионами
-                        }.thenBy { it.first.lowercase() })
+                        .filter { it.first.contains(searchQuery, ignoreCase = true) }
+                        .sortedWith(
+                            compareByDescending<Triple<String, Country, String>> {
+                                it.third.split("/")[0].toInt() > 0
+                            }.thenBy { it.first.lowercase() }
+                        )
 
                     val grouped = localizedCountries.groupBy { it.first.first().uppercaseChar() }
                     val headers = grouped.keys.sorted()
                     val indexedList = mutableListOf<Pair<String?, Triple<String, Country, String>?>>()
-
                     grouped.forEach { (letter, items) ->
                         indexedList.add(letter.toString() to null)
-                        items.forEach {
-                            indexedList.add(null to it)
-                        }
+                        items.forEach { indexedList.add(null to it) }
                     }
 
                     LazyColumn(
@@ -183,44 +167,36 @@ fun StoreScreen(
                         item {
                             Text(
                                 text = LocalizerUI.t("collections_desc", currentLanguage),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 textAlign = TextAlign.Center
                             )
                         }
-
                         item {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 OutlinedTextField(
                                     value = searchQuery,
                                     onValueChange = { searchQuery = it },
                                     modifier = Modifier.weight(1f),
-                                    placeholder = { Text("Поиск страны") },
+                                    placeholder = { Text("Search country") },
                                     singleLine = true
                                 )
                                 if (searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Очистить")
+                                        Icon(Icons.Default.Close, contentDescription = "Clear")
                                     }
                                 }
                             }
                         }
-
                         itemsIndexed(indexedList) { _, item ->
                             val (header, countryData) = item
                             if (header != null) {
                                 Text(
                                     text = header,
                                     style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier
-                                        .padding(vertical = 4.dp)
-                                        .animateItem()
+                                    modifier = Modifier.padding(vertical = 4.dp).animateItem()
                                 )
                             } else if (countryData != null) {
                                 val (name, country, regionStatus) = countryData
@@ -229,23 +205,17 @@ fun StoreScreen(
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable {
-                                            selectedCountryCode = country.countryCode
-                                        }
+                                        .clickable { selectedCountryCode = country.countryCode }
                                         .animateItem()
                                 ) {
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(flag, fontSize = 20.sp, modifier = Modifier.padding(end = 12.dp))
-
                                         Column {
                                             Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                                            Text(
-                                                text = "$regionStatus регионов открыто",
+                                            Text(regionStatus + " regions unlocked",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = Color.Gray
                                             )
@@ -255,33 +225,23 @@ fun StoreScreen(
                             }
                         }
                     }
-
                     if (searchQuery.isEmpty()) {
                         Column(
-                            modifier = Modifier
-                                .align(Alignment.CenterEnd)
-                                .padding(end = 4.dp),
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             headers.forEach { letter ->
                                 Text(
                                     text = letter.toString(),
                                     fontSize = 12.sp,
-                                    modifier = Modifier
-                                        .padding(2.dp)
-                                        .clickable {
-                                            val index = indexedList.indexOfFirst { it.first == letter.toString() }
-                                            if (index != -1) {
-                                                scope.launch {
-                                                    listState.animateScrollToItem(index)
-                                                }
-                                            }
-                                        }
+                                    modifier = Modifier.padding(2.dp).clickable {
+                                        val index = indexedList.indexOfFirst { it.first == letter.toString() }
+                                        if (index != -1) scope.launch { listState.animateScrollToItem(index) }
+                                    }
                                 )
                             }
                         }
                     }
-
                 } else {
                     val regions = regionsByCountry[selectedCountryCode] ?: emptyList()
 
@@ -293,19 +253,16 @@ fun StoreScreen(
                             item {
                                 Text(
                                     text = LocalizerUI.t("noregions", currentLanguage),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                                     color = Color.Gray
                                 )
                             }
                         } else {
                             items(regions) { region ->
-                                val name = region.name[currentLanguage] ?: region.name["en"] ?: "Без названия"
+                                val name = region.name[currentLanguage] ?: region.name["en"] ?: "Unnamed"
                                 val description = region.description[currentLanguage] ?: ""
                                 val isPurchased = purchasedRegions.contains(region.region_code)
                                 val flag = countryCodeToFlagEmoji(region.country_code)
-
                                 val bgColor = if (isPurchased) Color(0xFFF0F0F0) else Color.White
 
                                 Card(
@@ -323,9 +280,7 @@ fun StoreScreen(
                                         }
                                 ) {
                                     Row(
-                                        modifier = Modifier
-                                            .padding(12.dp)
-                                            .fillMaxWidth(),
+                                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(flag, fontSize = 28.sp, modifier = Modifier.padding(end = 12.dp))
@@ -335,12 +290,12 @@ fun StoreScreen(
                                                 Text(description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                                             }
                                         }
-                                            Icon(
-                                                imageVector = if (isPurchased) Icons.Default.Check else Icons.Default.KeyboardArrowRight,
-                                                contentDescription = if (isPurchased) "Куплено" else "Выбрать",
-                                                tint = if (isPurchased) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(24.dp)
-                                            )
+                                        Icon(
+                                            imageVector = if (isPurchased) Icons.Default.Check else Icons.Default.KeyboardArrowRight,
+                                            contentDescription = if (isPurchased) "Purchased" else "Select",
+                                            tint = if (isPurchased) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
                                     }
                                 }
                             }
@@ -348,18 +303,17 @@ fun StoreScreen(
                     }
                 }
 
-                // Диалог покупки
                 if (showDialog && selectedRegion != null) {
-                    val regionName = selectedRegion?.name?.get(currentLanguage) ?: "этот регион"
+                    val regionName = selectedRegion?.name?.get(currentLanguage) ?: "this region"
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
-                        title = { Text(if (isInitialSelection) "Выбор региона" else "Подтвердите покупку") },
+                        title = { Text(if (isInitialSelection) "Select region" else "Confirm purchase") },
                         text = {
                             Text(
                                 if (isInitialSelection)
-                                    "Вы хотите выбрать $regionName как основной регион?"
+                                    "Do you want to set $regionName as your main region?"
                                 else
-                                    "Вы хотите купить $regionName за $COST GP?"
+                                    "Do you want to buy $regionName for $COST GP?"
                             )
                         },
                         confirmButton = {
@@ -367,71 +321,58 @@ fun StoreScreen(
                                 showDialog = false
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
-                                        if (!isInitialSelection) {
-                                            pointsViewModel.spentGP(COST)
-                                        }
+                                        if (!isInitialSelection) pointsViewModel.spentGP(COST)
                                         storeViewModel.purchaseRegionAndLoadPOI(region, translateViewModel)
                                         userPreferences.addRegionInCollection(region)
                                         onRegionChosen()
                                     }
                                 }
-                            }) {
-                                Text(if (isInitialSelection) "Выбрать" else "Купить")
-                            }
+                            }) { Text(if (isInitialSelection) "Select" else "Buy") }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showDialog = false }) {
-                                Text("Отмена")
-                            }
+                            TextButton(onClick = { showDialog = false }) { Text("Cancel") }
                         }
                     )
                 }
 
-                // Диалог при нехватке GP
                 if (showInsufficientGPDialog && selectedRegion != null) {
                     val need = COST - currentGP
                     AlertDialog(
                         onDismissRequest = { showInsufficientGPDialog = false },
-                        title = { Text("Недостаточно GP") },
+                        title = { Text("Insufficient GP") },
                         text = {
-                            Text("Вам не хватает $need GP для покупки. Продолжайте набирать очки или...")
+                            Text("You need $need more GP to buy this region. Keep earning points or...")
                         },
                         confirmButton = {
                             TextButton(onClick = {
                                 showInsufficientGPDialog = false
-
-                                //времено можно купить без денег
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
-                                        if (!isInitialSelection) {
-                                            pointsViewModel.spentGP(COST)
-                                        }
+                                        if (!isInitialSelection) pointsViewModel.spentGP(COST)
                                         storeViewModel.purchaseRegionAndLoadPOI(region, translateViewModel)
                                         userPreferences.addRegionInCollection(region)
                                         onRegionChosen()
                                     }
                                 }
-
-                            }) {
-                                Text( text = "☕ Угости меня кофем!",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
-                                    ),
-                                    )
-                            }
+                            }) { Text("Buy with real money") }
                         },
-                        /*
                         dismissButton = {
-                            TextButton(onClick = { showInsufficientGPDialog = false }) {
-                                Text("Позже")
-                            }
+                            TextButton(onClick = { showInsufficientGPDialog = false }) { Text("Cancel") }
                         }
-
-                         */
                     )
                 }
             }
         }
+    }
+}
+
+fun countryCodeToFlagEmoji(code: String): String {
+    return if (code.length == 2) {
+        code.uppercase().map {
+            Character.toChars(0x1F1E6 + (it.code - 'A'.code)).concatToString()
+        }.joinToString("")
+    } else {
+        "🏳️"
     }
 }
 

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopAppBar (
+fun TopAppBar(
     currentGP: Int,
     onItemSelected: (String) -> Unit,
     topBarTitle: String,
@@ -31,9 +31,9 @@ fun TopAppBar (
 
     val title = when (topBarTitle) {
         "main" -> "Weekend Guide"
-        "favorites" -> "Избранное"
-        "statistic" -> "Достижения"
-        "profile" -> "Профиль"
+        "favorites" -> "Favorites"
+        "statistic" -> "Achievements"
+        "profile" -> "Profile"
         else -> topBarTitle
     }
 
@@ -42,8 +42,7 @@ fun TopAppBar (
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
         actions = {
             Row(
-                modifier = Modifier
-                    .padding(end = 4.dp),
+                modifier = Modifier.padding(end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("$currentGP 🏆", color = Color.White)
@@ -58,7 +57,7 @@ fun TopAppBar (
                 }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Назад",
+                        contentDescription = "Back",
                         tint = Color.White
                     )
                 }

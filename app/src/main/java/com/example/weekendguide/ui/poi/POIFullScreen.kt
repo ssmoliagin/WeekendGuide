@@ -1,7 +1,6 @@
 package com.example.weekendguide.ui.poi
 
 import android.location.Location
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,15 +53,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.components.LoadingOverlay
-import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
+import com.example.weekendguide.viewmodel.PointsViewModel
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.auth.FirebaseAuth
@@ -70,7 +68,6 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -106,7 +103,6 @@ fun POIFullScreen(
     val coroutineScope = rememberCoroutineScope()
     var isChecking by remember { mutableStateOf(false) }
 
-    //Персональные данные
     val userInfo by loginViewModel.userData.collectAsState()
     val email = userInfo.email ?: ""
     val displayName = userInfo.displayName ?: ""
@@ -126,7 +122,7 @@ fun POIFullScreen(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Назад",
+                            contentDescription = "Back",
                             tint = Color.White
                         )
                     }
@@ -143,8 +139,7 @@ fun POIFullScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-
-                //ФОТО
+                // IMAGE
                 item {
                     Box(
                         modifier = Modifier
@@ -159,13 +154,13 @@ fun POIFullScreen(
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        if(isVisited) {
+                        if (isVisited) {
                             Icon(
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
                                     .padding(8.dp),
                                 imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Посещенно",
+                                contentDescription = "Visited",
                                 tint = Color.Green
                             )
                         }
@@ -178,46 +173,41 @@ fun POIFullScreen(
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                contentDescription = "Избранное",
+                                contentDescription = "Favorite",
                                 tint = if (isFavorite) Color.Red else Color.Gray
                             )
                         }
                     }
                 }
 
-                // РЕЙТИНГ
+                // RATING
                 item {
                     val allReviews by poiViewModel.reviews.collectAsState()
                     val reviews = allReviews[poi.id] ?: emptyList()
-                    val averageRating = if (reviews.isNotEmpty())
-                        reviews.map { it.rating }.average()
-                    else 0.0
-                    val reviewsCount = reviews.size
+                    val averageRating = reviews.map { it.rating }.average().takeIf { reviews.isNotEmpty() } ?: 0.0
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        // Показ звезд среднего рейтинга (округление вниз)
-                        val filledStars = averageRating.toInt()
                         repeat(5) { index ->
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = if (index < filledStars) Color(0xFFFFD700) else Color.LightGray,
+                                tint = if (index < averageRating.toInt()) Color(0xFFFFD700) else Color.LightGray,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = String.format("Рейтинг: %.1f (%d отзывов)", averageRating, reviewsCount),
+                            text = String.format("Rating: %.1f (%d reviews)", averageRating, reviews.size),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
 
-                // ОПИСАНИЕ
+                // DESCRIPTION
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -234,7 +224,7 @@ fun POIFullScreen(
                         distanceKm?.let {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "$it км от $userCurrentCity",
+                                text = "$it km from $userCurrentCity",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = Color.Gray
                             )
@@ -242,10 +232,10 @@ fun POIFullScreen(
                     }
                 }
 
-                // КАРТА
+                // MAP
                 item {
                     Text(
-                        text = "На карте:",
+                        text = "On the map:",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -267,16 +257,14 @@ fun POIFullScreen(
                     }
                 }
 
-                // ОТЗЫВЫ
+                // REVIEWS
                 item {
-
                     val userReviews by poiViewModel.userReviews.collectAsState()
                     val alreadyReviewed = userReviews[poi.id] == true
 
                     LaunchedEffect(poi.id) {
-                        val currentUser = FirebaseAuth.getInstance().currentUser
-                        if (currentUser != null) {
-                            poiViewModel.checkIfUserReviewed(poi.id, currentUser.uid)
+                        FirebaseAuth.getInstance().currentUser?.let {
+                            poiViewModel.checkIfUserReviewed(poi.id, it.uid)
                         }
                     }
 
@@ -286,33 +274,25 @@ fun POIFullScreen(
                     var selectedRating by remember { mutableStateOf(0) }
                     var reviewText by remember { mutableStateOf("") }
                     var showReviewForm by remember { mutableStateOf(true) }
-
                     val context = LocalContext.current
 
                     Text(
-                        text = "Отзывы",
+                        text = "Reviews",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(16.dp)
                     )
 
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-
-                        // ===== СПИСОК ОТЗЫВОВ =====
                         if (poiReviews.isEmpty()) {
                             Text(
-                                "Нет отзывов. Будьте первым!",
+                                "No reviews yet. Be the first!",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
                         } else {
-
                             var showAllReviews by remember { mutableStateOf(false) }
-
-// Сортировка по убыванию времени
                             val sortedReviews = poiReviews.sortedByDescending { it.timestamp }
-
-// Выбираем, какие отзывы отображать
                             val reviewsToDisplay = if (showAllReviews) sortedReviews else sortedReviews.take(3)
 
                             reviewsToDisplay.forEach { review ->
@@ -346,9 +326,7 @@ fun POIFullScreen(
                                                 )
                                             }
                                         }
-
                                         Spacer(modifier = Modifier.width(10.dp))
-
                                         Column {
                                             Text(review.userName, fontWeight = FontWeight.Bold)
                                             Text(
@@ -377,23 +355,21 @@ fun POIFullScreen(
                                 }
                             }
 
-// Кнопка Показать все / Скрыть
                             if (poiReviews.size > 3) {
                                 TextButton(
                                     onClick = { showAllReviews = !showAllReviews },
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                 ) {
-                                    Text(if (showAllReviews) "Скрыть отзывы" else "Показать все отзывы (${poiReviews.size - 3})")
+                                    Text(if (showAllReviews) "Hide reviews" else "Show all reviews (${poiReviews.size - 3})")
                                 }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // ===== ФОРМА ОТЗЫВА =====
                         if (isVisited && !alreadyReviewed) {
                             Text(
-                                text = "Оставьте ваш отзыв",
+                                text = "Leave your review",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -402,7 +378,7 @@ fun POIFullScreen(
                                 for (i in 1..5) {
                                     Icon(
                                         imageVector = Icons.Default.Star,
-                                        contentDescription = "Рейтинг $i",
+                                        contentDescription = "Rating $i",
                                         tint = if (i <= selectedRating) Color(0xFFFFD700) else Color.LightGray,
                                         modifier = Modifier
                                             .size(36.dp)
@@ -416,7 +392,7 @@ fun POIFullScreen(
                                 onValueChange = {
                                     if (it.length <= 500) reviewText = it
                                 },
-                                placeholder = { Text("Напишите ваш отзыв (до 500 символов)...") },
+                                placeholder = { Text("Write your review (max 500 characters)...") },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
@@ -426,7 +402,7 @@ fun POIFullScreen(
 
                             if (reviewText.length > 500) {
                                 Text(
-                                    "Максимум 500 символов",
+                                    "Maximum 500 characters",
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -434,16 +410,14 @@ fun POIFullScreen(
 
                             Button(
                                 onClick = {
-                                    val currentUser = FirebaseAuth.getInstance().currentUser
-                                    if (currentUser != null && reviewText.isNotBlank() && selectedRating > 0) {
-                                        val alreadyReviewed = poiViewModel.hasUserReviewed(poi.id, currentUser.uid)
-
-                                        if (alreadyReviewed) {
-                                            Toast.makeText(context, "Вы уже оставляли отзыв к этой точке", Toast.LENGTH_SHORT).show()
+                                    val user = FirebaseAuth.getInstance().currentUser
+                                    if (user != null && reviewText.isNotBlank() && selectedRating > 0) {
+                                        if (poiViewModel.hasUserReviewed(poi.id, user.uid)) {
+                                            Toast.makeText(context, "You already reviewed this place", Toast.LENGTH_SHORT).show()
                                         } else {
                                             val review = Review(
                                                 poiId = poi.id,
-                                                userId = currentUser.uid,
+                                                userId = user.uid,
                                                 userName = name,
                                                 userPhotoUrl = photoUrl,
                                                 rating = selectedRating,
@@ -456,11 +430,11 @@ fun POIFullScreen(
                                                 onSuccess = {
                                                     reviewText = ""
                                                     selectedRating = 0
-                                                    poiViewModel.checkIfUserReviewed(poi.id, currentUser.uid) // скрыть форму после отправки
-                                                    Toast.makeText(context, "Отзыв отправлен", Toast.LENGTH_SHORT).show()
+                                                    poiViewModel.checkIfUserReviewed(poi.id, user.uid)
+                                                    Toast.makeText(context, "Review submitted", Toast.LENGTH_SHORT).show()
                                                 },
                                                 onError = {
-                                                    Toast.makeText(context, "Ошибка: ${it.message}", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "Error: ${it.message}", Toast.LENGTH_SHORT).show()
                                                 }
                                             )
                                         }
@@ -471,46 +445,37 @@ fun POIFullScreen(
                                     .padding(vertical = 8.dp),
                                 enabled = reviewText.isNotBlank() && selectedRating > 0
                             ) {
-                                Text("Отправить отзыв")
+                                Text("Submit review")
                             }
-                        } else if (alreadyReviewed) {
-                            Text(
-                                "Вы уже оставляли отзыв к этой точке.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
                         } else {
                             Text(
-                                "Вы можете оставить отзыв только после посещения этой точки.",
+                                if (alreadyReviewed) "You already reviewed this place." else "You can leave a review after visiting.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
                     }
-
                 }
-
             }
 
-            // Кнопка чекпоинта
+            // Checkpoint button
             if (!isVisited) {
                 Button(
                     onClick = {
-                        if (isPremium){ //временый режим бога
+                        if (isPremium) {
                             poiViewModel.markPoiVisited(poi.id)
                             pointsViewModel.addGP(100)
-                            Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "+100 GP for visit!", Toast.LENGTH_SHORT).show()
                         } else {
                             isChecking = true
                             coroutineScope.launch {
                                 pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
                                     if (success) {
                                         poiViewModel.markPoiVisited(poi.id)
-                                        Toast.makeText(context, "+100 GP за посещение!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "+100 GP for visit!", Toast.LENGTH_SHORT).show()
                                     } else {
-                                        Toast.makeText(context, "Вы слишком далеко от точки", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "You are too far from the place", Toast.LENGTH_SHORT).show()
                                     }
                                     isChecking = false
                                 }
@@ -526,17 +491,16 @@ fun POIFullScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = if (isChecking) "Проверка..." else "Чекпоинт",
+                        text = if (isChecking) "Checking..." else "Checkpoint",
                         color = Color.White
                     )
                 }
             }
 
-
-            // Оверлей "Сканирование местности..."
             if (isChecking) {
-                LoadingOverlay(title = "Сканирование местности...")
+                LoadingOverlay(title = "Scanning the area...")
             }
         }
     }
+
 }

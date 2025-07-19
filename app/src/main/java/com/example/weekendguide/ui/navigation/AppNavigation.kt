@@ -102,7 +102,7 @@ fun AppNavigation(
                 app = app,
                 onLoggedOut = {
                 navController.navigate("splash") {
-                    popUpTo(0) { inclusive = true } // Удаляет всю навигационную историю
+                    popUpTo(0) { inclusive = true }
                 }
             },
                 loginViewModel = loginViewModel,
