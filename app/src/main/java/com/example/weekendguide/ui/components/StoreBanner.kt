@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weekendguide.data.locales.LocalizerUI
 
 @Composable
 fun StoreBanner(
@@ -45,7 +46,7 @@ fun StoreBanner(
                 Text("\uD83D\uDDFA\uFE0F", fontSize = 36.sp)
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "Discover new places!",
+                    text = LocalizerUI.t("discover_new_places", currentLanguage),
                     style = MaterialTheme.typography.titleMedium.copy(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
@@ -61,13 +62,13 @@ fun StoreBanner(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "📍 Available",
+                    text = LocalizerUI.t("available", currentLanguage),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontSize = 16.sp
                     )
                 )
                 Text(
-                    text = "$totalPOIs points",
+                    text = "$totalPOIs ${LocalizerUI.t("points", currentLanguage)}",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -83,7 +84,7 @@ fun StoreBanner(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "🎯 Explored",
+                    text = LocalizerUI.t("explored", currentLanguage),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontSize = 16.sp
                     )
@@ -101,7 +102,7 @@ fun StoreBanner(
             Spacer(Modifier.height(18.dp))
 
             Text(
-                text = "➡ View new collections",
+                text = LocalizerUI.t("view_new_collections", currentLanguage),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary,

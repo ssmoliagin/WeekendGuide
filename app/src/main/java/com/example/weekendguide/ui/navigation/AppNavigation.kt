@@ -2,24 +2,21 @@ package com.example.weekendguide.ui.navigation
 
 import android.app.Application
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.weekendguide.data.preferences.UserPreferences
-import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
-import com.example.weekendguide.data.repository.WikiRepository
-import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.login.LoginScreen
 import com.example.weekendguide.ui.main.MainScreen
+import com.example.weekendguide.ui.splash.SplashScreen
 import com.example.weekendguide.ui.store.StoreScreen
 import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
-import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
+import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
@@ -68,6 +65,7 @@ fun AppNavigation(
         composable("login") {
             LoginScreen(
                 loginViewModel = loginViewModel,
+                translateViewModel = translateViewModel,
                 onNavigate = { destination ->
                 when (destination) {
                     SplashViewModel.Destination.Store -> navController.navigate("store") {

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import com.example.weekendguide.data.locales.LocalizerUI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,15 +26,16 @@ fun TopAppBar(
     currentGP: Int,
     onItemSelected: (String) -> Unit,
     topBarTitle: String,
+    currentLanguage: String,
     onDismiss: () -> Unit
 ) {
     val sound = LocalView.current
 
     val title = when (topBarTitle) {
         "main" -> "Weekend Guide"
-        "favorites" -> "Favorites"
-        "statistic" -> "Achievements"
-        "profile" -> "Profile"
+        "favorites" -> LocalizerUI.t("favorites", currentLanguage)
+        "statistic" -> LocalizerUI.t("achievements", currentLanguage)
+        "profile" -> LocalizerUI.t("profile", currentLanguage)
         else -> topBarTitle
     }
 

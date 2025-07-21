@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepositoryImpl
@@ -125,7 +126,7 @@ fun MainScreen(
             if (isGranted) {
                 locationViewModel.detectLocationFromGPS()
             } else {
-                Toast.makeText(app, "Разрешение не предоставлено", Toast.LENGTH_SHORT).show()
+                Toast.makeText(app, LocalizerUI.t("permission", currentLanguage), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -329,6 +330,7 @@ fun MainScreen(
                         else if (showProfileScreen) "profile"
                         else "main",
                     onDismiss = {resetFiltersUndScreens()},
+                    currentLanguage = currentLanguage,
                 ) }
 
             //NavigationBar
@@ -352,7 +354,8 @@ fun MainScreen(
                         selectedRadius = "∞"
                         showStatisticsScreen = true
                     },
-                    onDismiss = {resetFiltersUndScreens()}
+                    onDismiss = {resetFiltersUndScreens()},
+                    currentLanguage = currentLanguage,
                 )}
 
             //LocationPanel
@@ -369,6 +372,7 @@ fun MainScreen(
                     onRequestGPS = { onRequestLocationChange() },
                     userCurrentCity = currentCity,
                     onDismiss = {resetFiltersUndScreens()},
+                    currentLanguage = currentLanguage,
                 )}
 
             //FiltersButtons
@@ -387,7 +391,8 @@ fun MainScreen(
                     onOpenFilters = { showFiltersPanel = true },
                     onDismiss = { showMapScreen = false },
                     radiusValues = radiusValues,
-                    currentUnits = currentUnits
+                    currentUnits = currentUnits,
+                    currentLanguage = currentLanguage,
                 )
             }
 
@@ -440,7 +445,8 @@ fun MainScreen(
                     showNavigationBar = { showNavigationBar() },
                     showFiltersButtons = { showFiltersButtons() },
                     allReviews = reviewsList,
-                    poiViewModel = poiViewModel
+                    currentUnits = currentUnits,
+                    currentLanguage = currentLanguage,
                 )
             }
             //MainContent
@@ -461,9 +467,9 @@ fun MainScreen(
                     showLocationPanel = { showLocationPanel() },
                     showFiltersButtons = { showFiltersButtons() },
                     showStoreBanner = {showStoreBanner () },
-                    translateViewModel = translateViewModel,
                     allReviews = reviewsList,
-                    poiViewModel = poiViewModel
+                    currentUnits = currentUnits,
+                    currentLanguage = currentLanguage,
                 )
             }
 
@@ -529,9 +535,9 @@ fun MainScreen(
                         onClearAllTypes = { selectedTypes = emptyList() },
                         showVisited = showVisited,
                         onToggleShowVisited = { showVisited = !showVisited },
-                        translateViewModel = translateViewModel,
                         radiusValues = radiusValues,
-                        currentUnits = currentUnits
+                        currentUnits = currentUnits,
+                        currentLanguage = currentLanguage,
                     )
                 }
             }
@@ -558,7 +564,9 @@ fun MainScreen(
                         pointsViewModel = pointsViewModel,
                         locationViewModel = locationViewModel,
                         loginViewModel = loginViewModel,
-                        isPremium = isPremium
+                        isPremium = isPremium,
+                        currentUnits = currentUnits,
+                        currentLanguage = currentLanguage,
                     )
                 }
             }
@@ -580,10 +588,12 @@ fun MainScreen(
                     pointsViewModel = pointsViewModel,
                     locationViewModel = locationViewModel,
                     loginViewModel = loginViewModel,
-                    isPremium = isPremium
+                    isPremium = isPremium,
+                    currentUnits = currentUnits,
+                    currentLanguage = currentLanguage,
                 )
             }
         }
 
-    } ?: LoadingOverlay()
+    } ?: LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
 }

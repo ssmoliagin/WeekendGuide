@@ -1,11 +1,296 @@
 ﻿{
-  "select_language": {
-    "en": "Select Language",
-    "de": "Sprache wählen",
-    "ru": "Выберите язык"
+  "cancel": {
+    "en": "Cancel",
+    "de": "Abbrechen",
+    "ru": "Отмена"
   },
+
+  "loading": {
+    "en": "Loading...",
+    "de": "Laden...",
+    "ru": "Загрузка..."
+  },
+  "scanningArea": {
+    "en": "Scanning the area...",
+    "de": "Bereich wird gescannt...",
+    "ru": "Сканирование области..."
+  },
+
+  "list": {
+    "en": "List",
+    "de": "Liste",
+    "ru": "Список"
+  },
+  "on_map": {
+    "en": "On Map",
+    "de": "Auf der Karte",
+    "ru": "На карте"
+  },
+  "filter": {
+    "en": "Filter",
+    "de": "Filter",
+    "ru": "Фильтр"
+  },
+
+  "back": {
+    "en": "Back",
+    "de": "Zurück",
+    "ru": "Назад"
+  },
+  "clear": {
+    "en": "Clear",
+    "de": "Löschen",
+    "ru": "Очистить"
+  },
+  "current_location": {
+    "en": "Current location",
+    "de": "Aktueller Standort",
+    "ru": "Текущее местоположение"
+  },
+  "city_or_address": {
+    "en": "City or address",
+    "de": "Stadt oder Adresse",
+    "ru": "Город или адрес"
+  },
+  "near_me": {
+    "en": "Near me",
+    "de": "In meiner Nähe",
+    "ru": "Рядом со мной"
+  },
+
+  "search": {
+    "en": "Search",
+    "de": "Suche",
+    "ru": "Поиск"
+  },
+  "favorites": {
+    "en": "Favorites",
+    "de": "Favoriten",
+    "ru": "Избранное"
+  },
+  "achievements": {
+    "en": "Achievements",
+    "de": "Erfolge",
+    "ru": "Достижения"
+  },
+  "profile": {
+    "en": "Profile",
+    "de": "Profil",
+    "ru": "Профиль"
+  },
+
+  "discover_new_places": {
+    "en": "Discover new places!",
+    "de": "Entdecke neue Orte!",
+    "ru": "Открой новые места!"
+  },
+  "available": {
+    "en": "📍 Available",
+    "de": "📍 Verfügbar",
+    "ru": "📍 Доступно"
+  },
+  "explored": {
+    "en": "🎯 Explored",
+    "de": "🎯 Erforscht",
+    "ru": "🎯 Изучено"
+  },
+  "view_new_collections": {
+    "en": "➡ View new collections",
+    "de": "➡ Neue Sammlungen ansehen",
+    "ru": "➡ Посмотреть новые коллекции"
+  },
+  "points": {
+    "en": "points",
+    "de": "ort",
+    "ru": "мест"
+  },
+
+  "radius": {
+    "en": "Radius",
+    "de": "Entfernung",
+    "ru": "Дальность"
+  },
+  "selected_radius": {
+    "en": "Selected",
+    "de": "Ausgewählt",
+    "ru": "Выбрано"
+  },
+  "place_types": {
+    "en": "Place Types",
+    "de": "Ortsarten",
+    "ru": "Типы мест"
+  },
+  "select_all": {
+    "en": "Select all",
+    "de": "Alle auswählen",
+    "ru": "Выбрать все"
+  },
+  "clear_all": {
+    "en": "Clear all",
+    "de": "Alle entfernen",
+    "ru": "Убрать все"
+  },
+  "show_visited": {
+    "en": "Show visited",
+    "de": "Besuchte anzeigen",
+    "ru": "Показывать посещённые"
+  },
+
+  "login_title": {
+    "en": "Sign up or log in\nto start exploring attractions",
+    "de": "Registrieren oder anmelden,\num Sehenswürdigkeiten zu entdecken",
+    "ru": "Зарегистрируйтесь или войдите,\nчтобы начать исследовать достопримечательности"
+  },
+  "continue_google": {
+    "en": "Continue with Google",
+    "de": "Mit Google fortfahren",
+    "ru": "Продолжить с Google"
+  },
+  "or": {
+    "en": "or",
+    "de": "oder",
+    "ru": "или"
+  },
+  "email": {
+    "en": "Email",
+    "de": "E-Mail",
+    "ru": "Email"
+  },
+  "password": {
+    "en": "Password",
+    "de": "Passwort",
+    "ru": "Пароль"
+  },
+  "continue_email": {
+    "en": "Continue with Email",
+    "de": "Mit E-Mail fortfahren",
+    "ru": "Продолжить с Email"
+  },
+  "terms_acceptance": {
+    "en": "By continuing, you agree to our terms of use",
+    "de": "Durch die Fortsetzung stimmen Sie unseren Nutzungsbedingungen zu",
+    "ru": "Продолжая, вы соглашаетесь с нашими условиями использования"
+  },
+
+  "permission": {
+    "en": "Permission not granted",
+    "de": "Erlaubnis nicht erteilt",
+    "ru": "Разрешение не предоставлено"
+  },
+
+  "places_near": {
+    "en": "places near",
+    "de": "Orte in der Nähe von",
+    "ru": "мест рядом с"
+  },
+  "you": {
+    "en": "you",
+    "de": "dir",
+    "ru": "вами"
+  },
+  "show_all": {
+    "en": "Show all",
+    "de": "Alle anzeigen",
+    "ru": "Показать все"
+  },
+  "near": {
+    "en": "near",
+    "de": "in der Nähe von",
+    "ru": "рядом с"
+  },
+  "from": {
+    "en": "from",
+    "de": "von",
+    "ru": "от"
+  },
+  "onMap": {
+    "en": "On the map:",
+    "de": "Auf der Karte:",
+    "ru": "На карте:"
+  },
+  "reviews": {
+    "en": "Reviews",
+    "de": "Bewertungen",
+    "ru": "Отзывы"
+  },
+  "noReviewsYet": {
+    "en": "No reviews yet. Be the first!",
+    "de": "Noch keine Bewertungen. Sei der Erste!",
+    "ru": "Пока нет отзывов. Будьте первым!"
+  },
+  "hideReviews": {
+    "en": "Hide reviews",
+    "de": "Bewertungen ausblenden",
+    "ru": "Скрыть отзывы"
+  },
+  "showAllReviews": {
+    "en": "Show all reviews",
+    "de": "Alle Bewertungen anzeigen",
+    "ru": "Показать все отзывы"
+  },
+  "leaveReview": {
+    "en": "Leave your review",
+    "de": "Schreibe eine Bewertung",
+    "ru": "Оставьте отзыв"
+  },
+  "writeReviewPlaceholder": {
+    "en": "Write your review (max 500 characters)...",
+    "de": "Schreibe deine Bewertung (max. 500 Zeichen)...",
+    "ru": "Напишите ваш отзыв (до 500 символов)..."
+  },
+  "reviewTooLong": {
+    "en": "Maximum 500 characters",
+    "de": "Maximal 500 Zeichen",
+    "ru": "Максимум 500 символов"
+  },
+  "alreadyReviewed": {
+    "en": "You already reviewed this place",
+    "de": "Du hast diesen Ort bereits bewertet",
+    "ru": "Вы уже оставили отзыв об этом месте"
+  },
+  "reviewSubmitted": {
+    "en": "Review submitted",
+    "de": "Bewertung gesendet",
+    "ru": "Отзыв отправлен"
+  },
+  "submitReview": {
+    "en": "Submit review",
+    "de": "Bewertung absenden",
+    "ru": "Отправить отзыв"
+  },
+  "alreadyReviewedText": {
+    "en": "You already reviewed this place.",
+    "de": "Du hast diesen Ort bereits bewertet.",
+    "ru": "Вы уже оставили отзыв об этом месте."
+  },
+  "reviewAfterVisit": {
+    "en": "You can leave a review after visiting.",
+    "de": "Du kannst nach dem Besuch eine Bewertung hinterlassen.",
+    "ru": "Вы можете оставить отзыв после посещения."
+  },
+  "forVisit": {
+    "en": "100 GP for visit!",
+    "de": "100 GP für den Besuch!",
+    "ru": "100 GP за посещение!"
+  },
+  "tooFar": {
+    "en": "You are too far from the place",
+    "de": "Du bist zu weit vom Ort entfernt",
+    "ru": "Вы слишком далеко от места"
+  },
+  "imHereButton": {
+    "en": "I'm here!",
+    "de": "Ich bin da!",
+    "ru": "Я на месте!"
+  },
+  "checking": {
+    "en": "Checking...",
+    "de": "Wird überprüft...",
+    "ru": "Проверка..."
+  },
+
   "personal_data": {
-    "en": "Personal Data",
+    "en": "Personal data",
     "de": "Persönliche Daten",
     "ru": "Личные данные"
   },
@@ -14,66 +299,213 @@
     "de": "Name",
     "ru": "Имя"
   },
-  "email": {
-    "en": "Email",
-    "de": "E-Mail",
-    "ru": "Почта"
-  },
   "settings": {
     "en": "Settings",
     "de": "Einstellungen",
     "ru": "Настройки"
   },
-  "language": {
-    "en": "Language",
-    "de": "Sprache",
-    "ru": "Язык"
+  "my_collection": {
+    "en": "My Collection",
+    "de": "Meine Sammlung",
+    "ru": "Моя коллекция"
   },
-  "theme": {
-    "en": "Theme",
-    "de": "Thema",
-    "ru": "Тема"
+  "about": {
+    "en": "About",
+    "de": "Über",
+    "ru": "О приложении"
   },
-  "units": {
-    "en": "Units",
-    "de": "Einheiten",
-    "ru": "Единицы измерения"
+  "feedback": {
+    "en": "Feedback",
+    "de": "Feedback",
+    "ru": "Обратная связь"
+  },
+  "terms_privacy": {
+    "en": "Terms of Use and Privacy Policy",
+    "de": "Nutzungsbedingungen und Datenschutzrichtlinie",
+    "ru": "Условия использования и политика конфиденциальности"
+  },
+  "sign_out_account": {
+    "en": "Sign out of account",
+    "de": "Ausloggen",
+    "ru": "Выйти из аккаунта"
+  },
+  "delete_account": {
+    "en": "⚠ Delete account",
+    "de": "⚠ Konto löschen",
+    "ru": "⚠ Удалить аккаунт"
+  },
+  "sign_out_title": {
+    "en": "Sign out of account?",
+    "de": "Vom Konto abmelden?",
+    "ru": "Выйти из аккаунта?"
+  },
+  "sign_out_confirm": {
+    "en": "Are you sure you want to sign out?",
+    "de": "Möchten Sie sich wirklich abmelden?",
+    "ru": "Вы уверены, что хотите выйти?"
+  },
+  "sign_out_button": {
+    "en": "Sign out",
+    "de": "Abmelden",
+    "ru": "Выйти"
+  },
+  "delete_account_title": {
+    "en": "Delete account?",
+    "de": "Konto löschen?",
+    "ru": "Удалить аккаунт?"
+  },
+  "delete_account_confirm": {
+    "en": "Are you sure you want to permanently delete your account?",
+    "de": "Möchten Sie Ihr Konto dauerhaft löschen?",
+    "ru": "Вы уверены, что хотите безвозвратно удалить свой аккаунт?"
+  },
+  "delete_button": {
+    "en": "Delete",
+    "de": "Löschen",
+    "ru": "Удалить"
+  },
+  "account_deleted": {
+    "en": "Account deleted",
+    "de": "Konto gelöscht",
+    "ru": "Аккаунт удалён"
+  },
+  "account_delete_error": {
+    "en": "Error deleting account",
+    "de": "Fehler beim Löschen des Kontos",
+    "ru": "Ошибка удаления аккаунта"
   },
   "notifications": {
-    "en": "Notifications",
-    "de": "Benachrichtigungen",
-    "ru": "Уведомления"
+    "en": "\uD83D\uDD14 Notifications",
+    "de": "\uD83D\uDD14 Benachrichtigungen",
+    "ru": "\uD83D\uDD14 Уведомления"
   },
-  "light": {
+  "theme": {
+    "en": "\uD83C\uDF13 Theme",
+    "de": "\uD83C\uDF13 Thema",
+    "ru": "\uD83C\uDF13 Тема"
+  },
+  "language": {
+    "en": "\uD83C\uDF10 Language",
+    "de": "\uD83C\uDF10 Sprache",
+    "ru": "\uD83C\uDF10 Язык"
+  },
+  "units": {
+    "en": "\uD83D\uDCCF Units",
+    "de": "\uD83D\uDCCF Einheiten",
+    "ru": "\uD83D\uDCCF Единицы"
+  },
+  "theme_options_light": {
     "en": "Light",
     "de": "Hell",
     "ru": "Светлая"
   },
-  "dark": {
+  "theme_options_dark": {
     "en": "Dark",
     "de": "Dunkel",
     "ru": "Тёмная"
   },
-  "system": {
-    "en": "System default",
-    "de": "Systemeinstellung",
-    "ru": "Настройки устройства"
+  "theme_options_system": {
+    "en": "System",
+    "de": "System",
+    "ru": "Системная"
   },
-  "meters": {
-    "en": "Meters",
-    "de": "Meter",
-    "ru": "Метры"
+  "units_options_metric": {
+    "en": "Metric",
+    "de": "Metrisch",
+    "ru": "Метрическая"
   },
-  "miles": {
-    "en": "Miles",
-    "de": "Meilen",
-    "ru": "Мили"
+  "units_options_imperial": {
+    "en": "Imperial",
+    "de": "Imperial",
+    "ru": "Имперская"
   },
-  "noregions": {
-    "en": "No available regions for this country",
-    "de": "Keine verfügbaren Regionen für dieses Land",
-    "ru": "Нет доступных регионов для этой страны"
+  "mi": {
+    "en": "miles",
+    "de": "meilen",
+    "ru": "миль"
   },
+  "km": {
+    "en": "km",
+    "de": "km",
+    "ru": "км"
+  },
+
+  "total_points": {
+    "en": "🏆 Total Points",
+    "de": "🏆 Gesamtpunkte",
+    "ru": "🏆 Всего очков"
+  },
+  "earned": {
+    "en": "🟢 Earned:",
+    "de": "🟢 Erhalten:",
+    "ru": "🟢 Получено:"
+  },
+  "spent": {
+    "en": "🔴 Spent:",
+    "de": "🔴 Ausgegeben:",
+    "ru": "🔴 Потрачено:"
+  },
+  "your_rank": {
+    "en": "🏅 Your rank:",
+    "de": "🏅 Dein Rang:",
+    "ru": "🏅 Ваш ранг:"
+  },
+  "hide_leaderboard": {
+    "en": "Hide Leaderboard",
+    "de": "Bestenliste ausblenden",
+    "ru": "Скрыть таблицу лидеров"
+  },
+  "show_leaderboard": {
+    "en": "Show Leaderboard",
+    "de": "Bestenliste anzeigen",
+    "ru": "Показать таблицу лидеров"
+  },
+  "top_users": {
+    "en": "📊 Top Users",
+    "de": "📊 Top-Nutzer",
+    "ru": "📊 Лучшие пользователи"
+  },
+  "general_statistics": {
+    "en": "🧭 General Statistics",
+    "de": "🧭 Allgemeine Statistik",
+    "ru": "🧭 Общая статистика"
+  },
+  "countries_visited": {
+    "en": "🌍 Countries visited:",
+    "de": "🌍 Besuchte Länder:",
+    "ru": "🌍 Посещено стран:"
+  },
+  "regions_unlocked": {
+    "en": "🚩 Regions unlocked:",
+    "de": "🚩 Freigeschaltete Regionen:",
+    "ru": "🚩 Разблокировано регионов:"
+  },
+  "places_visited": {
+    "en": "✅ Places visited:",
+    "de": "✅ Besuchte Orte:",
+    "ru": "✅ Посещено мест:"
+  },
+  "category_achievements": {
+    "en": "🎯 Category Achievements",
+    "de": "🎯 Kategorien-Erfolge",
+    "ru": "🎯 Достижения по категориям"
+  },
+  "level": {
+    "en": "Level",
+    "de": "Level",
+    "ru": "Уровень"
+  },
+  "to_next_level": {
+    "en": "to next level",
+    "de": "bis zum nächsten Level",
+    "ru": "до следующего уровня"
+  },
+  "level_up": {
+    "en": "Level Up!",
+    "de": "Level erreicht!",
+    "ru": "Новый уровень!"
+  },
+
   "collections_title": {
     "en": "Collections",
     "de": "Kollektionen",
@@ -83,5 +515,73 @@
     "en": "Choose a region to discover points of interest and places worth visiting",
     "de": "Wähle eine Region aus, um sehenswerte Orte und interessante Plätze zu entdecken",
     "ru": "Выберите регион, чтобы открыть для себя интересные места и достопримечательности"
+  },
+  "noregions": {
+    "en": "No available regions for this country",
+    "de": "Keine verfügbaren Regionen für dieses Land",
+    "ru": "Нет доступных регионов для этой страны"
+  },
+
+  "search_country_placeholder": {
+    "en": "Search country",
+    "de": "Land suchen",
+    "ru": "Поиск страны"
+  },
+
+  "select_region_title": {
+    "en": "Select region",
+    "de": "Region auswählen",
+    "ru": "Выбрать регион"
+  },
+  "confirm_purchase_title": {
+    "en": "Confirm purchase",
+    "de": "Kauf bestätigen",
+    "ru": "Подтвердите покупку"
+  },
+  "confirm_select_text": {
+    "en": "Download points of interest?",
+    "de": "Sehenswürdigkeiten herunterladen?",
+    "ru": "Загрузить достопримечательности?"
+  },
+  "confirm_buy_text": {
+    "en": "Purchase points of interest for",
+    "de": "Sehenswürdigkeiten kaufen für",
+    "ru": "Приобрести достопримечательности за"
+  },
+  "select": {
+    "en": "Select",
+    "de": "Auswählen",
+    "ru": "Выбрать"
+  },
+  "buy": {
+    "en": "Buy",
+    "de": "Kaufen",
+    "ru": "Купить"
+  },
+  "insufficient_gp_title": {
+    "en": "Insufficient GP",
+    "de": "Nicht genug GP",
+    "ru": "Недостаточно очков"
+  },
+  "insufficient_gp_text": {
+    "en": "You need more GP to buy this region. Keep earning points or...",
+    "de": "Sie benötigen GP mehr, um diese Region zu kaufen. Sammeln Sie weiter Punkte oder...",
+    "ru": "Вам не хватает очков для покупки региона. Продолжайте зарабатывать очки или..."
+  },
+  "buy_with_money": {
+    "en": "☕ Treat me to a coffee",
+    "de": "☕ Spendier mir einen Kaffee",
+    "ru": "☕ Угости меня кофе"
+  },
+  "purchased": {
+    "en": "Purchased",
+    "de": "Gekauft",
+    "ru": "Куплено"
+  },
+  "select_action": {
+    "en": "Select",
+    "de": "Auswählen",
+    "ru": "Выбрать"
   }
+
 }

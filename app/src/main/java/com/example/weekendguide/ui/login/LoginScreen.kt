@@ -23,14 +23,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weekendguide.R
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
+import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     loginViewModel: LoginViewModel,
-    onNavigate: (SplashViewModel.Destination) -> Unit,
+    translateViewModel: TranslateViewModel,
+    onNavigate: (SplashViewModel.Destination) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val isLoading by loginViewModel.isLoading.collectAsState()
@@ -46,6 +49,8 @@ fun LoginScreen(
             loginViewModel.handleGoogleSignInResult(result.data)
         }
     }
+
+    val currentLanguage by translateViewModel.language.collectAsState()
 
     val navigateDestination = remember { mutableStateOf<SplashViewModel.Destination?>(null) }
     LaunchedEffect(Unit) {
@@ -83,7 +88,7 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            text = "Зарегистрируйтесь или войдите,\nчтобы начать исследовать достопримечательности",
+                            text = LocalizerUI.t("login_title", currentLanguage),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                             textAlign = TextAlign.Center
                         )
@@ -126,7 +131,7 @@ fun LoginScreen(
                                     modifier = Modifier.weight(1f),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("Продолжить с Google")
+                                    Text(LocalizerUI.t("continue_google", currentLanguage))
                                 }
 
                                 Spacer(modifier = Modifier.width(20.dp))
@@ -141,7 +146,7 @@ fun LoginScreen(
                         ) {
                             Divider(modifier = Modifier.weight(1f))
                             Text(
-                                text = "или",
+                                text = LocalizerUI.t("or", currentLanguage),
                                 modifier = Modifier.padding(horizontal = 12.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -160,7 +165,7 @@ fun LoginScreen(
                             OutlinedTextField(
                                 value = email,
                                 onValueChange = { email = it },
-                                label = { Text("Email") },
+                                label = { Text(LocalizerUI.t("email", currentLanguage)) },
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 14.sp),
                                 modifier = Modifier.fillMaxWidth(0.9f)
@@ -171,7 +176,7 @@ fun LoginScreen(
                             OutlinedTextField(
                                 value = password,
                                 onValueChange = { password = it },
-                                label = { Text("Пароль") },
+                                label = { Text(LocalizerUI.t("password", currentLanguage)) },
                                 visualTransformation = PasswordVisualTransformation(),
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 14.sp),
@@ -195,7 +200,7 @@ fun LoginScreen(
                                 },
                                 enabled = email.isNotBlank() && password.isNotBlank()
                             ) {
-                                Text("Продолжить с Email", fontSize = 14.sp)
+                                Text(LocalizerUI.t("continue_email", currentLanguage), fontSize = 14.sp)
                             }
 
                             errorMessage?.let {
@@ -210,7 +215,7 @@ fun LoginScreen(
                     }
 
                     Text(
-                        text = "Продолжая, вы соглашаетесь с нашими условиями использования",
+                        text = LocalizerUI.t("terms_acceptance", currentLanguage),
                         style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -223,3 +228,4 @@ fun LoginScreen(
         }
     }
 }
+

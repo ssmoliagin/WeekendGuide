@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weekendguide.data.locales.LocalizerUI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,8 @@ fun FiltersButtons(
     onShowScreenType: String? = null,
     onDismiss: () -> Unit,
     radiusValues: List<String>,
-    currentUnits: String
+    currentUnits: String,
+    currentLanguage: String,
 ) {
     val sound = LocalView.current
     val buttonHeight = 30.dp
@@ -71,7 +73,7 @@ fun FiltersButtons(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Список", fontSize = 13.sp, maxLines = 1)
+                Text(LocalizerUI.t("list", currentLanguage), fontSize = 13.sp, maxLines = 1)
             }
         } else {
             OutlinedButton(
@@ -98,7 +100,7 @@ fun FiltersButtons(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("На карте", fontSize = 13.sp, maxLines = 1)
+                Text(LocalizerUI.t("on_map", currentLanguage), fontSize = 13.sp, maxLines = 1)
             }
         }
 
@@ -173,7 +175,7 @@ fun FiltersButtons(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Фильтр", fontSize = 13.sp, maxLines = 1)
+            Text(LocalizerUI.t("filter", currentLanguage), fontSize = 13.sp, maxLines = 1)
         }
     }
 }

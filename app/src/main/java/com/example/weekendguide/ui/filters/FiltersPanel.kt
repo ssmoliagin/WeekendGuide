@@ -36,14 +36,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weekendguide.data.locales.LocalizerUI
-import com.example.weekendguide.viewmodel.TranslateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -57,11 +54,11 @@ fun FiltersPanel(
     onClearAllTypes: () -> Unit,
     showVisited: Boolean,
     onToggleShowVisited: () -> Unit,
-    translateViewModel: TranslateViewModel,
     radiusValues: List<String>,
+    currentLanguage: String,
     currentUnits: String
 ) {
-    val currentLanguage by translateViewModel.language.collectAsState()
+
     val radiusSliderPosition = radiusValues.indexOf(selectedRadius).coerceAtLeast(0)
 
     val typeIcons = mapOf(
@@ -90,7 +87,7 @@ fun FiltersPanel(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // 🔵 Radius selector
-            Text("Дальность ($currentUnits)", style = MaterialTheme.typography.titleMedium)
+            Text("${LocalizerUI.t("radius", currentLanguage)} ($currentUnits)", style = MaterialTheme.typography.titleMedium)
 
             Slider(
                 value = radiusSliderPosition.toFloat(),
@@ -103,13 +100,13 @@ fun FiltersPanel(
             )
 
             Text(
-                text = "Выбрано: $selectedRadius $currentUnits",
+                text = "${LocalizerUI.t("selected_radius", currentLanguage)}: $selectedRadius ${LocalizerUI.t(currentUnits, currentLanguage)}",
                 modifier = Modifier.padding(bottom = 12.dp),
                 style = MaterialTheme.typography.bodySmall
             )
 
             // ✅ Place types
-            Text("Типы мест", style = MaterialTheme.typography.titleMedium)
+            Text(LocalizerUI.t("place_types", currentLanguage), style = MaterialTheme.typography.titleMedium)
 
             FlowRow(
                 modifier = Modifier.padding(top = 4.dp),
@@ -149,7 +146,12 @@ fun FiltersPanel(
                         if (allSelected) onClearAllTypes() else onSelectAllTypes()
                     },
                     label = {
-                        Text(if (allSelected) "Убрать все" else "Выбрать все")
+                        Text(
+                            LocalizerUI.t(
+                                if (allSelected) "clear_all" else "select_all",
+                                currentLanguage
+                            )
+                        )
                     },
                     leadingIcon = {
                         Icon(
@@ -171,7 +173,10 @@ fun FiltersPanel(
                     checked = showVisited,
                     onCheckedChange = { onToggleShowVisited() }
                 )
-                Text("Показывать посещённые", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    LocalizerUI.t("show_visited", currentLanguage),
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }

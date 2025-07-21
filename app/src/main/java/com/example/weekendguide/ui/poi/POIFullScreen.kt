@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.components.LoadingOverlay
@@ -89,6 +90,8 @@ fun POIFullScreen(
     pointsViewModel: PointsViewModel,
     locationViewModel: LocationViewModel,
     loginViewModel: LoginViewModel,
+    currentLanguage: String,
+    currentUnits: String
 ) {
     val distanceKm = remember(poi, userLocation) {
         userLocation?.let { (userLat, userLng) ->
@@ -201,7 +204,7 @@ fun POIFullScreen(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = String.format("Rating: %.1f (%d reviews)", averageRating, reviews.size),
+                            text = String.format("%.1f (%d)", averageRating, reviews.size),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -224,7 +227,7 @@ fun POIFullScreen(
                         distanceKm?.let {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "$it km from $userCurrentCity",
+                                text = "$it ${LocalizerUI.t(currentUnits, currentLanguage)} ${LocalizerUI.t("from", currentLanguage)} $userCurrentCity",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = Color.Gray
                             )
@@ -235,7 +238,7 @@ fun POIFullScreen(
                 // MAP
                 item {
                     Text(
-                        text = "On the map:",
+                        text = LocalizerUI.t("onMap", currentLanguage),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
@@ -277,7 +280,7 @@ fun POIFullScreen(
                     val context = LocalContext.current
 
                     Text(
-                        text = "Reviews",
+                        text = LocalizerUI.t("reviews", currentLanguage),
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(16.dp)
                     )
@@ -285,7 +288,7 @@ fun POIFullScreen(
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                         if (poiReviews.isEmpty()) {
                             Text(
-                                "No reviews yet. Be the first!",
+                                text = LocalizerUI.t("noReviewsYet", currentLanguage),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(vertical = 8.dp)
@@ -328,7 +331,10 @@ fun POIFullScreen(
                                         }
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Column {
-                                            Text(review.userName, fontWeight = FontWeight.Bold)
+                                            Text(
+                                                text = review.userName,
+                                                color = Color.Black,
+                                                fontWeight = FontWeight.Bold)
                                             Text(
                                                 text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(review.timestamp)),
                                                 fontSize = 12.sp,
@@ -351,7 +357,10 @@ fun POIFullScreen(
                                     }
 
                                     Spacer(modifier = Modifier.height(6.dp))
-                                    Text(review.text)
+                                    Text(
+                                        text = review.text,
+                                        color = Color.Black
+                                        )
                                 }
                             }
 
@@ -360,7 +369,7 @@ fun POIFullScreen(
                                     onClick = { showAllReviews = !showAllReviews },
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                 ) {
-                                    Text(if (showAllReviews) "Hide reviews" else "Show all reviews (${poiReviews.size - 3})")
+                                    Text(if (showAllReviews) LocalizerUI.t("hideReviews", currentLanguage) else "${LocalizerUI.t("showAllReviews", currentLanguage)} (${poiReviews.size - 3})")
                                 }
                             }
                         }
@@ -369,7 +378,7 @@ fun POIFullScreen(
 
                         if (isVisited && !alreadyReviewed) {
                             Text(
-                                text = "Leave your review",
+                                text = LocalizerUI.t("leaveReview", currentLanguage),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
@@ -392,7 +401,7 @@ fun POIFullScreen(
                                 onValueChange = {
                                     if (it.length <= 500) reviewText = it
                                 },
-                                placeholder = { Text("Write your review (max 500 characters)...") },
+                                placeholder = { Text(LocalizerUI.t("writeReviewPlaceholder", currentLanguage)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
@@ -402,7 +411,7 @@ fun POIFullScreen(
 
                             if (reviewText.length > 500) {
                                 Text(
-                                    "Maximum 500 characters",
+                                    text = LocalizerUI.t("reviewTooLong", currentLanguage),
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -413,7 +422,7 @@ fun POIFullScreen(
                                     val user = FirebaseAuth.getInstance().currentUser
                                     if (user != null && reviewText.isNotBlank() && selectedRating > 0) {
                                         if (poiViewModel.hasUserReviewed(poi.id, user.uid)) {
-                                            Toast.makeText(context, "You already reviewed this place", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, LocalizerUI.t("alreadyReviewed", currentLanguage), Toast.LENGTH_SHORT).show()
                                         } else {
                                             val review = Review(
                                                 poiId = poi.id,
@@ -431,7 +440,7 @@ fun POIFullScreen(
                                                     reviewText = ""
                                                     selectedRating = 0
                                                     poiViewModel.checkIfUserReviewed(poi.id, user.uid)
-                                                    Toast.makeText(context, "Review submitted", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, LocalizerUI.t("reviewSubmitted", currentLanguage), Toast.LENGTH_SHORT).show()
                                                 },
                                                 onError = {
                                                     Toast.makeText(context, "Error: ${it.message}", Toast.LENGTH_SHORT).show()
@@ -445,11 +454,11 @@ fun POIFullScreen(
                                     .padding(vertical = 8.dp),
                                 enabled = reviewText.isNotBlank() && selectedRating > 0
                             ) {
-                                Text("Submit review")
+                                Text(LocalizerUI.t("submitReview", currentLanguage))
                             }
                         } else {
                             Text(
-                                if (alreadyReviewed) "You already reviewed this place." else "You can leave a review after visiting.",
+                                if (alreadyReviewed) LocalizerUI.t("alreadyReviewedText", currentLanguage) else LocalizerUI.t("reviewAfterVisit", currentLanguage),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(top = 8.dp)
@@ -466,16 +475,16 @@ fun POIFullScreen(
                         if (isPremium) {
                             poiViewModel.markPoiVisited(poi.id)
                             pointsViewModel.addGP(100)
-                            Toast.makeText(context, "+100 GP for visit!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, LocalizerUI.t("forVisit", currentLanguage), Toast.LENGTH_SHORT).show()
                         } else {
                             isChecking = true
                             coroutineScope.launch {
                                 pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
                                     if (success) {
                                         poiViewModel.markPoiVisited(poi.id)
-                                        Toast.makeText(context, "+100 GP for visit!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, LocalizerUI.t("forVisit", currentLanguage), Toast.LENGTH_SHORT).show()
                                     } else {
-                                        Toast.makeText(context, "You are too far from the place", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, LocalizerUI.t("tooFar", currentLanguage), Toast.LENGTH_SHORT).show()
                                     }
                                     isChecking = false
                                 }
@@ -491,14 +500,14 @@ fun POIFullScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = if (isChecking) "Checking..." else "Checkpoint",
+                        text = if (isChecking) LocalizerUI.t("checking", currentLanguage) else LocalizerUI.t("imHereButton", currentLanguage),
                         color = Color.White
                     )
                 }
             }
 
             if (isChecking) {
-                LoadingOverlay(title = "Scanning the area...")
+                LoadingOverlay(title = LocalizerUI.t("scanningArea", currentLanguage))
             }
         }
     }

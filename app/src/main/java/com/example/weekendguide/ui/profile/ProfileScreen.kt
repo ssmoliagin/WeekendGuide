@@ -1,7 +1,6 @@
 package com.example.weekendguide.ui.profile
 
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -50,17 +49,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import coil.compose.AsyncImage
+import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.Constants.EMAIL
 import com.example.weekendguide.data.locales.LocalizerUI
-import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.ProfileViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
-import kotlin.math.roundToInt
-import com.example.weekendguide.BuildConfig
-import androidx.core.net.toUri
 
 enum class SettingsType {
     THEME, LANGUAGE, UNITS
@@ -81,6 +78,7 @@ fun ProfileScreen(
 ) {
     var sheetVisible by remember { mutableStateOf(false) }
     var sheetType by remember { mutableStateOf<SettingsType?>(null) }
+    val currentLanguage by translateViewModel.language.collectAsState()
 
     fun openSheet(type: SettingsType) {
         sheetType = type
@@ -94,7 +92,7 @@ fun ProfileScreen(
     val name = displayName.ifBlank { email.substringBefore("@") }
 
     val currentTheme by themeViewModel.theme.collectAsState()
-    val themeOptions = listOf("Light", "Dark", "System")
+    val themeOptions = listOf(LocalizerUI.t("theme_options_light", currentLanguage), LocalizerUI.t("theme_options_dark", currentLanguage), LocalizerUI.t("theme_options_system", currentLanguage))
     val themeValues = listOf("light", "dark", "system")
     var selectedThemeIndex by remember {
         mutableStateOf(themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0)
@@ -106,8 +104,10 @@ fun ProfileScreen(
         selectedThemeIndex = idx
         selectedTheme = themeOptions[idx]
     }
+    LaunchedEffect(currentLanguage) {
+        selectedTheme = themeOptions[selectedThemeIndex]
+    }
 
-    val currentLanguage by translateViewModel.language.collectAsState()
     val languageOptions = listOf("English", "Deutsch", "Русский")
     val languageValues = listOf("en", "de", "ru")
     var selectedLanguageIndex by remember {
@@ -122,7 +122,7 @@ fun ProfileScreen(
     }
 
     val currentUnits by profileViewModel.units.collectAsState()
-    val unitsOptions = listOf("Metric", "Imperial")
+    val unitsOptions = listOf(LocalizerUI.t("units_options_metric", currentLanguage), LocalizerUI.t("units_options_imperial", currentLanguage))
     val unitsValues = listOf("km", "mi")
     var selectedUnitsIndex by remember {
         mutableStateOf(unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0)
@@ -133,6 +133,9 @@ fun ProfileScreen(
         val idx = unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0
         selectedUnitsIndex = idx
         selectedUnits = unitsOptions[idx]
+    }
+    LaunchedEffect(currentLanguage) {
+        selectedUnits = unitsOptions[selectedUnitsIndex]
     }
 
     val notificationEnabled by profileViewModel.notification.collectAsState()
@@ -196,10 +199,10 @@ fun ProfileScreen(
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Name", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text(LocalizerUI.t("name", currentLanguage), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                                 Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(12.dp))
-                                Text("Email", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text(LocalizerUI.t("email", currentLanguage), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                                 Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                             }
 
@@ -218,7 +221,7 @@ fun ProfileScreen(
             }
 
             item {
-                Text("Settings", style = MaterialTheme.typography.titleMedium)
+                Text(LocalizerUI.t("settings", currentLanguage), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -228,9 +231,9 @@ fun ProfileScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        SettingRow("🌐 Language", selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
-                        SettingRow("🌓 Theme", selectedTheme) { openSheet(SettingsType.THEME) }
-                        SettingRow("📏 Units", selectedUnits) { openSheet(SettingsType.UNITS) }
+                        SettingRow(LocalizerUI.t("language", currentLanguage), selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
+                        SettingRow(LocalizerUI.t("theme", currentLanguage), selectedTheme) { openSheet(SettingsType.THEME) }
+                        SettingRow(LocalizerUI.t("units", currentLanguage), selectedUnits) { openSheet(SettingsType.UNITS) }
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -238,7 +241,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("🔔 Notifications")
+                            Text(LocalizerUI.t("notifications", currentLanguage))
                             Switch(
                                 checked = notificationEnabled,
                                 onCheckedChange = { profileViewModel.setNotificationsEnabled(it) }
@@ -250,7 +253,9 @@ fun ProfileScreen(
             }
 
             item {
-                Text("My Collection", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = LocalizerUI.t("my_collection", currentLanguage),
+                    style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 showStoreBanner()
@@ -261,7 +266,9 @@ fun ProfileScreen(
             item {
                 val context = LocalContext.current
 
-                Text("About", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = LocalizerUI.t("about", currentLanguage),
+                    style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
 
                 Card(
@@ -292,7 +299,7 @@ fun ProfileScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("\uD83D\uDC64", fontSize = 18.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("Developer: SSmoliagin", style = MaterialTheme.typography.bodyMedium)
+                            Text("SSmoliagin", style = MaterialTheme.typography.bodyMedium)
                         }
 
                         Spacer(Modifier.height(12.dp))
@@ -308,9 +315,11 @@ fun ProfileScreen(
                                 },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("📧", fontSize = 20.sp)
+                            Text("📧", fontSize = 30.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("Feedback", color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                text = LocalizerUI.t("feedback", currentLanguage),
+                                color = MaterialTheme.colorScheme.primary)
                         }
 
                         Spacer(Modifier.height(16.dp))
@@ -321,7 +330,9 @@ fun ProfileScreen(
                                 .clickable { /* TODO: open link */ },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Terms of Use and Privacy Policy", color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                text = LocalizerUI.t("terms_privacy", currentLanguage),
+                                color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -329,14 +340,14 @@ fun ProfileScreen(
             }
 
             item {
-                AccountActionsSection(onLoggedOut, profileViewModel)
+                AccountActionsSection(onLoggedOut, profileViewModel, currentLanguage)
             }
         }
 
         if (sheetVisible && sheetType != null) {
             val (title, options, selected, onSelect) = when (sheetType) {
                 SettingsType.THEME -> Quad(
-                    "Theme", themeOptions, selectedTheme
+                    LocalizerUI.t("theme", currentLanguage), themeOptions, selectedTheme
                 ) { selected: String ->
                     selectedTheme = selected
                     val idx = themeOptions.indexOf(selected)
@@ -345,7 +356,7 @@ fun ProfileScreen(
                 }
 
                 SettingsType.LANGUAGE -> Quad(
-                    "Language", languageOptions, selectedLanguage
+                    LocalizerUI.t("language", currentLanguage), languageOptions, selectedLanguage
                 ) { selected: String ->
                     selectedLanguage = selected
                     val idx = languageOptions.indexOf(selected)
@@ -354,7 +365,7 @@ fun ProfileScreen(
                 }
 
                 SettingsType.UNITS -> Quad(
-                    "Units", unitsOptions, selectedUnits
+                    LocalizerUI.t("units", currentLanguage), unitsOptions, selectedUnits
                 ) { selected: String ->
                     selectedUnits = selected
                     val idx = unitsOptions.indexOf(selected)
@@ -429,63 +440,13 @@ fun SettingRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingsBottomSheet(
-    sheetTitle: String,
-    options: List<String>,
-    selectedOption: String,
-    onOptionSelected: (String) -> Unit,
-    onDismissRequest: () -> Unit
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = sheetTitle,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
 
-            options.forEach { option ->
-                val isSelected = option == selectedOption
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onOptionSelected(option)
-                            onDismissRequest()
-                        }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = isSelected,
-                        onClick = {
-                            onOptionSelected(option)
-                            onDismissRequest()
-                        }
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(option)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-    }
-}
 
 @Composable
 fun AccountActionsSection(
     onLoggedOut: () -> Unit,
     profileViewModel: ProfileViewModel,
+    currentLanguage: String,
 ) {
     val context = LocalContext.current
     var showSignOutDialog by remember { mutableStateOf(false) }
@@ -496,13 +457,15 @@ fun AccountActionsSection(
             onClick = { showSignOutDialog = true },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Выйти из аккаунта", color = Color.White)
+            Text(
+                text = LocalizerUI.t("sign_out_account", currentLanguage),
+                color = Color.White)
         }
 
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "⚠ Удалить аккаунт",
+            text = LocalizerUI.t("delete_account", currentLanguage),
             color = Color.Red,
             fontSize = 14.sp,
             modifier = Modifier.clickable {
@@ -513,8 +476,8 @@ fun AccountActionsSection(
         if (showSignOutDialog) {
             AlertDialog(
                 onDismissRequest = { showSignOutDialog = false },
-                title = { Text("Выйти из аккаунта?") },
-                text = { Text("Вы уверены, что хотите выйти?") },
+                title = { Text(LocalizerUI.t("sign_out_title", currentLanguage)) },
+                text = { Text(LocalizerUI.t("sign_out_confirm", currentLanguage)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showSignOutDialog = false
@@ -522,12 +485,12 @@ fun AccountActionsSection(
                             onLoggedOut()
                         }
                     }) {
-                        Text("Выйти")
+                        Text(LocalizerUI.t("sign_out_button", currentLanguage))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showSignOutDialog = false }) {
-                        Text("Отмена")
+                        Text(LocalizerUI.t("cancel", currentLanguage))
                     }
                 }
             )
@@ -536,26 +499,28 @@ fun AccountActionsSection(
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
-                title = { Text("Удалить аккаунт?") },
-                text = { Text("Вы уверены, что хотите безвозвратно удалить свой аккаунт?") },
+                title = { Text(LocalizerUI.t("delete_account_title", currentLanguage)) },
+                text = { Text(LocalizerUI.t("delete_account_confirm", currentLanguage)) },
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteDialog = false
                         profileViewModel.deleteAccount { success ->
                             if (success) {
-                                Toast.makeText(context, "Аккаунт удалён", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, LocalizerUI.t("account_deleted", currentLanguage), Toast.LENGTH_SHORT).show()
                                 onLoggedOut()
                             } else {
-                                Toast.makeText(context, "Ошибка удаления аккаунта", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, LocalizerUI.t("account_delete_error", currentLanguage), Toast.LENGTH_SHORT).show()
                             }
                         }
                     }) {
-                        Text("Удалить", color = Color.Red)
+                        Text(
+                            text = LocalizerUI.t("delete_button", currentLanguage),
+                            color = Color.Red)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Отмена")
+                        Text(LocalizerUI.t("cancel", currentLanguage))
                     }
                 }
             )

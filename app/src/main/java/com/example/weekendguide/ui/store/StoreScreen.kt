@@ -95,7 +95,7 @@ fun StoreScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    if (isLoading) LoadingOverlay()
+    if (isLoading) LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
     else {
         Scaffold(
             topBar = {
@@ -180,7 +180,7 @@ fun StoreScreen(
                                     value = searchQuery,
                                     onValueChange = { searchQuery = it },
                                     modifier = Modifier.weight(1f),
-                                    placeholder = { Text("Search country") },
+                                    placeholder = { Text(LocalizerUI.t("search_country_placeholder", currentLanguage)) },
                                     singleLine = true
                                 )
                                 if (searchQuery.isNotEmpty()) {
@@ -215,7 +215,7 @@ fun StoreScreen(
                                         Text(flag, fontSize = 20.sp, modifier = Modifier.padding(end = 12.dp))
                                         Column {
                                             Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                                            Text(regionStatus + " regions unlocked",
+                                            Text("${LocalizerUI.t("regions_unlocked", currentLanguage)} $regionStatus",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = Color.Gray
                                             )
@@ -307,13 +307,13 @@ fun StoreScreen(
                     val regionName = selectedRegion?.name?.get(currentLanguage) ?: "this region"
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
-                        title = { Text(if (isInitialSelection) "Select region" else "Confirm purchase") },
+                        title = { Text(if (isInitialSelection) LocalizerUI.t("select_region_title", currentLanguage) else LocalizerUI.t("confirm_purchase_title", currentLanguage)) },
                         text = {
                             Text(
                                 if (isInitialSelection)
-                                    "Do you want to set $regionName as your main region?"
+                                    "${regionName}: " + LocalizerUI.t("confirm_select_text", currentLanguage)
                                 else
-                                    "Do you want to buy $regionName for $COST GP?"
+                                    "${regionName}: " + LocalizerUI.t("confirm_buy_text", currentLanguage) + " $COST GP?"
                             )
                         },
                         confirmButton = {
@@ -327,10 +327,10 @@ fun StoreScreen(
                                         onRegionChosen()
                                     }
                                 }
-                            }) { Text(if (isInitialSelection) "Select" else "Buy") }
+                            }) { Text(if (isInitialSelection) LocalizerUI.t("select", currentLanguage) else LocalizerUI.t("buy", currentLanguage)) }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                            TextButton(onClick = { showDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
                         }
                     )
                 }
@@ -339,9 +339,9 @@ fun StoreScreen(
                     val need = COST - currentGP
                     AlertDialog(
                         onDismissRequest = { showInsufficientGPDialog = false },
-                        title = { Text("Insufficient GP") },
+                        title = { Text(LocalizerUI.t("insufficient_gp_title", currentLanguage)) },
                         text = {
-                            Text("You need $need more GP to buy this region. Keep earning points or...")
+                            Text(LocalizerUI.t("insufficient_gp_text", currentLanguage))
                         },
                         confirmButton = {
                             TextButton(onClick = {
@@ -354,11 +354,13 @@ fun StoreScreen(
                                         onRegionChosen()
                                     }
                                 }
-                            }) { Text("Buy with real money") }
+                            }) { Text(LocalizerUI.t("buy_with_money", currentLanguage)) }
                         },
+                        /*
                         dismissButton = {
-                            TextButton(onClick = { showInsufficientGPDialog = false }) { Text("Cancel") }
+                            TextButton(onClick = { showInsufficientGPDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
                         }
+                         */
                     )
                 }
             }

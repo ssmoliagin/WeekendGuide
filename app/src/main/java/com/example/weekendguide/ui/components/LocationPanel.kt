@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.Place
@@ -37,7 +38,8 @@ fun LocationPanel(
     onLocationSelected: (String, Pair<Double, Double>) -> Unit,
     onRequestGPS: () -> Unit,
     onShowScreenType: String?,
-    onDismiss: () -> Unit
+    currentLanguage: String,
+    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val imm = context.getSystemService(InputMethodManager::class.java)
@@ -54,8 +56,8 @@ fun LocationPanel(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    val defaultLabel = userCurrentCity ?: "City or address"
-    val defaultSuggestionText = "Near me"
+    val defaultLabel = userCurrentCity ?: LocalizerUI.t("city_or_address", currentLanguage)
+    val defaultSuggestionText = LocalizerUI.t("near_me", currentLanguage)
 
     LaunchedEffect(query.text, isFocused) {
         val baseSuggestions = listOf(SuggestionItem.CurrentLocation)
@@ -90,7 +92,7 @@ fun LocationPanel(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text(defaultLabel) },
+            label = { Text(defaultLabel) }, // если defaultLabel — строка, стоит заменить
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
@@ -100,7 +102,10 @@ fun LocationPanel(
                         sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                         onDismiss()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = LocalizerUI.t("back", currentLanguage)
+                        )
                     }
                 } else {
                     Icon(Icons.Default.Search, contentDescription = null)
@@ -112,7 +117,10 @@ fun LocationPanel(
                         query = TextFieldValue("")
                         suggestions = emptyList()
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = LocalizerUI.t("clear", currentLanguage)
+                        )
                     }
                 }
             },
@@ -142,7 +150,7 @@ fun LocationPanel(
                                     .clickable {
                                         sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                                         onRequestGPS()
-                                        query = TextFieldValue(defaultSuggestionText)
+                                        query = TextFieldValue(defaultSuggestionText) // можно заменить на локализованное
                                         suggestions = emptyList()
                                         imm.hideSoftInputFromWindow(view.windowToken, 0)
                                         focusManager.clearFocus()
@@ -156,7 +164,7 @@ fun LocationPanel(
                                     modifier = Modifier.padding(end = 8.dp)
                                 )
                                 Text(
-                                    text = defaultSuggestionText,
+                                    text = LocalizerUI.t("current_location", currentLanguage),
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                             }

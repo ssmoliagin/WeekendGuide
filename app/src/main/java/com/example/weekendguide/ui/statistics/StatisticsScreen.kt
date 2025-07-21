@@ -3,18 +3,53 @@ package com.example.weekendguide.ui.statistics
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Attractions
+import androidx.compose.material.icons.filled.Castle
+import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.DownhillSkiing
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Forest
+import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Museum
+import androidx.compose.material.icons.filled.NaturePeople
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Pool
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
@@ -85,7 +120,7 @@ fun StatisticsScreen(
         ) {
             item {
                 Text(
-                    text = "🏆 Total Points",
+                    text = LocalizerUI.t("total_points", currentLanguage),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
@@ -98,19 +133,19 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🟢 Earned:", Modifier.weight(1f))
+                            Text(LocalizerUI.t("earned", currentLanguage), Modifier.weight(1f))
                             Text("$totalGP GP", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🔴 Spent:", Modifier.weight(1f))
+                            Text(LocalizerUI.t("spent", currentLanguage), Modifier.weight(1f))
                             Text("$spentGP GP", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🏅 Your rank:", Modifier.weight(1f))
+                            Text(LocalizerUI.t("your_rank", currentLanguage), Modifier.weight(1f))
                             Text(userRank?.toString() ?: "—", fontWeight = FontWeight.Bold)
                         }
                         Text(
-                            text = if (leaderboardVisible) "Hide Leaderboard" else "Show Leaderboard",
+                            text = if (leaderboardVisible) LocalizerUI.t("hide_leaderboard", currentLanguage) else LocalizerUI.t("show_leaderboard", currentLanguage),
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .clickable {
@@ -130,7 +165,7 @@ fun StatisticsScreen(
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("📊 Top Users", style = MaterialTheme.typography.titleMedium)
+                            Text(LocalizerUI.t("top_users", currentLanguage), style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
                             leaderboard.take(10).forEachIndexed { index, (name, gp) ->
                                 Row(
@@ -149,7 +184,7 @@ fun StatisticsScreen(
                 }
 
                 Text(
-                    text = "🧭 General Statistics",
+                    text = LocalizerUI.t("general_statistics", currentLanguage),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -162,15 +197,15 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🌍 Countries visited:", Modifier.weight(1f))
+                            Text(LocalizerUI.t("countries_visited", currentLanguage), Modifier.weight(1f))
                             Text("$purchasedCountriesCount", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("🚩 Regions unlocked:", Modifier.weight(1f))
+                            Text(LocalizerUI.t("regions_unlocked", currentLanguage), Modifier.weight(1f))
                             Text("$purchasedRegionsCount", fontWeight = FontWeight.Bold)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text("✅ Places visited:", Modifier.weight(1f))
+                            Text(LocalizerUI.t("places_visited", currentLanguage), Modifier.weight(1f))
                             Text("$visitedPOIs / $totalPOIs", fontWeight = FontWeight.Bold)
                         }
                     }
@@ -179,7 +214,7 @@ fun StatisticsScreen(
 
             item {
                 Text(
-                    text = "🎯 Category Achievements",
+                    text = LocalizerUI.t("category_achievements", currentLanguage),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -240,7 +275,7 @@ fun StatisticsScreen(
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = "Level ${level + 1}",
+                                text = "${LocalizerUI.t("level", currentLanguage)} ${level + 1}",
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -259,7 +294,7 @@ fun StatisticsScreen(
                         )
 
                         Text(
-                            text = "$nextGoal to next level",
+                            text = "$nextGoal ${LocalizerUI.t("to_next_level", currentLanguage)}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -279,7 +314,7 @@ fun StatisticsScreen(
                             ) {
                                 Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Level Up!", color = MaterialTheme.colorScheme.tertiary)
+                                Text(LocalizerUI.t("level_up", currentLanguage), color = MaterialTheme.colorScheme.tertiary)
                             }
                         }
 

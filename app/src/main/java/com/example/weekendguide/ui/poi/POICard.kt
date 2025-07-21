@@ -4,14 +4,29 @@ import android.location.Location
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -21,9 +36,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
-import com.example.weekendguide.viewmodel.POIViewModel
 
 @Composable
 fun POICard(
@@ -37,7 +52,8 @@ fun POICard(
     onClick: () -> Unit,
     onSelectPOI: (POI) -> Unit,
     reviews: List<Review> = emptyList(),
-    poiViewModel: POIViewModel
+    currentLanguage: String,
+    currentUnits: String
 ) {
     val (cardModifier, imageModifier) = when (cardType) {
         "mini" -> Modifier
@@ -153,7 +169,7 @@ fun POICard(
                 distanceKm?.let {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "$it km from $userCurrentCity",
+                        text = "$it ${LocalizerUI.t(currentUnits, currentLanguage)} ${LocalizerUI.t("from", currentLanguage)} $userCurrentCity",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Gray
                     )

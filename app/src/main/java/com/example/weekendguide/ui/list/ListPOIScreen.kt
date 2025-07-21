@@ -1,6 +1,11 @@
 package com.example.weekendguide.ui.list
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -12,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.ui.poi.POICard
-import com.example.weekendguide.viewmodel.POIViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +33,8 @@ fun ListPOIScreen(
     showNavigationBar: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
     allReviews: List<Review> = emptyList(),
-    poiViewModel: POIViewModel
+    currentUnits: String,
+    currentLanguage: String,
 ) {
     val listState = rememberLazyListState()
 
@@ -64,7 +69,8 @@ fun ListPOIScreen(
                         onClick = onPOIClick,
                         onSelectPOI = onSelectPOI,
                         reviews = allReviews.filter { it.poiId == poi.id },
-                        poiViewModel = poiViewModel
+                        currentUnits = currentUnits,
+                        currentLanguage = currentLanguage,
                     )
                 }
             }

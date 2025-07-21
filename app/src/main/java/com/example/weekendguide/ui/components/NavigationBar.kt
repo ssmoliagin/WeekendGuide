@@ -13,6 +13,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalView
+import com.example.weekendguide.data.locales.LocalizerUI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,6 +23,7 @@ fun NavigationBar(
     onShowFavoritesList: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenStatistics: () -> Unit,
+    currentLanguage: String,
     onDismiss: () -> Unit
 ) {
     val sound = LocalView.current
@@ -34,8 +36,15 @@ fun NavigationBar(
                 onItemSelected("main")
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
             },
-            icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-            label = { Text("Search") }
+            icon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = LocalizerUI.t("search", currentLanguage)
+                )
+            },
+            label = {
+                Text(LocalizerUI.t("search", currentLanguage))
+            }
         )
 
         NavigationBarItem(
@@ -46,8 +55,15 @@ fun NavigationBar(
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
                 onShowFavoritesList()
             },
-            icon = { Icon(Icons.Default.Bookmarks, contentDescription = "Favorites") },
-            label = { Text("Favorites") }
+            icon = {
+                Icon(
+                    Icons.Default.Bookmarks,
+                    contentDescription = LocalizerUI.t("favorites", currentLanguage)
+                )
+            },
+            label = {
+                Text(LocalizerUI.t("favorites", currentLanguage))
+            }
         )
 
         NavigationBarItem(
@@ -58,8 +74,15 @@ fun NavigationBar(
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
                 onOpenStatistics()
             },
-            icon = { Icon(Icons.Default.BarChart, contentDescription = "Achievements") },
-            label = { Text("Achievements") }
+            icon = {
+                Icon(
+                    Icons.Default.BarChart,
+                    contentDescription = LocalizerUI.t("achievements", currentLanguage)
+                )
+            },
+            label = {
+                Text(LocalizerUI.t("achievements", currentLanguage))
+            }
         )
 
         NavigationBarItem(
@@ -70,8 +93,15 @@ fun NavigationBar(
                 sound.playSoundEffect(SoundEffectConstants.CLICK)
                 onOpenProfile()
             },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-            label = { Text("Profile") }
+            icon = {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = LocalizerUI.t("profile", currentLanguage)
+                )
+            },
+            label = {
+                Text(LocalizerUI.t("profile", currentLanguage))
+            }
         )
     }
 }
