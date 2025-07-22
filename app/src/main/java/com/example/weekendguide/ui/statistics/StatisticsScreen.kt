@@ -16,19 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Attractions
-import androidx.compose.material.icons.filled.Castle
-import androidx.compose.material.icons.filled.Celebration
-import androidx.compose.material.icons.filled.DirectionsBike
-import androidx.compose.material.icons.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.DownhillSkiing
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Forest
-import androidx.compose.material.icons.filled.LocationCity
-import androidx.compose.material.icons.filled.Museum
-import androidx.compose.material.icons.filled.NaturePeople
-import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.Pool
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
@@ -71,7 +60,8 @@ fun StatisticsScreen(
     pointsViewModel: PointsViewModel,
     translateViewModel: TranslateViewModel,
     statisticsViewModel: StatisticsViewModel,
-    leaderboardViewModel: LeaderboardViewModel
+    leaderboardViewModel: LeaderboardViewModel,
+    typeIcons: Map<String, ImageVector>,
 ) {
     val currentLanguage by translateViewModel.language.collectAsState()
     val totalGP by pointsViewModel.totalGP.collectAsState()
@@ -82,24 +72,7 @@ fun StatisticsScreen(
     val leveledUpSet by statisticsViewModel.categoryLevels.collectAsState()
     val totalPOIs = totalPOIList.size
     val visitedPOIs = userPOIList.size
-
-    val typeIcons = mapOf(
-        "castle" to Icons.Default.Castle,
-        "nature" to Icons.Default.Forest,
-        "park" to Icons.Default.NaturePeople,
-        "funpark" to Icons.Default.Attractions,
-        "museum" to Icons.Default.Museum,
-        "swimming" to Icons.Default.Pool,
-        "hiking" to Icons.Default.DirectionsWalk,
-        "cycling" to Icons.Default.DirectionsBike,
-        "zoo" to Icons.Default.Pets,
-        "city-walk" to Icons.Default.LocationCity,
-        "festival" to Icons.Default.Celebration,
-        "active" to Icons.Default.DownhillSkiing
-    )
-
     val typeGoals = listOf(5, 10, 20, 50, 100)
-
     val leaderboardVisible by leaderboardViewModel.leaderboardVisible.collectAsState()
     val userRank by leaderboardViewModel.userRank.collectAsState()
     val leaderboard by leaderboardViewModel.leaderboard.collectAsState()
@@ -284,7 +257,7 @@ fun StatisticsScreen(
                         Spacer(modifier = Modifier.height(14.dp))
 
                         LinearProgressIndicator(
-                            progress = animatedProgress,
+                            progress = { animatedProgress },
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier

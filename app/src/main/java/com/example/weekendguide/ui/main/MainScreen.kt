@@ -8,6 +8,17 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsBike
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Attractions
+import androidx.compose.material.icons.filled.Castle
+import androidx.compose.material.icons.filled.DownhillSkiing
+import androidx.compose.material.icons.filled.Forest
+import androidx.compose.material.icons.filled.Museum
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Pool
+import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -115,6 +126,19 @@ fun MainScreen(
         factory = StatisticsViewModelFactory(userPreferences, userRemoteDataSource)
     )
 
+    val typeIcons = mapOf(
+        "architecture" to Icons.Default.Castle,
+        "nature" to Icons.Default.Forest,
+        "museum" to Icons.Default.Museum,
+        "fun" to Icons.Default.Attractions,
+        "zoo" to Icons.Default.Pets,
+        "water" to Icons.Default.Pool,
+        "active" to Icons.Default.DownhillSkiing,
+        "hiking" to Icons.AutoMirrored.Filled.DirectionsWalk,
+        "cycling" to Icons.AutoMirrored.Filled.DirectionsBike,
+        "culture" to Icons.Default.TheaterComedy,
+    )
+
     // --- LOCATION ---
 
     var isLoading by remember { mutableStateOf(false) }
@@ -183,7 +207,7 @@ fun MainScreen(
     }
 
     // --- CORE ---
-    regions?.let { reg ->
+    regions.let { reg ->
 
         if (regions.isNotEmpty()) {
             val poiViewModel: POIViewModel = remember(regions) {
@@ -500,7 +524,8 @@ fun MainScreen(
                     pointsViewModel = pointsViewModel,
                     translateViewModel = translateViewModel,
                     statisticsViewModel = statisticsViewModel,
-                    leaderboardViewModel = leaderboardViewModel
+                    leaderboardViewModel = leaderboardViewModel,
+                    typeIcons = typeIcons
                 )
             }
 
@@ -538,6 +563,7 @@ fun MainScreen(
                         radiusValues = radiusValues,
                         currentUnits = currentUnits,
                         currentLanguage = currentLanguage,
+                        typeIcons = typeIcons
                     )
                 }
             }

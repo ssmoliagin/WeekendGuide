@@ -346,7 +346,7 @@ fun ProfileScreen(
 
         if (sheetVisible && sheetType != null) {
             val (title, options, selected, onSelect) = when (sheetType) {
-                SettingsType.THEME -> Quad(
+                SettingsType.THEME -> quad(
                     LocalizerUI.t("theme", currentLanguage), themeOptions, selectedTheme
                 ) { selected: String ->
                     selectedTheme = selected
@@ -355,7 +355,7 @@ fun ProfileScreen(
                     sheetVisible = false
                 }
 
-                SettingsType.LANGUAGE -> Quad(
+                SettingsType.LANGUAGE -> quad(
                     LocalizerUI.t("language", currentLanguage), languageOptions, selectedLanguage
                 ) { selected: String ->
                     selectedLanguage = selected
@@ -364,7 +364,7 @@ fun ProfileScreen(
                     sheetVisible = false
                 }
 
-                SettingsType.UNITS -> Quad(
+                SettingsType.UNITS -> quad(
                     LocalizerUI.t("units", currentLanguage), unitsOptions, selectedUnits
                 ) { selected: String ->
                     selectedUnits = selected
@@ -407,7 +407,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun <T> Quad(
+private fun <T> quad(
     title: String,
     options: List<T>,
     selected: T,

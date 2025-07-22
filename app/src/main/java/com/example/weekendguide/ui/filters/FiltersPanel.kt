@@ -11,20 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Attractions
-import androidx.compose.material.icons.filled.Castle
-import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.DirectionsBike
-import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.DownhillSkiing
-import androidx.compose.material.icons.filled.Forest
-import androidx.compose.material.icons.filled.LocationCity
-import androidx.compose.material.icons.filled.Museum
-import androidx.compose.material.icons.filled.NaturePeople
-import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.Pool
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weekendguide.data.locales.LocalizerUI
@@ -56,26 +46,11 @@ fun FiltersPanel(
     onToggleShowVisited: () -> Unit,
     radiusValues: List<String>,
     currentLanguage: String,
-    currentUnits: String
+    currentUnits: String,
+    typeIcons: Map<String, ImageVector>,
 ) {
 
     val radiusSliderPosition = radiusValues.indexOf(selectedRadius).coerceAtLeast(0)
-
-    val typeIcons = mapOf(
-        "castle" to Icons.Default.Castle,
-        "nature" to Icons.Default.Forest,
-        "park" to Icons.Default.NaturePeople,
-        "funpark" to Icons.Default.Attractions,
-        "museum" to Icons.Default.Museum,
-        "swimming" to Icons.Default.Pool,
-        "hiking" to Icons.Default.DirectionsWalk,
-        "cycling" to Icons.Default.DirectionsBike,
-        "zoo" to Icons.Default.Pets,
-        "city-walk" to Icons.Default.LocationCity,
-        "festival" to Icons.Default.Celebration,
-        "active" to Icons.Default.DownhillSkiing
-    )
-
     val allSelected = selectedTypes.containsAll(allTypes)
 
     Card(
@@ -114,13 +89,12 @@ fun FiltersPanel(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allTypes.forEach { type ->
-                    val icon = typeIcons[type]
+                    val icon = typeIcons[type] ?: Icons.Default.Star
                     FilterChip(
                         selected = selectedTypes.contains(type),
                         onClick = { onTypeToggle(type) },
                         label = {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                if (icon != null) {
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = type,
@@ -132,9 +106,6 @@ fun FiltersPanel(
                                         fontSize = 10.sp,
                                         maxLines = 1
                                     )
-                                } else {
-                                    Text(LocalizerUI.t(type, currentLanguage))
-                                }
                             }
                         }
                     )

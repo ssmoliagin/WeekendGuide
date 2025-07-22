@@ -19,7 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
@@ -124,7 +124,7 @@ fun POIFullScreen(
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
                         )
@@ -149,7 +149,7 @@ fun POIFullScreen(
                             .fillMaxWidth()
                             .height(300.dp)
                     ) {
-                        poi.imageUrl?.let { imageUrl ->
+                        poi.imageUrl.let { imageUrl ->
                             Image(
                                 painter = rememberAsyncImagePainter(imageUrl),
                                 contentDescription = null,

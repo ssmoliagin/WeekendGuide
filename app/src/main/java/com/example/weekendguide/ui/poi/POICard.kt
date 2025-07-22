@@ -89,7 +89,7 @@ fun POICard(
         Column(modifier = Modifier.fillMaxSize()) {
 
             Box(modifier = imageModifier) {
-                poi.imageUrl?.let { imageUrl ->
+                poi.imageUrl.let { imageUrl ->
                     Image(
                         painter = rememberAsyncImagePainter(imageUrl),
                         contentDescription = null,
