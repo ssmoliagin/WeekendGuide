@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
@@ -88,7 +89,10 @@ fun MainContent(
                     ) {
                         Text(
                             text = "${count} ${LocalizerUI.t("places_near", currentLanguage)} ${userCurrentCity ?: LocalizerUI.t("you", currentLanguage)}",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = LocalizerUI.t("show_all", currentLanguage),
@@ -138,7 +142,7 @@ fun MainContent(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} ${LocalizerUI.t("near", currentLanguage)} ${userCurrentCity ?: LocalizerUI.t("you", currentLanguage)} - $count",
+                                text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(

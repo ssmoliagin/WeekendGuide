@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.locales.LocalizerUI
@@ -150,19 +151,31 @@ fun POICard(
                 }
 
                 Text(
-                    text = poi.title,
+                    text = when (currentLanguage) {
+                        "en" -> poi.title_en
+                        "de" -> poi.title_de
+                        "ru" -> poi.title_ru
+                        else -> ""
+                    }.ifBlank { poi.title },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 2
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (cardType != "mini") {
                     Text(
-                        text = poi.description,
+                        text = when (currentLanguage) {
+                            "en" -> poi.description_en
+                            "de" -> poi.description_de
+                            "ru" -> poi.description_ru
+                            else -> ""
+                        }.ifBlank { poi.description },
                         style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 

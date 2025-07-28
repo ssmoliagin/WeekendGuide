@@ -109,9 +109,9 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     override suspend fun downloadAndCachePOI(region: Region, translateViewModel: TranslateViewModel) {
         withContext(Dispatchers.IO) {
             try {
-                val language = translateViewModel.language.value
-                val remotePath = "$path/data/places/${region.country_code}/${region.region_code}/poi/$language.csv"
-                val localFile = File(context.cacheDir, "poi_${region.region_code}_$language.csv")
+                //val language = translateViewModel.language.value
+                val remotePath = "$path/data/places/${region.country_code}/poi/${region.region_code}.csv"
+                val localFile = File(context.cacheDir, "poi_${region.region_code}.csv")
                 val ref = storage.getReferenceFromUrl(remotePath)
 
                 val metadata = ref.metadata.await()
@@ -132,9 +132,9 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
 
     override suspend fun getPOIs(regionCode: String, translateViewModel: TranslateViewModel): List<POI> = withContext(Dispatchers.IO) {
 
-        val language = translateViewModel.language.value
+        //val language = translateViewModel.language.value
 
-        val file = File(context.cacheDir, "poi_${regionCode}_$language.csv")
+        val file = File(context.cacheDir, "poi_${regionCode}.csv")
 
         if (!file.exists()) {
             return@withContext emptyList()
@@ -150,17 +150,25 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         return file.readLines()
             .drop(1)
             .mapNotNull { line ->
-                val tokens = line.split(";")
+                val tokens = line.split(",")
                 try {
                     POI(
-                        id = tokens[0].trim(),
-                        lat = tokens[1].trim().toDouble(),
-                        lng = tokens[2].trim().toDouble(),
-                        title = tokens[3].trim(),
-                        description = tokens[4].trim(),
-                        type = tokens[5].trim(),
-                        tags = tokens[6].split(",").map { it.trim() },
-                        imageUrl = tokens.getOrNull(7)?.trim().orEmpty()
+                        id_country = tokens[0].trim(),
+                        id_region = tokens[1].trim(),
+                        id = tokens[2].trim(),
+                        lat = tokens[3].trim().toDouble(),
+                        lng = tokens[4].trim().toDouble(),
+                        title = tokens[5].trim(),
+                        description = tokens[6].trim(),
+                        title_en = tokens[7].trim(),
+                        description_en = tokens[8].trim(),
+                        title_de = tokens[9].trim(),
+                        description_de = tokens[10].trim(),
+                        title_ru = tokens[11].trim(),
+                        description_ru = tokens[12].trim(),
+                        type = tokens[13].trim(),
+                        tags = tokens[14].split(" ").map { it.trim() },
+                        imageUrl = tokens.getOrNull(15)?.trim().orEmpty()
                     )
                 } catch (e: Exception) {
                     Log.w("DataRepo", "Skipping invalid POI line: $line")

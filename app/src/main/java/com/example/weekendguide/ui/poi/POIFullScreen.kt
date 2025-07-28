@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -112,15 +113,33 @@ fun POIFullScreen(
     val photoUrl = userInfo.photoUrl
     val name = displayName.ifBlank { email.substringBefore("@") }
 
-    LaunchedEffect(poi.title) {
-        poiViewModel.loadWikipediaDescription(poi.title)
+
+
+    fun POI.getLocalizedTitle(lang: String): String {
+        return when (lang) {
+            "en" -> title_en
+            "de" -> title_de
+            "ru" -> title_ru
+            else -> ""
+        }.ifBlank { title }
+    }
+
+    LaunchedEffect(poi.getLocalizedTitle(currentLanguage)) {
+        poiViewModel.loadWikipediaDescription(poi.getLocalizedTitle(currentLanguage))
         poiViewModel.loadReviews(poi.id)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(poi.title, color = Color.White) },
+                title = {
+                    Text(
+                        text = poi.getLocalizedTitle(currentLanguage),
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                        },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
                         Icon(
@@ -214,13 +233,19 @@ fun POIFullScreen(
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = poi.title,
+                            text = poi.getLocalizedTitle(currentLanguage),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = wikiDescription ?: poi.description,
+                            text = wikiDescription ?:
+                            (when (currentLanguage) {
+                                "en" -> poi.description_en
+                                "de" -> poi.description_de
+                                "ru" -> poi.description_ru
+                                else -> ""
+                            }).ifBlank { poi.description },
                             style = MaterialTheme.typography.bodyLarge,
                             lineHeight = 20.sp
                         )
@@ -255,7 +280,7 @@ fun POIFullScreen(
                     ) {
                         Marker(
                             state = MarkerState(position = LatLng(poi.lat, poi.lng)),
-                            title = poi.title
+                            title = poi.getLocalizedTitle(currentLanguage),
                         )
                     }
                 }
