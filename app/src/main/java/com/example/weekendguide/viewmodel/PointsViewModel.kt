@@ -85,7 +85,6 @@ class PointsViewModel(
         userRemote.launchSyncLocalToRemote(viewModelScope)
     }
 
-    //Checks distance to POI
     suspend fun checkAndAwardGPForPOI(
         poi: POI,
         locationViewModel: LocationViewModel,
@@ -98,9 +97,6 @@ class PointsViewModel(
         try {
             val newLocation = withTimeoutOrNull(maxTimeout) {
                 locationViewModel.detectLocationFromGPS()
-                locationViewModel.location
-                    .filterNotNull()
-                    .first()
             }
 
             if (newLocation == null) {
@@ -117,7 +113,6 @@ class PointsViewModel(
                 result
             )
             val distanceMeters = result[0]
-
             val success = distanceMeters < 100.0
 
             if (success) addGP(100)

@@ -148,7 +148,9 @@ fun MainScreen(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             if (isGranted) {
-                locationViewModel.detectLocationFromGPS()
+                coroutineScope.launch {
+                    locationViewModel.detectLocationFromGPS()
+                }
             } else {
                 Toast.makeText(app, LocalizerUI.t("permission", currentLanguage), Toast.LENGTH_SHORT).show()
             }

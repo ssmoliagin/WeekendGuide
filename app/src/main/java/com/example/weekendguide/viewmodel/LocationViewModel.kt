@@ -44,41 +44,41 @@ class LocationViewModel(
     }
 
     @SuppressLint("MissingPermission")
-    fun detectLocationFromGPS() {
-        viewModelScope.launch {
-            try {
-                val tokenSource = CancellationTokenSource()
-                val location = fusedLocationClient.getCurrentLocation(
-                    com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
-                    tokenSource.token
-                ).await()
+    suspend fun detectLocationFromGPS(): Pair<Double, Double>? {
+        val tokenSource = CancellationTokenSource()
+        val location = fusedLocationClient.getCurrentLocation(
+            com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+            tokenSource.token
+        ).await()
 
-                if (location != null) {
-                    val lat = location.latitude
-                    val lng = location.longitude
-                    _location.value = lat to lng
-                    userPreferences.saveCurrentLocation(lat, lng)
+        if (location != null) {
+            val lat = location.latitude
+            val lng = location.longitude
 
-                    val cityName = getCityName(lat, lng)
-                    cityName?.let {
-                        _currentCity.value = it
-                        userPreferences.saveCurrentCity(it)
+            _location.value = lat to lng
+            userPreferences.saveCurrentLocation(lat, lng)
 
-                        val currentData = userPreferences.userDataFlow.first()
-                        val updatedData = currentData.copy(
-                            currentCity = it,
-                            currentLat = lat,
-                            currentLng = lng
-                        )
-                        userPreferences.saveUserData(updatedData)
-                        userRemote.launchSyncLocalToRemote(viewModelScope)
-                    }
-                }
-            } catch (_: Exception) {
-                // Optionally handle error silently or emit to error state
+            val cityName = getCityName(lat, lng)
+            cityName?.let {
+                _currentCity.value = it
+                userPreferences.saveCurrentCity(it)
+
+                val currentData = userPreferences.userDataFlow.first()
+                val updatedData = currentData.copy(
+                    currentCity = it,
+                    currentLat = lat,
+                    currentLng = lng
+                )
+                userPreferences.saveUserData(updatedData)
+                userRemote.launchSyncLocalToRemote(viewModelScope)
             }
+
+            return lat to lng
         }
+
+        return null
     }
+
 
     private fun getCityName(lat: Double, lng: Double): String? {
         val geocoder = Geocoder(getApplication(), Locale.getDefault())
