@@ -106,16 +106,22 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("earned", currentLanguage), Modifier.weight(1f))
-                            Text("$totalGP GP", fontWeight = FontWeight.Bold)
+                            Text(LocalizerUI.t("earned", currentLanguage),
+                                Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                            Text("$totalGP GP", fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("spent", currentLanguage), Modifier.weight(1f))
-                            Text("$spentGP GP", fontWeight = FontWeight.Bold)
+                            Text(LocalizerUI.t("spent", currentLanguage),
+                                Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                            Text("$spentGP GP", fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("your_rank", currentLanguage), Modifier.weight(1f))
-                            Text(userRank?.toString() ?: "—", fontWeight = FontWeight.Bold)
+                            Text(LocalizerUI.t("your_rank", currentLanguage),
+                                Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                            Text(userRank?.toString() ?: "—", fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground)
                         }
                         Text(
                             text = if (leaderboardVisible) LocalizerUI.t("hide_leaderboard", currentLanguage) else LocalizerUI.t("show_leaderboard", currentLanguage),
@@ -138,7 +144,8 @@ fun StatisticsScreen(
                         elevation = CardDefaults.cardElevation(4.dp)
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text(LocalizerUI.t("top_users", currentLanguage), style = MaterialTheme.typography.titleMedium)
+                            Text(LocalizerUI.t("top_users", currentLanguage),
+                                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(modifier = Modifier.height(8.dp))
                             leaderboard.take(10).forEachIndexed { index, (name, gp) ->
                                 Row(
@@ -147,9 +154,12 @@ fun StatisticsScreen(
                                         .padding(vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("${index + 1}.", modifier = Modifier.width(24.dp))
-                                    Text(name, modifier = Modifier.weight(1f))
-                                    Text("$gp GP", fontWeight = FontWeight.SemiBold)
+                                    Text("${index + 1}.",
+                                        modifier = Modifier.width(24.dp), color = MaterialTheme.colorScheme.onBackground)
+                                    Text(name,
+                                        modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                                    Text("$gp GP",
+                                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
                                 }
                             }
                         }
@@ -170,16 +180,23 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("countries_visited", currentLanguage), Modifier.weight(1f))
-                            Text("$purchasedCountriesCount", fontWeight = FontWeight.Bold)
+                            Text(LocalizerUI.t("countries_visited", currentLanguage),
+                                Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                            Text("$purchasedCountriesCount",
+                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("regions_unlocked", currentLanguage), Modifier.weight(1f))
-                            Text("$purchasedRegionsCount", fontWeight = FontWeight.Bold)
+                            Text(
+                                text = "\uD83D\uDEA9 ${LocalizerUI.t("regions_unlocked", currentLanguage)}",
+                                Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                            Text("$purchasedRegionsCount",
+                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("places_visited", currentLanguage), Modifier.weight(1f))
-                            Text("$visitedPOIs / $totalPOIs", fontWeight = FontWeight.Bold)
+                            Text(LocalizerUI.t("places_visited", currentLanguage),
+                                Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
+                            Text("$visitedPOIs / $totalPOIs",
+                                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 }
@@ -223,9 +240,6 @@ fun StatisticsScreen(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
                     elevation = CardDefaults.cardElevation(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isNewLevelReached) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surface
-                    ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
@@ -239,12 +253,12 @@ fun StatisticsScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .padding(end = 16.dp),
-                                tint = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                tint = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                             )
                             Text(
                                 text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
@@ -259,7 +273,7 @@ fun StatisticsScreen(
                         LinearProgressIndicator(
                             progress = { animatedProgress },
                             color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            trackColor = MaterialTheme.colorScheme.background,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)
@@ -270,7 +284,7 @@ fun StatisticsScreen(
                             text = "$nextGoal ${LocalizerUI.t("to_next_level", currentLanguage)}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         if (isNewLevelReached) {

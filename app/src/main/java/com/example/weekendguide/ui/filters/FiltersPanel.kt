@@ -62,7 +62,9 @@ fun FiltersPanel(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // 🔵 Radius selector
-            Text("${LocalizerUI.t("radius", currentLanguage)} ($currentUnits)", style = MaterialTheme.typography.titleMedium)
+            Text("${LocalizerUI.t("radius", currentLanguage)} ($currentUnits)",
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleMedium)
 
             Slider(
                 value = radiusSliderPosition.toFloat(),
@@ -77,11 +79,14 @@ fun FiltersPanel(
             Text(
                 text = "${LocalizerUI.t("selected_radius", currentLanguage)}: $selectedRadius ${LocalizerUI.t(currentUnits, currentLanguage)}",
                 modifier = Modifier.padding(bottom = 12.dp),
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodySmall
             )
 
             // ✅ Place types
-            Text(LocalizerUI.t("place_types", currentLanguage), style = MaterialTheme.typography.titleMedium)
+            Text(LocalizerUI.t("place_types", currentLanguage),
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleMedium)
 
             FlowRow(
                 modifier = Modifier.padding(top = 4.dp),
@@ -103,6 +108,7 @@ fun FiltersPanel(
                                     Text(
                                         text = LocalizerUI.t(type, currentLanguage),
                                         style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onBackground,
                                         fontSize = 10.sp,
                                         maxLines = 1
                                     )
@@ -121,7 +127,8 @@ fun FiltersPanel(
                             LocalizerUI.t(
                                 if (allSelected) "clear_all" else "select_all",
                                 currentLanguage
-                            )
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     leadingIcon = {
@@ -146,6 +153,7 @@ fun FiltersPanel(
                 )
                 Text(
                     LocalizerUI.t("show_visited", currentLanguage),
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }

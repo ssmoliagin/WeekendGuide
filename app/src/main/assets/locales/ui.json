@@ -476,9 +476,9 @@
     "ru": "🌍 Посещено стран:"
   },
   "regions_unlocked": {
-    "en": "🚩 Regions unlocked:",
-    "de": "🚩 Freigeschaltete Regionen:",
-    "ru": "🚩 Разблокировано регионов:"
+    "en": "Regions unlocked:",
+    "de": "Freigeschaltete Regionen:",
+    "ru": "Разблокировано регионов:"
   },
   "places_visited": {
     "en": "✅ Places visited:",

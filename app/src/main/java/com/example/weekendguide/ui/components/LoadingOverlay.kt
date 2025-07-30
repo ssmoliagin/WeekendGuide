@@ -26,16 +26,16 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun LoadingOverlay(
-    modifier: Modifier = Modifier,
     title: String = "Loading...",
     progress: Float? = null
 ) {
+    val color = MaterialTheme.colorScheme.background
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFFEEEEEE), Color(0xFFCCCCCC))
+                    colors = listOf(color, color.copy(alpha = 0.60f))
                 )
             )
             .padding(32.dp),
@@ -55,7 +55,8 @@ fun LoadingOverlay(
                 Text(
                     title,
                     style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = Color.Black
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 if (progress != null) {

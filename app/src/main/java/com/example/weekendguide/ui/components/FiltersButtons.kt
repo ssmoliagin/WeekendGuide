@@ -1,7 +1,6 @@
 package com.example.weekendguide.ui.components
 
 import android.view.SoundEffectConstants
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +20,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,7 +62,7 @@ fun FiltersButtons(
     var radiusExpanded by remember { mutableStateOf(false) }
 
     val commonButtonColors = ButtonDefaults.outlinedButtonColors(
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surfaceVariant
     )
 
     Row(
@@ -73,6 +73,7 @@ fun FiltersButtons(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (onShowScreenType == "map") {
+
             OutlinedButton(
                 onClick = {
                     sound.playSoundEffect(SoundEffectConstants.CLICK)
@@ -83,9 +84,9 @@ fun FiltersButtons(
                     .weight(1f)
                     .height(buttonHeight),
                 shape = RoundedCornerShape(4.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 8.dp),
-                colors = commonButtonColors
+                colors = commonButtonColors,
+
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.List,
@@ -94,7 +95,10 @@ fun FiltersButtons(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(LocalizerUI.t("list", currentLanguage), fontSize = 13.sp, maxLines = 1)
+                Text(LocalizerUI.t("list", currentLanguage),
+                    fontSize = 13.sp, maxLines = 1,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         } else {
             OutlinedButton(
@@ -110,7 +114,6 @@ fun FiltersButtons(
                     .weight(1f)
                     .height(buttonHeight),
                 shape = RoundedCornerShape(4.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 8.dp),
                 colors = commonButtonColors
             ) {
@@ -121,7 +124,9 @@ fun FiltersButtons(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(LocalizerUI.t("on_map", currentLanguage), fontSize = 13.sp, maxLines = 1)
+                Text(LocalizerUI.t("on_map", currentLanguage),
+                    fontSize = 13.sp, maxLines = 1,
+                    color = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -135,7 +140,6 @@ fun FiltersButtons(
                     .fillMaxWidth()
                     .height(buttonHeight),
                 shape = RoundedCornerShape(4.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 8.dp),
                 colors = commonButtonColors
             ) {
@@ -146,7 +150,9 @@ fun FiltersButtons(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(" + $selectedRadius $currentUnits", fontSize = 13.sp, maxLines = 1)
+                Text(" + $selectedRadius $currentUnits",
+                    fontSize = 13.sp, maxLines = 1,
+                    color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.ArrowDropDown,
@@ -165,7 +171,7 @@ fun FiltersButtons(
             ) {
                 radiusValues.forEach { radius ->
                     DropdownMenuItem(
-                        text = { Text("$radius $currentUnits") },
+                        text = { Text("$radius $currentUnits", color = MaterialTheme.colorScheme.primary) },
                         onClick = {
                             sound.playSoundEffect(SoundEffectConstants.CLICK)
                             onRadiusChange(radius)
@@ -185,7 +191,6 @@ fun FiltersButtons(
                 .weight(1f)
                 .height(buttonHeight),
             shape = RoundedCornerShape(4.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
             contentPadding = PaddingValues(horizontal = 8.dp),
             colors = commonButtonColors
         ) {
@@ -196,7 +201,9 @@ fun FiltersButtons(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text(LocalizerUI.t("filter", currentLanguage), fontSize = 13.sp, maxLines = 1)
+            Text(LocalizerUI.t("filter", currentLanguage),
+                fontSize = 13.sp, maxLines = 1,
+                color = MaterialTheme.colorScheme.primary)
         }
     }
 }

@@ -34,7 +34,7 @@ fun StoreBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
         onClick = onOpenStore
     ) {
         Column(
@@ -48,7 +48,7 @@ fun StoreBanner(
                 Text(
                     text = LocalizerUI.t("discover_new_places", currentLanguage),
                     style = MaterialTheme.typography.titleMedium.copy(
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.background,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -64,14 +64,16 @@ fun StoreBanner(
                 Text(
                     text = LocalizerUI.t("available", currentLanguage),
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 16.sp
-                    )
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.background
+                    ),
+
                 )
                 Text(
                     text = "$totalPOIs ${LocalizerUI.t("points", currentLanguage)}",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.background,
                         fontSize = 17.sp
                     )
                 )
@@ -86,14 +88,15 @@ fun StoreBanner(
                 Text(
                     text = LocalizerUI.t("explored", currentLanguage),
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.background
                     )
                 )
                 Text(
                     text = "$exploredPercentage%",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.background,
                         fontSize = 17.sp
                     )
                 )
@@ -105,7 +108,7 @@ fun StoreBanner(
                 text = LocalizerUI.t("view_new_collections", currentLanguage),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.tertiary,
                     fontSize = 16.sp
                 )
             )

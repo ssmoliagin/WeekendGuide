@@ -110,7 +110,7 @@ fun StoreScreen(
             topBar = {
                 TopAppBar(
                     title = { Text(LocalizerUI.t("collections_title", currentLanguage), color = Color.White) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                     actions = {
                         Row(modifier = Modifier.padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("$currentGP 🏆", color = Color.White)
@@ -223,7 +223,10 @@ fun StoreScreen(
                                     ) {
                                         Text(flag, fontSize = 20.sp, modifier = Modifier.padding(end = 12.dp))
                                         Column {
-                                            Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                            Text(name,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onBackground)
                                             Text("${LocalizerUI.t("regions_unlocked", currentLanguage)} $regionStatus",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = Color.Gray
@@ -294,7 +297,10 @@ fun StoreScreen(
                                     ) {
                                         Text(flag, fontSize = 28.sp, modifier = Modifier.padding(end = 12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                            Text(name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onBackground)
                                             if (description.isNotEmpty()) {
                                                 Text(description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                                             }
@@ -348,9 +354,11 @@ fun StoreScreen(
                     val need = COST - currentGP
                     AlertDialog(
                         onDismissRequest = { showInsufficientGPDialog = false },
-                        title = { Text(LocalizerUI.t("insufficient_gp_title", currentLanguage)) },
+                        title = { Text(LocalizerUI.t("insufficient_gp_title", currentLanguage),
+                            color = MaterialTheme.colorScheme.onBackground) },
                         text = {
-                            Text(LocalizerUI.t("insufficient_gp_text", currentLanguage))
+                            Text(LocalizerUI.t("insufficient_gp_text", currentLanguage),
+                                color = MaterialTheme.colorScheme.onBackground)
                         },
                         confirmButton = {
                             TextButton(onClick = {

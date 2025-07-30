@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -150,7 +152,7 @@ fun POIFullScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
             )
         }
@@ -327,65 +329,84 @@ fun POIFullScreen(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 6.dp)
-                                        .background(Color(0xFFF9F9F9), RoundedCornerShape(12.dp))
-                                        .padding(12.dp)
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (!review.userPhotoUrl.isNullOrEmpty()) {
-                                            Image(
-                                                painter = rememberAsyncImagePainter(review.userPhotoUrl),
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .clip(CircleShape)
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .background(Color.Gray, CircleShape),
-                                                contentAlignment = Alignment.Center
+                                    Card(
+                                        shape = RoundedCornerShape(12.dp),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(16.dp)) {
+
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(
-                                                    text = review.userName.take(1).uppercase(),
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold
-                                                )
+                                                // Фото или инициал
+                                                if (!review.userPhotoUrl.isNullOrEmpty()) {
+                                                    Image(
+                                                        painter = rememberAsyncImagePainter(review.userPhotoUrl),
+                                                        contentDescription = null,
+                                                        modifier = Modifier
+                                                            .size(40.dp)
+                                                            .clip(CircleShape)
+                                                    )
+                                                } else {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(40.dp)
+                                                            .background(Color.Gray, CircleShape),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = review.userName.take(1).uppercase(),
+                                                            color = Color.White,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.width(12.dp))
+
+                                                // Имя, дата и звезды в одной колонке
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(
+                                                            text = review.userName,
+                                                            color = MaterialTheme.colorScheme.onBackground,
+                                                            fontWeight = FontWeight.Bold,
+                                                            modifier = Modifier.weight(1f)
+                                                        )
+                                                        Row {
+                                                            repeat(5) { starIndex ->
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Star,
+                                                                    contentDescription = null,
+                                                                    tint = if (starIndex < review.rating) Color(0xFFFFD700) else Color.LightGray,
+                                                                    modifier = Modifier.size(16.dp)
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+
+                                                    Text(
+                                                        text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(review.timestamp)),
+                                                        fontSize = 12.sp,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
                                             }
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column {
+
+                                            Spacer(modifier = Modifier.height(12.dp))
+
                                             Text(
-                                                text = review.userName,
-                                                color = Color.Black,
-                                                fontWeight = FontWeight.Bold)
-                                            Text(
-                                                text = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date(review.timestamp)),
-                                                fontSize = 12.sp,
-                                                color = Color.Gray
+                                                text = review.text,
+                                                color = MaterialTheme.colorScheme.onBackground
                                             )
                                         }
                                     }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    Row {
-                                        repeat(5) { starIndex ->
-                                            Icon(
-                                                imageVector = Icons.Default.Star,
-                                                contentDescription = null,
-                                                tint = if (starIndex < review.rating) Color(0xFFFFD700) else Color.LightGray,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = review.text,
-                                        color = Color.Black
-                                        )
                                 }
                             }
 
@@ -526,7 +547,12 @@ fun POIFullScreen(
                 ) {
                     Text(
                         text = if (isChecking) LocalizerUI.t("checking", currentLanguage) else LocalizerUI.t("imHereButton", currentLanguage),
-                        color = Color.White
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 20.sp
+                        )
+
                     )
                 }
             }

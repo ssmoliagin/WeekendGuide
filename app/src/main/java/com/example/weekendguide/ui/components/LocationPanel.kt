@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
@@ -113,7 +112,7 @@ fun LocationPanel(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text(defaultLabel) }, // если defaultLabel — строка, стоит заменить
+            label = { Text(defaultLabel) },
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
@@ -148,10 +147,10 @@ fun LocationPanel(
             singleLine = true,
             interactionSource = interactionSource,
             colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline,
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White
+                focusedIndicatorColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
 
@@ -160,7 +159,7 @@ fun LocationPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 300.dp)
-                    .background(Color.White.copy(alpha = 0.9f))
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 items(suggestions) { item ->
                     when (item) {
@@ -171,7 +170,7 @@ fun LocationPanel(
                                     .clickable {
                                         sound.playSoundEffect(android.view.SoundEffectConstants.CLICK)
                                         onRequestGPS()
-                                        query = TextFieldValue(defaultSuggestionText) // можно заменить на локализованное
+                                        query = TextFieldValue(defaultSuggestionText)
                                         suggestions = emptyList()
                                         imm.hideSoftInputFromWindow(view.windowToken, 0)
                                         focusManager.clearFocus()
@@ -186,7 +185,8 @@ fun LocationPanel(
                                 )
                                 Text(
                                     text = LocalizerUI.t("current_location", currentLanguage),
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                         }
@@ -231,7 +231,8 @@ fun LocationPanel(
                                 )
                                 Text(
                                     text = prediction.getFullText(null).toString(),
-                                    style = MaterialTheme.typography.bodyLarge
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                         }

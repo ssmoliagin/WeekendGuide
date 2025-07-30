@@ -159,7 +159,6 @@ fun ProfileScreen(
 
                 Card(
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -199,18 +198,22 @@ fun ProfileScreen(
                             Column(
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text(LocalizerUI.t("name", currentLanguage), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                                Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text(LocalizerUI.t("name", currentLanguage), style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface)
+                                Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground)
                                 Spacer(Modifier.height(12.dp))
-                                Text(LocalizerUI.t("email", currentLanguage), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                                Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text(LocalizerUI.t("email", currentLanguage), style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface)
+                                Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground)
                             }
 
                             if (isPremium) {
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = "Premium",
-                                    tint = Color(0xFFFFD700),
+                                    tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(24.dp).padding(start = 8.dp)
                                 )
                             }
@@ -228,7 +231,6 @@ fun ProfileScreen(
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         SettingRow(LocalizerUI.t("language", currentLanguage), selectedLanguage) { openSheet(SettingsType.LANGUAGE) }
@@ -241,7 +243,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(LocalizerUI.t("notifications", currentLanguage))
+                            Text(LocalizerUI.t("notifications", currentLanguage),color = MaterialTheme.colorScheme.onBackground)
                             Switch(
                                 checked = notificationEnabled,
                                 onCheckedChange = { profileViewModel.setNotificationsEnabled(it) }
@@ -274,8 +276,7 @@ fun ProfileScreen(
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -286,11 +287,13 @@ fun ProfileScreen(
                             Text(
                                 text = "Weekend Guide",
                                 fontSize = 24.sp,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
                                 text = "v.${BuildConfig.VERSION_NAME}",
-                                style = MaterialTheme.typography.labelMedium
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
 
@@ -299,7 +302,8 @@ fun ProfileScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("\uD83D\uDC64", fontSize = 18.sp)
                             Spacer(Modifier.width(8.dp))
-                            Text("SSmoliagin", style = MaterialTheme.typography.bodyMedium)
+                            Text("SSmoliagin", style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground)
                         }
 
                         Spacer(Modifier.height(12.dp))
@@ -380,7 +384,7 @@ fun ProfileScreen(
                 onDismissRequest = { sheetVisible = false }
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge)
+                    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
                     Spacer(Modifier.height(16.dp))
                     options.forEach { option ->
                         Row(
@@ -397,7 +401,7 @@ fun ProfileScreen(
                                 onClick = { onSelect(option) }
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text(option, style = MaterialTheme.typography.bodyLarge)
+                            Text(option, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
                         }
                     }
                 }
@@ -435,7 +439,7 @@ fun SettingRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(iconText, style = MaterialTheme.typography.bodyLarge)
+        Text(iconText, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground))
         Text(value, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary))
     }
 }
@@ -459,7 +463,7 @@ fun AccountActionsSection(
         ) {
             Text(
                 text = LocalizerUI.t("sign_out_account", currentLanguage),
-                color = Color.White)
+                color = MaterialTheme.colorScheme.background)
         }
 
         Spacer(Modifier.height(8.dp))
