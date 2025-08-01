@@ -151,11 +151,16 @@ class UserPreferences(private val context: Context) {
     suspend fun getCurrentGP(): Int = context.dataStore.data.first()[Keys.CURRENT_GP] ?: 0
     suspend fun getSpentGP(): Int = context.dataStore.data.first()[Keys.SPENT_GP] ?: 0
 
-    suspend fun addGP(points: Int) {
+    suspend fun addGPAndGet(points: Int): Pair<Int, Int> {
+        var current = 0
+        var total = 0
         context.dataStore.edit { prefs ->
-            prefs[Keys.CURRENT_GP] = (prefs[Keys.CURRENT_GP] ?: 0) + points
-            prefs[Keys.TOTAL_GP] = (prefs[Keys.TOTAL_GP] ?: 0) + points
+            current = (prefs[Keys.CURRENT_GP] ?: 0) + points
+            total = (prefs[Keys.TOTAL_GP] ?: 0) + points
+            prefs[Keys.CURRENT_GP] = current
+            prefs[Keys.TOTAL_GP] = total
         }
+        return current to total
     }
 
     suspend fun spentGP(points: Int): Boolean {

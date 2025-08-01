@@ -40,14 +40,15 @@ class PointsViewModel(
     }
 
     fun addGP(amount: Int) = viewModelScope.launch {
-        userPreferences.addGP(amount)
-        _currentGP.value = userPreferences.getCurrentGP()
-        _totalGP.value = userPreferences.getTotalGP()
+        val (current, total) = userPreferences.addGPAndGet(amount)
+
+        _currentGP.value = current
+        _totalGP.value = total
 
         val currentData = userPreferences.userDataFlow.first()
         val updatedData = currentData.copy(
-            current_GP = _currentGP.value,
-            total_GP = _totalGP.value
+            current_GP = current,
+            total_GP = total
         )
         userPreferences.saveUserData(updatedData)
         userRemote.launchSyncLocalToRemote(viewModelScope)
