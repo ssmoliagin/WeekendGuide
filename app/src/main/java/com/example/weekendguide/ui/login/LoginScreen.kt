@@ -167,7 +167,7 @@ fun LoginScreen(
                                 onValueChange = { email = it },
                                 label = { Text(LocalizerUI.t("email", currentLanguage)) },
                                 singleLine = true,
-                                textStyle = TextStyle(fontSize = 14.sp),
+                                textStyle = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground),
                                 modifier = Modifier.fillMaxWidth(0.9f)
                             )
 
@@ -179,7 +179,7 @@ fun LoginScreen(
                                 label = { Text(LocalizerUI.t("password", currentLanguage)) },
                                 visualTransformation = PasswordVisualTransformation(),
                                 singleLine = true,
-                                textStyle = TextStyle(fontSize = 14.sp),
+                                textStyle = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground),
                                 modifier = Modifier.fillMaxWidth(0.9f),
                                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                                 keyboardActions = KeyboardActions(

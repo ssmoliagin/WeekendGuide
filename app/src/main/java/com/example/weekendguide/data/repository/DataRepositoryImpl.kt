@@ -6,7 +6,6 @@ import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
-import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
@@ -83,7 +82,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
 
     override suspend fun getRegions(countryCode: String): List<Region> = withContext(Dispatchers.IO) {
         val lowerCode = countryCode.lowercase(Locale.ROOT)
-        val url = "$path/data/places/$lowerCode/regions.json"
+        val url = "$path/data/places/$lowerCode/region.json"
         val file = File(context.cacheDir, "regions_$lowerCode.json")
         try {
             val ref = storage.getReferenceFromUrl(url)
@@ -95,21 +94,20 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 ref.getFile(file).await()
                 file.setLastModified(remoteUpdated)
             } else {
-                Log.d("DataRepo", "Using cached regions.json for $countryCode")
+                Log.d("DataRepo", "Using cached region.json for $countryCode")
             }
 
             val jsonString = file.readText()
             json.decodeFromString(jsonString)
         } catch (e: Exception) {
-            Log.e("DataRepo", "Error loading regions.json for $countryCode", e)
+            Log.e("DataRepo", "Error loading region.json for $countryCode", e)
             emptyList()
         }
     }
 
-    override suspend fun downloadAndCachePOI(region: Region, translateViewModel: TranslateViewModel) {
+    override suspend fun downloadAndCachePOI(region: Region) {
         withContext(Dispatchers.IO) {
             try {
-                //val language = translateViewModel.language.value
                 val remotePath = "$path/data/places/${region.country_code}/poi/${region.region_code}.csv"
                 val localFile = File(context.cacheDir, "poi_${region.region_code}.csv")
                 val ref = storage.getReferenceFromUrl(remotePath)
@@ -130,9 +128,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
-    override suspend fun getPOIs(regionCode: String, translateViewModel: TranslateViewModel): List<POI> = withContext(Dispatchers.IO) {
-
-        //val language = translateViewModel.language.value
+    override suspend fun getPOIs(regionCode: String): List<POI> = withContext(Dispatchers.IO) {
 
         val file = File(context.cacheDir, "poi_${regionCode}.csv")
 

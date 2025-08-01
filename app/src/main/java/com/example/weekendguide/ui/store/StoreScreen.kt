@@ -322,7 +322,8 @@ fun StoreScreen(
                     val regionName = selectedRegion?.name?.get(currentLanguage) ?: "this region"
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
-                        title = { Text(if (isInitialSelection) LocalizerUI.t("select_region_title", currentLanguage) else LocalizerUI.t("confirm_purchase_title", currentLanguage)) },
+                        title = { Text(if (isInitialSelection) LocalizerUI.t("select_region_title", currentLanguage) else LocalizerUI.t("confirm_purchase_title", currentLanguage),
+                            color = MaterialTheme.colorScheme.onBackground) },
                         text = {
                             Text(
                                 if (isInitialSelection)
@@ -337,7 +338,7 @@ fun StoreScreen(
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
                                         if (!isInitialSelection) pointsViewModel.spentGP(COST)
-                                        storeViewModel.purchaseRegionAndLoadPOI(region, translateViewModel)
+                                        storeViewModel.purchaseRegionAndLoadPOI(region)
                                         userPreferences.addRegionInCollection(region)
                                         onRegionChosen()
                                     }
@@ -366,18 +367,13 @@ fun StoreScreen(
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
                                         if (!isInitialSelection) pointsViewModel.spentGP(COST)
-                                        storeViewModel.purchaseRegionAndLoadPOI(region, translateViewModel)
+                                        storeViewModel.purchaseRegionAndLoadPOI(region)
                                         userPreferences.addRegionInCollection(region)
                                         onRegionChosen()
                                     }
                                 }
                             }) { Text(LocalizerUI.t("buy_with_money", currentLanguage)) }
                         },
-                        /*
-                        dismissButton = {
-                            TextButton(onClick = { showInsufficientGPDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
-                        }
-                         */
                     )
                 }
             }

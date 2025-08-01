@@ -80,7 +80,7 @@ class StoreViewModel(
         }
     }
 
-    fun purchaseRegionAndLoadPOI(region: Region, translateViewModel: TranslateViewModel) {
+    fun purchaseRegionAndLoadPOI(region: Region) {
         viewModelScope.launch {
             try {
                 userPreferences.addPurchasedRegion(region.region_code)
@@ -94,8 +94,8 @@ class StoreViewModel(
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
 
-                dataRepository.downloadAndCachePOI(region, translateViewModel)
-                val pois = dataRepository.getPOIs(region.region_code, translateViewModel)
+                dataRepository.downloadAndCachePOI(region)
+                val pois = dataRepository.getPOIs(region.region_code)
                 _poiList.value = pois
 
                 loadPurchased()

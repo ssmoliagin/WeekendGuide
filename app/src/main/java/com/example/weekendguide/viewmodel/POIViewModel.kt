@@ -85,8 +85,8 @@ class POIViewModel(
             try {
                 val allPOIs = mutableListOf<POI>()
                 for (reg in region) {
-                    dataRepository.downloadAndCachePOI(reg, translateViewModel)
-                    val pois = dataRepository.getPOIs(reg.region_code, translateViewModel)
+                    dataRepository.downloadAndCachePOI(reg)
+                    val pois = dataRepository.getPOIs(reg.region_code)
                     allPOIs += pois
                 }
                 _poiList.value = allPOIs
