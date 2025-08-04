@@ -21,6 +21,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     private val storage = Firebase.storage
     private val json = Json { ignoreUnknownKeys = true }
 
+    //type.json
     override suspend fun downloadTypesJson(): String? = withContext(Dispatchers.IO) {
         val url = "$path/data/locales/type.json"
         val file = File(context.cacheDir, "type.json")
@@ -57,6 +58,44 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
+    //tags.json
+    override suspend fun downloadTagsJson(): String? = withContext(Dispatchers.IO) {
+        val url = "$path/data/locales/tags.json"
+        val file = File(context.cacheDir, "tags.json")
+
+        return@withContext try {
+            val ref = storage.getReferenceFromUrl(url)
+            val metadata = ref.metadata.await()
+            val remoteUpdated = metadata.updatedTimeMillis
+            val localUpdated = if (file.exists()) file.lastModified() else 0L
+
+            if (remoteUpdated > localUpdated) {
+                ref.getFile(file).await()
+            } else {
+                Log.d("LocalesRepo", "Using cached tags.json")
+            }
+            file.readText()
+        } catch (e: Exception) {
+            Log.e("LocalesRepo", "Error loading tags.json", e)
+            null
+        }
+    }
+
+    override suspend fun getTags(): String? = withContext(Dispatchers.IO) {
+        try {
+            val file = File(context.cacheDir, "tags.json")
+            if (file.exists()) {
+                file.readText()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("DataRepository", "Error reading cached tags.json", e)
+            null
+        }
+    }
+
+    //countries.json
     override suspend fun getCountries(): List<Country> = withContext(Dispatchers.IO) {
         val url = "$path/data/places/countries.json"
         val file = File(context.cacheDir, "countries.json")
@@ -80,6 +119,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
+    //region.json
     override suspend fun getRegions(countryCode: String): List<Region> = withContext(Dispatchers.IO) {
         val lowerCode = countryCode.lowercase(Locale.ROOT)
         val url = "$path/data/places/$lowerCode/region.json"
@@ -105,6 +145,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
+    //poi.csv
     override suspend fun downloadAndCachePOI(region: Region) {
         withContext(Dispatchers.IO) {
             try {

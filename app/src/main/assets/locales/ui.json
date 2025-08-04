@@ -120,6 +120,11 @@
     "de": "Ortsarten",
     "ru": "Типы мест"
   },
+  "place_tags": {
+    "en": "Additional",
+    "de": "Zusätzlich",
+    "ru": "Дополнительно"
+  },
   "select_all": {
     "en": "Select all",
     "de": "Alle auswählen",
@@ -134,6 +139,26 @@
     "en": "Show visited",
     "de": "Besuchte anzeigen",
     "ru": "Показывать посещённые"
+  },
+  "sort_by": {
+    "en": "Sort by",
+    "de": "Sortieren nach",
+    "ru": "Сортировать по"
+  },
+  "distance": {
+    "en": "Distance",
+    "de": "Entfernung",
+    "ru": "Расстояние"
+  },
+  "name": {
+    "en": "Name",
+    "de": "Name",
+    "ru": "Название"
+  },
+  "rating": {
+    "en": "Rating",
+    "de": "Bewertung",
+    "ru": "Рейтинг"
   },
 
   "login_title": {
@@ -582,6 +607,57 @@
     "en": "Select",
     "de": "Auswählen",
     "ru": "Выбрать"
+  },
+
+  "desc_type_architecture": {
+    "en": "A place of unique architecture and history — it attracts travelers from around the world.",
+    "de": "Ein Ort mit einzigartiger Architektur und Geschichte – ein Anziehungspunkt für Reisende aus aller Welt.",
+    "ru": "Место с уникальной архитектурой и историей — привлекает путешественников со всего мира."
+  },
+  "desc_type_active": {
+    "en": "A popular location for outdoor sports and adventurous activities.",
+    "de": "Ein beliebter Ort für Outdoor-Sportarten und Abenteueraktivitäten.",
+    "ru": "Популярная локация для активного отдыха и приключений на свежем воздухе."
+  },
+  "desc_type_fun": {
+    "en": "A fun place for the whole family with attractions and joyful experiences.",
+    "de": "Ein unterhaltsamer Ort für die ganze Familie mit Attraktionen und Erlebnissen.",
+    "ru": "Весёлое место для всей семьи с играми, аттракционами и яркими впечатлениями."
+  },
+  "desc_type_zoo": {
+    "en": "A great opportunity to observe animals and enjoy nature.",
+    "de": "Eine tolle Gelegenheit, Tiere zu beobachten und die Natur zu genießen.",
+    "ru": "Отличная возможность понаблюдать за животными и насладиться природой."
+  },
+  "desc_type_museum": {
+    "en": "An interesting and educational place with exhibits for all ages.",
+    "de": "Ein interessanter und lehrreicher Ort mit Ausstellungen für jedes Alter.",
+    "ru": "Интересное и познавательное место с экспозициями для взрослых и детей."
+  },
+  "desc_type_culture": {
+    "en": "A place of cultural events and creative inspiration.",
+    "de": "Ein Ort für kulturelle Veranstaltungen und kreative Inspiration.",
+    "ru": "Локация для культурного досуга и творческих событий в атмосфере вдохновения."
+  },
+  "desc_type_nature": {
+    "en": "A scenic natural spot to enjoy peace and beauty.",
+    "de": "Ein malerischer Naturort zum Entspannen und Genießen.",
+    "ru": "Живописный уголок природы, где можно насладиться тишиной и красотой окружающего мира."
+  },
+  "desc_type_water": {
+    "en": "A pleasant place for swimming and relaxing by the water.",
+    "de": "Ein schöner Ort zum Schwimmen und Entspannen am Wasser.",
+    "ru": "Приятное место для отдыха, купания и расслабления у воды."
+  },
+  "desc_type_hiking": {
+    "en": "A hiking trail perfect for scenic walking adventures.",
+    "de": "Ein Wanderweg, ideal für landschaftliche Spaziergänge.",
+    "ru": "Маршрут или тропа, идеально подходящие для пешей прогулки и наслаждения пейзажами."
+  },
+  "desc_type_bike": {
+    "en": "A scenic cycling route through beautiful landscapes.",
+    "de": "Eine schöne Radroute durch malerische Landschaften.",
+    "ru": "Удобный веломаршрут для активного путешествия на фоне природы и интересных видов."
   }
 
 }

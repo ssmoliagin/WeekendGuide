@@ -53,6 +53,12 @@ class POIViewModel(
     private val _allTypes = MutableStateFlow<List<String>>(emptyList())
     val allTypes: StateFlow<List<String>> = _allTypes
 
+    private val _tagsIsLoading = MutableStateFlow(false)
+    val tagsIsLoading: StateFlow<Boolean> = _tagsIsLoading
+
+    private val _allTags = MutableStateFlow<List<String>>(emptyList())
+    val allTags: StateFlow<List<String>> = _allTags
+
     private val _userReviews = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val userReviews: StateFlow<Map<String, Boolean>> = _userReviews
 
@@ -61,22 +67,26 @@ class POIViewModel(
 
     init {
         viewModelScope.launch {
-            loadAllReviews()
-            userPreferences.visitedIdsFlow.collect {
-                _visitedPoiIds.value = it
+            launch {
+                loadAllReviews()
+                userPreferences.visitedIdsFlow.collect {
+                    _visitedPoiIds.value = it
+                }
+            }
+
+            launch {
+                translateViewModel.language
+                    .collect { loadAllPOIData() }
             }
         }
 
-        viewModelScope.launch {
-            translateViewModel.language.collect {
-                loadTypePOITranslations()
-                loadPOIs()
-            }
-        }
-
-        loadTypePOITranslations()
-        loadPOIs()
         observeLanguageChanges()
+    }
+
+    private fun loadAllPOIData() {
+        loadTypePOITranslations()
+        loadTagsPOITranslations()
+        loadPOIs()
     }
 
     fun loadPOIs() {
@@ -115,6 +125,29 @@ class POIViewModel(
                 }
             } finally {
                 _typesIsLoading.value = false
+            }
+        }
+    }
+
+    fun loadTagsPOITranslations() {
+        viewModelScope.launch {
+            _tagsIsLoading.value = true
+            try {
+                val cached = dataRepository.getTags()
+                if (cached != null) {
+                    LocalizerUI.loadFromJson(cached)
+                    val parsed = JSONObject(cached)
+                    _allTags.value = parsed.keys().asSequence().toList()
+                }
+
+                val downloaded = dataRepository.downloadTagsJson()
+                if (downloaded != null) {
+                    LocalizerUI.loadFromJson(downloaded)
+                    val parsed = JSONObject(downloaded)
+                    _allTags.value = parsed.keys().asSequence().toList()
+                }
+            } finally {
+                _tagsIsLoading.value = false
             }
         }
     }

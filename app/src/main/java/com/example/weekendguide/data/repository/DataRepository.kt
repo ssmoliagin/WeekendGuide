@@ -11,4 +11,6 @@ interface DataRepository {
     suspend fun downloadAndCachePOI(region: Region)
     suspend fun downloadTypesJson(): String?
     suspend fun getTypes(): String?
+    suspend fun downloadTagsJson(): String?
+    suspend fun getTags(): String?
 }

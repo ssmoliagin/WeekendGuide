@@ -9,16 +9,25 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Accessible
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Accessible
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Attractions
 import androidx.compose.material.icons.filled.Castle
 import androidx.compose.material.icons.filled.DownhillSkiing
+import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.Forest
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Museum
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Pool
+import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material.icons.filled.TheaterComedy
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -94,7 +103,7 @@ fun MainScreen(
     var showPOIInMap by remember { mutableStateOf(false) }
     var showListPOIScreen by remember { mutableStateOf(false) }
     var showPOIStoreScreen by remember { mutableStateOf(false) }
-    var onSortPOI by remember { mutableStateOf(false) }
+    var sortType by remember { mutableStateOf("distance") } // "distance", "name", "rating"
     var showFullPOI by remember { mutableStateOf(false) }
     var showOnlyFavorites by remember { mutableStateOf(false) }
     var showOnlyVisited by remember { mutableStateOf(false) }
@@ -137,6 +146,18 @@ fun MainScreen(
         "hiking" to Icons.AutoMirrored.Filled.DirectionsWalk,
         "cycling" to Icons.AutoMirrored.Filled.DirectionsBike,
         "culture" to Icons.Default.TheaterComedy,
+    )
+
+    val tagsIcons = mapOf(
+        "with-kids" to Icons.Default.FamilyRestroom,
+        "with-dogs" to Icons.Default.Pets,
+        "accessible" to Icons.AutoMirrored.Filled.Accessible,
+        "summer" to Icons.Default.WbSunny,
+        "winter" to Icons.Default.AcUnit,
+        "free" to Icons.Default.AttachMoney,
+        "paid" to Icons.Default.Money,
+        "indoors" to Icons.Default.Home,
+        "outdoors" to Icons.Default.Terrain
     )
 
     // --- LOCATION ---
@@ -250,6 +271,21 @@ fun MainScreen(
                 }
             }
 
+            //Tags
+            val allTags by poiViewModel.allTags.collectAsState()
+
+            var selectedTags by remember(allTags) {
+                mutableStateOf(if (allTags.isNotEmpty()) allTags else emptyList())
+            }
+
+            val onTagToggle: (String) -> Unit = { tag ->
+                selectedTags = if (tag in selectedTags) {
+                    selectedTags - tag
+                } else {
+                    selectedTags + tag
+                }
+            }
+
             //Radius
             val radiusValues = listOf("20","50","100","200","∞")
             var selectedRadius by remember { mutableStateOf("200") }
@@ -262,9 +298,18 @@ fun MainScreen(
                 else -> 200
             }
 
-            // Filter POIs (radius and types)
-            val filteredPOIList = remember(poiList, userLocation, selectedRadius, selectedTypes, allTypes) {
+            // Filter POIs (radius, types and tags)
+            val filteredPOIList = remember(
+                poiList,
+                userLocation,
+                selectedRadius,
+                selectedTypes,
+                selectedTags,
+                allTypes,
+                allTags
+            ) {
                 if (allTypes.isEmpty() || selectedTypes.isEmpty()) return@remember emptyList()
+                if (allTags.isNotEmpty() && selectedTags.isEmpty()) return@remember emptyList()
 
                 val distanceFiltered = userLocation?.let { (lat, lon) ->
                     poiList.filter { poi ->
@@ -275,7 +320,19 @@ fun MainScreen(
                     }
                 } ?: poiList
 
-                distanceFiltered.filter { poi -> selectedTypes.contains(poi.type) }
+                val typeFiltered = distanceFiltered.filter { poi ->
+                    selectedTypes.contains(poi.type)
+                }
+
+                val tagFiltered = if (selectedTags.isNotEmpty()) {
+                    typeFiltered.filter { poi ->
+                        poi.tags.any { it in selectedTags }
+                    }
+                } else {
+                    typeFiltered
+                }
+
+                tagFiltered
             }
 
             // Filter POIs (onlyOneType)
@@ -286,7 +343,7 @@ fun MainScreen(
             // FinalPoiList
             val finalPOIList = remember(
                 filteredPOIList,
-                onSortPOI,
+                sortType,
                 showOnlyFavorites,
                 favoriteIds,
                 showVisited,
@@ -307,23 +364,40 @@ fun MainScreen(
                     baseList = baseList.filter { poi -> favoriteIds.contains(poi.id) }
                 }
 
-                // Sort (km)
-                if (onSortPOI) {
-                    userLocation?.let { (lat, lon) ->
-                        baseList.sortedBy { poi ->
-                            val result = FloatArray(1)
-                            Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
-                            result[0]
+                // Sort
+                baseList = when (sortType) {
+                    "distance" -> {
+                        userLocation?.let { (lat, lon) ->
+                            baseList.sortedBy { poi ->
+                                val result = FloatArray(1)
+                                Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
+                                result[0]
+                            }
+                        } ?: baseList
+                    }
+                    "name" -> {
+                        baseList.sortedBy { it.title.lowercase() }
+                    }
+                    "rating" -> {
+                        baseList.sortedByDescending { poi ->
+                            val reviewsForPoi = allReviews.values.flatten().filter { it.poiId == poi.id }
+                            if (reviewsForPoi.isNotEmpty()) {
+                                reviewsForPoi.map { it.rating }.average()
+                            } else {
+                                0.0
+                            }
                         }
-                    } ?: baseList
-                } else {
-                    baseList
+                    }
+                    else -> baseList
                 }
+
+                baseList
             }
 
             // OnDismis()
             fun resetFiltersUndScreens() {
                 selectedTypes = allTypes
+                selectedTags= allTags
                 selectedRadius = "200"
                 showOnlyVisited = false
                 showOnlyFavorites = false
@@ -553,19 +627,32 @@ fun MainScreen(
                     sheetState = rememberModalBottomSheetState()
                 ) {
                     FiltersPanel(
+                        currentLanguage = currentLanguage,
+
+                        radiusValues = radiusValues,
+                        currentUnits = currentUnits,
                         selectedRadius = selectedRadius,
                         onRadiusChange = { selectedRadius = it },
+
                         allTypes = poiList.map { it.type }.distinct(),
                         selectedTypes = selectedTypes,
                         onTypeToggle = onTypeToggle,
                         onSelectAllTypes = { selectedTypes = allTypes },
                         onClearAllTypes = { selectedTypes = emptyList() },
+                        typeIcons = typeIcons,
+
+                        allTags = poiList.flatMap { it.tags }.distinct(),
+                        selectedTags = selectedTags,
+                        onTagToggle = onTagToggle,
+                        onSelectAllTags = { selectedTags = allTags },
+                        onClearAllTags = { selectedTags = emptyList() },
+                        tagsIcons = tagsIcons,
+
                         showVisited = showVisited,
                         onToggleShowVisited = { showVisited = !showVisited },
-                        radiusValues = radiusValues,
-                        currentUnits = currentUnits,
-                        currentLanguage = currentLanguage,
-                        typeIcons = typeIcons
+
+                        sortType = sortType,
+                        onSortTypeChange = { sortType = it },
                     )
                 }
             }
@@ -595,7 +682,9 @@ fun MainScreen(
                         isPremium = isPremium,
                         currentUnits = currentUnits,
                         currentLanguage = currentLanguage,
-                    )
+                        tagsIcons = tagsIcons,
+                        typeIcons = typeIcons,
+                        )
                 }
             }
 
@@ -619,6 +708,8 @@ fun MainScreen(
                     isPremium = isPremium,
                     currentUnits = currentUnits,
                     currentLanguage = currentLanguage,
+                    tagsIcons = tagsIcons,
+                    typeIcons = typeIcons,
                 )
             }
         }

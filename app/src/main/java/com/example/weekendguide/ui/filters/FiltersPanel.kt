@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Star
@@ -35,23 +36,34 @@ import com.example.weekendguide.data.locales.LocalizerUI
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FiltersPanel(
+    currentLanguage: String,
     selectedRadius: String,
     onRadiusChange: (String) -> Unit,
+    radiusValues: List<String>,
+    currentUnits: String,
     allTypes: List<String>,
     selectedTypes: List<String>,
     onTypeToggle: (String) -> Unit,
     onSelectAllTypes: () -> Unit,
     onClearAllTypes: () -> Unit,
+    typeIcons: Map<String, ImageVector>,
+    allTags: List<String>,
+    selectedTags: List<String>,
+    onTagToggle: (String) -> Unit,
+    onSelectAllTags: () -> Unit,
+    onClearAllTags: () -> Unit,
+    tagsIcons: Map<String, ImageVector>,
     showVisited: Boolean,
     onToggleShowVisited: () -> Unit,
-    radiusValues: List<String>,
-    currentLanguage: String,
-    currentUnits: String,
-    typeIcons: Map<String, ImageVector>,
+    sortType: String,
+    onSortTypeChange: (String) -> Unit,
 ) {
 
+
     val radiusSliderPosition = radiusValues.indexOf(selectedRadius).coerceAtLeast(0)
-    val allSelected = selectedTypes.containsAll(allTypes)
+    val allTypesSelected = selectedTypes.containsAll(allTypes)
+    val allTagsSelected = selectedTags.containsAll(allTags)
+
 
     Card(
         modifier = Modifier
@@ -120,20 +132,76 @@ fun FiltersPanel(
                 // 🔁 Select all / Clear all
                 AssistChip(
                     onClick = {
-                        if (allSelected) onClearAllTypes() else onSelectAllTypes()
+                        if (allTypesSelected) onClearAllTypes() else onSelectAllTypes()
                     },
                     label = {
                         Text(
                             LocalizerUI.t(
-                                if (allSelected) "clear_all" else "select_all",
+                                if (allTypesSelected) "clear_all" else "select_all",
                                 currentLanguage
                             ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     },
                     leadingIcon = {
                         Icon(
-                            imageVector = if (allSelected) Icons.Default.Clear else Icons.Default.DoneAll,
+                            imageVector = if (allTypesSelected) Icons.Default.Clear else Icons.Default.DoneAll,
+                            contentDescription = null
+                        )
+                    }
+                )
+            }
+
+            // 🏷️ Place Tags
+            Text(LocalizerUI.t("place_tags", currentLanguage),
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleMedium)
+
+            FlowRow(
+                modifier = Modifier.padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                allTags.forEach { tag ->
+                    val icon = tagsIcons[tag] ?: Icons.AutoMirrored.Filled.Label
+                    FilterChip(
+                        selected = selectedTags.contains(tag),
+                        onClick = { onTagToggle(tag) },
+                        label = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = tag,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = LocalizerUI.t(tag, currentLanguage),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    fontSize = 10.sp,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    )
+                }
+
+                AssistChip(
+                    onClick = {
+                        if (allTagsSelected) onClearAllTags() else onSelectAllTags()
+                    },
+                    label = {
+                        Text(
+                            LocalizerUI.t(
+                                if (allTagsSelected) "clear_all" else "select_all",
+                                currentLanguage
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (allTagsSelected) Icons.Default.Clear else Icons.Default.DoneAll,
                             contentDescription = null
                         )
                     }
@@ -153,9 +221,34 @@ fun FiltersPanel(
                 )
                 Text(
                     LocalizerUI.t("show_visited", currentLanguage),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onBackground,
                     style = MaterialTheme.typography.bodyLarge
                 )
+            }
+
+            // Sort
+            Text(
+                LocalizerUI.t("sort_by", currentLanguage),
+                color = MaterialTheme.colorScheme.onBackground,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                listOf(
+                    "distance" to LocalizerUI.t("distance", currentLanguage),
+                    "name" to LocalizerUI.t("name", currentLanguage),
+                    "rating" to LocalizerUI.t("rating", currentLanguage)
+                ).forEach { (key, label) ->
+                    FilterChip(
+                        selected = sortType == key,
+                        onClick = { onSortTypeChange(key) },
+                        label = { Text(label) }
+                    )
+                }
             }
         }
     }

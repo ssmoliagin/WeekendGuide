@@ -72,7 +72,7 @@ fun StatisticsScreen(
     val leveledUpSet by statisticsViewModel.categoryLevels.collectAsState()
     val totalPOIs = totalPOIList.size
     val visitedPOIs = userPOIList.size
-    val typeGoals = listOf(5, 10, 20, 50, 100)
+    val typeGoals = listOf(5, 10, 20, 30, 50, 100, 250, 500, 750, 1000)
     val leaderboardVisible by leaderboardViewModel.leaderboardVisible.collectAsState()
     val userRank by leaderboardViewModel.userRank.collectAsState()
     val leaderboard by leaderboardViewModel.leaderboard.collectAsState()
