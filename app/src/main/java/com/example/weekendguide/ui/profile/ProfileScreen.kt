@@ -76,44 +76,66 @@ fun ProfileScreen(
     onLoggedOut: () -> Unit,
     isPremium: Boolean
 ) {
-    var sheetVisible by remember { mutableStateOf(false) }
-    var sheetType by remember { mutableStateOf<SettingsType?>(null) }
+    // --- STATE FROM VIEWMODELS ---
     val currentLanguage by translateViewModel.language.collectAsState()
-
-    fun openSheet(type: SettingsType) {
-        sheetType = type
-        sheetVisible = true
-    }
-
+    val currentTheme by themeViewModel.theme.collectAsState()
     val userInfo by loginViewModel.userData.collectAsState()
+    val currentUnits by profileViewModel.units.collectAsState()
+    val notificationEnabled by profileViewModel.notification.collectAsState()
+
+    // --- DERIVED USER INFO ---
     val email = userInfo.email ?: ""
     val displayName = userInfo.displayName ?: ""
     val photoUrl = userInfo.photoUrl
     val name = displayName.ifBlank { email.substringBefore("@") }
 
-    val currentTheme by themeViewModel.theme.collectAsState()
-    val themeOptions = listOf(LocalizerUI.t("theme_options_light", currentLanguage), LocalizerUI.t("theme_options_dark", currentLanguage), LocalizerUI.t("theme_options_system", currentLanguage))
+    // --- THEME SELECTION ---
     val themeValues = listOf("light", "dark", "system")
+    val themeOptions = listOf(
+        LocalizerUI.t("theme_options_light", currentLanguage),
+        LocalizerUI.t("theme_options_dark", currentLanguage),
+        LocalizerUI.t("theme_options_system", currentLanguage)
+    )
     var selectedThemeIndex by remember {
         mutableStateOf(themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0)
     }
     var selectedTheme by remember { mutableStateOf(themeOptions[selectedThemeIndex]) }
 
-    LaunchedEffect(currentTheme) {
-        val idx = themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0
-        selectedThemeIndex = idx
-        selectedTheme = themeOptions[idx]
-    }
-    LaunchedEffect(currentLanguage) {
-        selectedTheme = themeOptions[selectedThemeIndex]
-    }
-
-    val languageOptions = listOf("English", "Deutsch", "Русский")
+    // --- LANGUAGE SELECTION ---
     val languageValues = listOf("en", "de", "ru")
+    val languageOptions = listOf("English", "Deutsch", "Русский")
     var selectedLanguageIndex by remember {
         mutableStateOf(languageValues.indexOf(currentLanguage).takeIf { it >= 0 } ?: 0)
     }
     var selectedLanguage by remember { mutableStateOf(languageOptions[selectedLanguageIndex]) }
+
+    // --- UNITS SELECTION ---
+    val unitsValues = listOf("km", "mi")
+    val unitsOptions = listOf(
+        LocalizerUI.t("units_options_metric", currentLanguage),
+        LocalizerUI.t("units_options_imperial", currentLanguage)
+    )
+    var selectedUnitsIndex by remember {
+        mutableStateOf(unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0)
+    }
+    var selectedUnits by remember { mutableStateOf(unitsOptions[selectedUnitsIndex]) }
+
+    // --- SHEET STATE ---
+    var sheetVisible by remember { mutableStateOf(false) }
+    var sheetType by remember { mutableStateOf<SettingsType?>(null) }
+
+    // --- FUNCTIONS ---
+    fun openSheet(type: SettingsType) {
+        sheetType = type
+        sheetVisible = true
+    }
+
+    // --- EFFECTS ---
+    LaunchedEffect(currentTheme, currentLanguage) {
+        val idx = themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0
+        selectedThemeIndex = idx
+        selectedTheme = themeOptions[idx]
+    }
 
     LaunchedEffect(currentLanguage) {
         val idx = languageValues.indexOf(currentLanguage).takeIf { it >= 0 } ?: 0
@@ -121,24 +143,11 @@ fun ProfileScreen(
         selectedLanguage = languageOptions[idx]
     }
 
-    val currentUnits by profileViewModel.units.collectAsState()
-    val unitsOptions = listOf(LocalizerUI.t("units_options_metric", currentLanguage), LocalizerUI.t("units_options_imperial", currentLanguage))
-    val unitsValues = listOf("km", "mi")
-    var selectedUnitsIndex by remember {
-        mutableStateOf(unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0)
-    }
-    var selectedUnits by remember { mutableStateOf(unitsOptions[selectedUnitsIndex]) }
-
-    LaunchedEffect(currentUnits) {
+    LaunchedEffect(currentUnits, currentLanguage) {
         val idx = unitsValues.indexOf(currentUnits).takeIf { it >= 0 } ?: 0
         selectedUnitsIndex = idx
         selectedUnits = unitsOptions[idx]
     }
-    LaunchedEffect(currentLanguage) {
-        selectedUnits = unitsOptions[selectedUnitsIndex]
-    }
-
-    val notificationEnabled by profileViewModel.notification.collectAsState()
 
     Scaffold(
         topBar = { showTopAppBar() },

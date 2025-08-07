@@ -34,6 +34,7 @@ fun TopAppBar(
     val title = when (topBarTitle) {
         "main" -> "Weekend Guide"
         "favorites" -> LocalizerUI.t("favorites", currentLanguage)
+        "visiteds" -> LocalizerUI.t("visiteds", currentLanguage)
         "statistic" -> LocalizerUI.t("achievements", currentLanguage)
         "profile" -> LocalizerUI.t("profile", currentLanguage)
         else -> topBarTitle

@@ -55,6 +55,9 @@ fun StatisticsScreen(
     userPOIList: List<POI>,
     totalPOIList: List<POI>,
     allTypes: List<String>,
+    totalGP: Int,
+    spentGP: Int,
+    onOpenListScreen: () -> Unit,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
     pointsViewModel: PointsViewModel,
@@ -64,8 +67,6 @@ fun StatisticsScreen(
     typeIcons: Map<String, ImageVector>,
 ) {
     val currentLanguage by translateViewModel.language.collectAsState()
-    val totalGP by pointsViewModel.totalGP.collectAsState()
-    val spentGP by pointsViewModel.spentGP.collectAsState()
     val purchasedRegionsCount by statisticsViewModel.purchasedRegionsCount.collectAsState()
     val purchasedCountriesCount by statisticsViewModel.purchasedCountriesCount.collectAsState()
     val typeStats = userPOIList.groupingBy { it.type }.eachCount()
@@ -198,6 +199,14 @@ fun StatisticsScreen(
                             Text("$visitedPOIs / $totalPOIs",
                                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
+
+                        Text(
+                            text = LocalizerUI.t("show_all", currentLanguage),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable { onOpenListScreen() }
+                                .padding(vertical = 8.dp)
+                        )
                     }
                 }
             }

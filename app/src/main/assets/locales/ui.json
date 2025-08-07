@@ -68,6 +68,11 @@
     "de": "Favoriten",
     "ru": "Избранное"
   },
+  "visiteds": {
+    "en": "Visiteds",
+    "de": "Besucht",
+    "ru": "Посещено"
+  },
   "achievements": {
     "en": "Achievements",
     "de": "Erfolge",
@@ -150,9 +155,9 @@
     "de": "Entfernung",
     "ru": "Расстояние"
   },
-  "name": {
-    "en": "Name",
-    "de": "Name",
+  "name_sort": {
+    "en": "Title",
+    "de": "Title",
     "ru": "Название"
   },
   "rating": {
@@ -546,13 +551,16 @@
     "de": "Keine verfügbaren Regionen für dieses Land",
     "ru": "Нет доступных регионов для этой страны"
   },
-
+  "nopois": {
+    "en": "No available POI",
+    "de": "Keine verfügbaren POI",
+    "ru": "Нет доступных точек"
+  },
   "search_country_placeholder": {
     "en": "Search country",
     "de": "Land suchen",
     "ru": "Поиск страны"
   },
-
   "select_region_title": {
     "en": "Select region",
     "de": "Region auswählen",

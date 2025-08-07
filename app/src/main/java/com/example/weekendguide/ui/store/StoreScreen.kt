@@ -266,7 +266,7 @@ fun StoreScreen(
                                 Text(
                                     text = LocalizerUI.t("noregions", currentLanguage),
                                     modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    color = Color.Gray
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                         } else {

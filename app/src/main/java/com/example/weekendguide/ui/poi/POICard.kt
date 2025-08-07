@@ -40,6 +40,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
+import kotlin.math.round
 
 @Composable
 fun POICard(
@@ -173,7 +174,10 @@ fun POICard(
                             "de" -> poi.description_de
                             "ru" -> poi.description_ru
                             else -> ""
-                        }.ifBlank { poi.description },
+                        }.ifBlank { poi.description }
+                            .ifBlank {
+                                LocalizerUI.t("desc_type_${poi.type}", currentLanguage)
+                            },
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -181,10 +185,13 @@ fun POICard(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                //distance
                 distanceKm?.let {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    val distance = if (currentUnits == "mi") round(it * 0.621371).toInt() else it
                     Text(
-                        text = "$it ${LocalizerUI.t(currentUnits, currentLanguage)} ${LocalizerUI.t("from", currentLanguage)} $userCurrentCity",
+                        text = "$distance ${LocalizerUI.t(currentUnits, currentLanguage)} ${LocalizerUI.t("from", currentLanguage)} $userCurrentCity",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface
                     )

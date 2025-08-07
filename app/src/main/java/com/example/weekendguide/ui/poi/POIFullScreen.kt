@@ -3,6 +3,7 @@ package com.example.weekendguide.ui.poi
 import android.content.ContentValues
 import android.content.Intent
 import android.location.Location
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Label
@@ -94,6 +96,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.round
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,6 +128,7 @@ fun POIFullScreen(
 
     val context = LocalContext.current
     val wikiDescription by poiViewModel.wikiDescription.collectAsState()
+    val wikiAnnotatedDescription by poiViewModel.wikiAnnotatedDescription.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     var isChecking by remember { mutableStateOf(false) }
 
@@ -156,16 +160,17 @@ fun POIFullScreen(
     suspend fun sharePOI() {
         val title = localizedTitle
         val description = localizedDescription
+            .lines()
+            .joinToString("\n") { it.trimStart() }
+            .trim()
         val locationUrl = "https://maps.google.com/?q=${poi.lat},${poi.lng}"
 
-        val shareText = """
-        📍 $title
-        $description
-        
-        🤳 ${LocalizerUI.t("share_by", currentLanguage)}
-        
-        🌍 $locationUrl
-    """.trimIndent()
+        val shareText = buildString {
+            append("📍 $title\n")
+            append(description.trim())
+            append("\n\n🤳 ${LocalizerUI.t("share_by", currentLanguage)}\n\n")
+            append("🌍 $locationUrl")
+        }
 
         val imageUri = withContext(Dispatchers.IO) {
             poi.imageUrl?.let { imageUrl ->
@@ -195,7 +200,7 @@ fun POIFullScreen(
             }
         }
 
-        context.startActivity(Intent.createChooser(intent, "Поделиться через"))
+        context.startActivity(Intent.createChooser(intent, "Share to"))
     }
 
     fun saveAsGpx(): Boolean {
@@ -441,29 +446,53 @@ fun POIFullScreen(
                 // TITLE & DESCRIPTION
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
+
+                        //title
                         Text(
                             text = localizedTitle,
                             style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onBackground,
                             fontWeight = FontWeight.Bold
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
+                        //desc
+                        wikiAnnotatedDescription?.let { annotatedText ->
+                            ClickableText(
+                                text = annotatedText,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    lineHeight = 20.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                ),
+                                onClick = { offset ->
+                                    annotatedText.getStringAnnotations("URL", offset, offset)
+                                        .firstOrNull()?.let { annotation ->
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                                            context.startActivity(intent)
+                                        }
+                                }
+                            )
+                        } ?: Text(
                             text = localizedDescription,
                             style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
                             lineHeight = 20.sp
                         )
 
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        //distance
                         distanceKm?.let {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            val distance = if (currentUnits == "mi") round(it * 0.621371).toInt() else it
                             Text(
-                                text = "$it ${LocalizerUI.t(currentUnits, currentLanguage)} ${LocalizerUI.t("from", currentLanguage)} $userCurrentCity",
+                                text = "$distance ${LocalizerUI.t(currentUnits, currentLanguage)} ${LocalizerUI.t("from", currentLanguage)} $userCurrentCity",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
+
                 }
 
                 // MAP
@@ -545,7 +574,6 @@ fun POIFullScreen(
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                // Фото или инициал
                                                 if (!review.userPhotoUrl.isNullOrEmpty()) {
                                                     Image(
                                                         painter = rememberAsyncImagePainter(review.userPhotoUrl),

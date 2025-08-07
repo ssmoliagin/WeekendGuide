@@ -1,5 +1,9 @@
 package com.example.weekendguide.viewmodel
 
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.locales.LocalizerUI
@@ -37,6 +41,9 @@ class POIViewModel(
     private val _wikiDescription = MutableStateFlow<String?>(null)
     val wikiDescription: StateFlow<String?> = _wikiDescription
     private var lastWikiTitle: String? = null
+
+    private val _wikiAnnotatedDescription = MutableStateFlow<AnnotatedString?>(null)
+    val wikiAnnotatedDescription: StateFlow<AnnotatedString?> = _wikiAnnotatedDescription
 
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
     val poiList: StateFlow<List<POI>> = _poiList
@@ -155,13 +162,57 @@ class POIViewModel(
     fun loadWikipediaDescription(title: String) {
         lastWikiTitle = title
         _wikiDescription.value = null
+        _wikiAnnotatedDescription.value = null
+
         viewModelScope.launch {
             val result = wikiRepository.fetchWikipediaDescription(title, translateViewModel.language.value)
             if (lastWikiTitle == title) {
                 _wikiDescription.value = result
+                result?.let {
+                    _wikiAnnotatedDescription.value = buildAnnotatedDescription(it)
+                }
             }
         }
     }
+
+    private fun buildAnnotatedDescription(text: String): AnnotatedString {
+        return buildAnnotatedString {
+            val regex = Regex("""\[([^\]]+)]\((https?://[^\)]+)\)""")
+            val match = regex.find(text)
+
+            if (match != null) {
+                val startIndex = match.range.first
+
+                val beforeLink = text.substring(0, startIndex)
+                val linkText = match.groupValues[1]
+                val linkUrl = match.groupValues[2]
+
+                append(beforeLink)
+
+                val start = length
+                append(linkText)
+                val end = length
+
+                addStyle(
+                    style = SpanStyle(
+                        textDecoration = TextDecoration.Underline
+                    ),
+                    start = start,
+                    end = end
+                )
+
+                addStringAnnotation(
+                    tag = "URL",
+                    annotation = linkUrl,
+                    start = start,
+                    end = end
+                )
+            } else {
+                append(text)
+            }
+        }
+    }
+
 
     private fun observeLanguageChanges() {
         viewModelScope.launch {

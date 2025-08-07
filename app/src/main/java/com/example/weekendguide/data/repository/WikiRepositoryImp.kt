@@ -1,6 +1,5 @@
 package com.example.weekendguide.data.repository
 
-import android.content.Context
 import android.util.Log
 import com.example.weekendguide.data.model.WikipediaSummary
 import com.google.gson.Gson
@@ -10,7 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 
-class WikiRepositoryImp(private val context: Context) : WikiRepository {
+class WikiRepositoryImp() : WikiRepository {
 
     override suspend fun fetchWikipediaDescription(title: String, language: String): String? {
         val encodedTitle = title.replace(" ", "%20")
@@ -28,7 +27,9 @@ class WikiRepositoryImp(private val context: Context) : WikiRepository {
                 if (response.isSuccessful) {
                     val json = response.body?.string()
                     val summary = Gson().fromJson(json, WikipediaSummary::class.java)
-                    summary.extract
+                    val extract = summary.extract ?: return@withContext null
+                    val articleUrl = "https://$language.wikipedia.org/wiki/$encodedTitle"
+                    "$extract\n\n[Wikipedia]($articleUrl)"
                 } else {
                     Log.e("WikiRepository", "Wikipedia API error ${response.code}: ${response.message}")
                     null
@@ -39,4 +40,5 @@ class WikiRepositoryImp(private val context: Context) : WikiRepository {
             }
         }
     }
+
 }

@@ -13,7 +13,6 @@ import androidx.compose.material.icons.automirrored.filled.Accessible
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.AcUnit
-import androidx.compose.material.icons.filled.Accessible
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Attractions
 import androidx.compose.material.icons.filled.Castle
@@ -95,7 +94,6 @@ fun MainScreen(
     userRemoteDataSource: UserRemoteDataSource,
     leaderboardViewModel: LeaderboardViewModel
 ) {
-
     var showMapScreen by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
     var showStatisticsScreen by remember { mutableStateOf(false) }
@@ -103,7 +101,7 @@ fun MainScreen(
     var showPOIInMap by remember { mutableStateOf(false) }
     var showListPOIScreen by remember { mutableStateOf(false) }
     var showPOIStoreScreen by remember { mutableStateOf(false) }
-    var sortType by remember { mutableStateOf("distance") } // "distance", "name", "rating"
+    var sortType by remember { mutableStateOf("distance") }
     var showFullPOI by remember { mutableStateOf(false) }
     var showOnlyFavorites by remember { mutableStateOf(false) }
     var showOnlyVisited by remember { mutableStateOf(false) }
@@ -235,7 +233,6 @@ fun MainScreen(
         if (regions.isNotEmpty()) {
             val poiViewModel: POIViewModel = remember(regions) {
                 POIViewModelFactory(
-                    context = app,
                     region = regions,
                     translateViewModel = translateViewModel,
                     dataRepository = dataRepository,
@@ -287,15 +284,15 @@ fun MainScreen(
             }
 
             //Radius
-            val radiusValues = listOf("20","50","100","200","∞")
-            var selectedRadius by remember { mutableStateOf("200") }
+            val radiusValues = if(currentUnits == "km") listOf("25","50","100","200","∞") else listOf("15","30","60","120","∞")
+            var selectedRadius by remember { if(currentUnits == "km") mutableStateOf("200") else mutableStateOf("120") }
             val radiusValue = when (selectedRadius) {
-                "20" -> 20
-                "50" -> 50
-                "100" -> 100
-                "200" -> 200
+                "25", "15" -> 25_000
+                "50", "30" -> 50_000
+                "100", "60" -> 100_000
+                "200", "120" -> 200_000
                 "∞" -> Int.MAX_VALUE
-                else -> 200
+                else ->  if(currentUnits == "km") 200_000 else 120_000
             }
 
             // Filter POIs (radius, types and tags)
@@ -315,7 +312,7 @@ fun MainScreen(
                     poiList.filter { poi ->
                         val result = FloatArray(1)
                         Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
-                        val distanceInKm = result[0] / 1000
+                        val distanceInKm = result[0]
                         distanceInKm <= radiusValue
                     }
                 } ?: poiList
@@ -398,7 +395,7 @@ fun MainScreen(
             fun resetFiltersUndScreens() {
                 selectedTypes = allTypes
                 selectedTags= allTags
-                selectedRadius = "200"
+                selectedRadius = if(currentUnits == "km") "200" else "120"
                 showOnlyVisited = false
                 showOnlyFavorites = false
 
@@ -424,7 +421,8 @@ fun MainScreen(
                     topBarTitle =
                         if (showListPOIScreen) {
                             if (showOnlyFavorites)"favorites"
-                            else  "${finalPOIList.size} мест рядом с $currentCity"
+                            else if (showOnlyVisited)"visiteds"
+                            else  "${finalPOIList.size} ${LocalizerUI.t("places_near", currentLanguage)} $currentCity"
                         }
                         else if (showStatisticsScreen) "statistic"
                         else if (showProfileScreen) "profile"
@@ -595,8 +593,14 @@ fun MainScreen(
                     userPOIList = finalPOIList,
                     totalPOIList = poiList,
                     allTypes = allTypes,
+                    totalGP = totalGP,
+                    spentGP = spentGP,
                     showNavigationBar = { showNavigationBar() },
                     showTopAppBar = { showTopAppBar () },
+                    onOpenListScreen = {
+                        showStatisticsScreen = false
+                        showListPOIScreen = true
+                                       },
                     pointsViewModel = pointsViewModel,
                     translateViewModel = translateViewModel,
                     statisticsViewModel = statisticsViewModel,

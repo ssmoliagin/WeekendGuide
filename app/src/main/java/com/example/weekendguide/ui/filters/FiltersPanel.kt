@@ -240,7 +240,7 @@ fun FiltersPanel(
             ) {
                 listOf(
                     "distance" to LocalizerUI.t("distance", currentLanguage),
-                    "name" to LocalizerUI.t("name", currentLanguage),
+                    "name_sort" to LocalizerUI.t("name", currentLanguage),
                     "rating" to LocalizerUI.t("rating", currentLanguage)
                 ).forEach { (key, label) ->
                     FilterChip(

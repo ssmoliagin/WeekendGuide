@@ -28,18 +28,18 @@ fun MapScreen(
     showFiltersButtons: @Composable () -> Unit,
 ) {
     val radiusValue = when (selectedRadius) {
-        "20" -> 20_000.0
-        "50" -> 50_000.0
-        "100" -> 100_000.0
-        "200" -> 200_000.0
+        "25", "15" -> 25_000.0
+        "50", "30" -> 50_000.0
+        "100", "60" -> 100_000.0
+        "200", "120" -> 200_000.0
         "∞" -> 0.0
         else -> 200_000.0
     }
 
     val zoom = when (selectedRadius) {
-        "20" -> 10f
-        "50" -> 9f
-        "100" -> 8f
+        "25", "15" -> 10f
+        "50", "30" -> 9f
+        "100", "60" -> 8f
         else -> 7f
     }
 
@@ -52,9 +52,9 @@ fun MapScreen(
 
     LaunchedEffect(selectedRadius, userLocation) {
         val newZoom = when (selectedRadius) {
-            "20" -> 10f
-            "50" -> 9f
-            "100" -> 8f
+            "25", "15" -> 10f
+            "50", "30" -> 9f
+            "100", "60" -> 8f
             else -> 7f
         }
 
