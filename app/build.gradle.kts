@@ -16,7 +16,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "0.2.8"
+        versionName = "0.2.84"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as? String ?: ""
@@ -56,6 +56,9 @@ dependencies {
     // 🧱 Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-util")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-graphics-android")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation("com.google.android.material:material:1.12.0")
@@ -89,6 +92,7 @@ dependencies {
 
     // 🗺 Google Maps Compose
     implementation("com.google.maps.android:maps-compose:2.11.4")
+    implementation("com.google.maps.android:android-maps-utils:3.8.0")
 
     // 🧭 Navigation
     implementation("androidx.navigation:navigation-compose:2.9.1")

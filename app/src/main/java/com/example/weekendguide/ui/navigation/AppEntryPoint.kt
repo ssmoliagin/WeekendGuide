@@ -19,6 +19,8 @@ import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LocationViewModelFactory
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.LoginViewModelFactory
+import com.example.weekendguide.viewmodel.MarkerIconViewModel
+import com.example.weekendguide.viewmodel.MarkerIconViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
@@ -58,6 +60,10 @@ fun AppEntryPoint() {
             localesRepo = localesRepo,
             userRemote = userRemoteDataSource
         )
+    )
+
+    val markerIconViewModel: MarkerIconViewModel = viewModel(
+        factory = MarkerIconViewModelFactory(app)
     )
 
     val themeViewModel: ThemeViewModel = viewModel(
@@ -106,7 +112,8 @@ fun AppEntryPoint() {
             userPreferences = userPreferences,
             dataRepository = dataRepository,
             userRemoteDataSource = userRemoteDataSource,
-            leaderboardViewModel = leaderboardViewModel
+            leaderboardViewModel = leaderboardViewModel,
+            markerIconViewModel = markerIconViewModel
         )
     }
 }

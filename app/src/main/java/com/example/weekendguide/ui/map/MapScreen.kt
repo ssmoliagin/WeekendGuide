@@ -2,17 +2,19 @@ package com.example.weekendguide.ui.map
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.*
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.*
+import com.google.maps.android.clustering.ClusterManager
+import com.google.maps.android.clustering.view.DefaultClusterRenderer
+import android.graphics.Color as AndroidColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,81 +28,117 @@ fun MapScreen(
     isVisited: (POI) -> Boolean,
     showLocationPanel: @Composable () -> Unit,
     showFiltersButtons: @Composable () -> Unit,
+    markerIconViewModel: MarkerIconViewModel
 ) {
-    val radiusValue = when (selectedRadius) {
-        "25", "15" -> 25_000.0
-        "50", "30" -> 50_000.0
-        "100", "60" -> 100_000.0
-        "200", "120" -> 200_000.0
-        "∞" -> 0.0
-        else -> 200_000.0
+    val context = LocalContext.current
+
+    val mapView = remember {
+        com.google.android.gms.maps.MapView(context).apply {
+            onCreate(null)
+            onResume()
+        }
     }
 
-    val zoom = when (selectedRadius) {
-        "25", "15" -> 10f
-        "50", "30" -> 9f
-        "100", "60" -> 8f
+    var googleMap by remember { mutableStateOf<GoogleMap?>(null) }
+    var clusterManager by remember { mutableStateOf<ClusterManager<POIClusterItem>?>(null) }
+
+    val radiusMeters = when (selectedRadius) {
+        "15", "25" -> 25000.0
+        "30", "50" -> 50000.0
+        "60", "100" -> 100000.0
+        "120", "200" -> 200000.0
+        "∞" -> 0.0
+        else -> 200000.0
+    }
+
+    val zoomLevel = when (selectedRadius) {
+        "15", "25" -> 10f
+        "30", "50" -> 9f
+        "60", "100" -> 8f
         else -> 7f
     }
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(
-            userLocation?.let { LatLng(it.first, it.second) } ?: LatLng(51.1657, 10.4515),
-            zoom
-        )
+    LaunchedEffect(Unit) {
+        markerIconViewModel.prepareDescriptorsIfNeeded(context)
     }
 
-    LaunchedEffect(selectedRadius, userLocation) {
-        val newZoom = when (selectedRadius) {
-            "25", "15" -> 10f
-            "50", "30" -> 9f
-            "100", "60" -> 8f
-            else -> 7f
-        }
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = {
+            mapView.apply {
+                getMapAsync { gMap ->
+                    googleMap = gMap
 
-        userLocation?.let {
-            cameraPositionState.animate(
-                update = CameraUpdateFactory.newLatLngZoom(LatLng(it.first, it.second), newZoom),
-                durationMs = 1000
-            )
-        }
-    }
+                    clusterManager = ClusterManager(context, gMap)
+                    clusterManager?.renderer = object : DefaultClusterRenderer<POIClusterItem>(context, gMap, clusterManager) {
+                        override fun onBeforeClusterItemRendered(item: POIClusterItem, markerOptions: MarkerOptions) {
+                            val poi = item.poi
+                            val descriptor = markerIconViewModel.getDescriptorSync(poi.type, isVisited(poi), isFavorite(poi))
+                            if (descriptor != null) {
+                                markerOptions.icon(descriptor)
+                            } else {
+                                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                            }
+                            markerOptions.title(poi.title)
+                        }
+                    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState
-        ) {
-            userPOIList.forEach { poi ->
-                val markerColor = when {
-                    isVisited(poi) -> BitmapDescriptorFactory.HUE_GREEN
-                    isFavorite(poi) -> BitmapDescriptorFactory.HUE_YELLOW
-                    else -> BitmapDescriptorFactory.HUE_RED
-                }
+                    clusterManager?.setOnClusterClickListener { cluster ->
+                        val zoom = gMap.cameraPosition.zoom + 2f
+                        gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(cluster.position, zoom))
+                        true
+                    }
 
-                Marker(
-                    state = MarkerState(position = LatLng(poi.lat, poi.lng)),
-                    title = poi.title,
-                    icon = BitmapDescriptorFactory.defaultMarker(markerColor),
-                    onClick = {
-                        onSelectPOI(poi)
+                    clusterManager?.setOnClusterItemClickListener { item ->
+                        onSelectPOI(item.poi)
                         onOpenPOIinMap()
                         true
                     }
-                )
-            }
 
-            userLocation?.let {
-                Circle(
-                    center = LatLng(it.first, it.second),
-                    radius = radiusValue,
-                    fillColor = Color.Blue.copy(alpha = 0.15f),
-                    strokeColor = Color.Blue,
-                    strokeWidth = 2f
-                )
+                    gMap.setOnCameraIdleListener(clusterManager)
+                    gMap.setOnMarkerClickListener(clusterManager)
+
+                    clusterManager?.clearItems()
+                    clusterManager?.addItems(userPOIList.map { POIClusterItem(it) })
+                    clusterManager?.cluster()
+
+                    userLocation?.let {
+                        val latLng = LatLng(it.first, it.second)
+                        gMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
+                    }
+                }
+            }
+        },
+        update = {
+            googleMap?.let { gMap ->
+                clusterManager?.let { cm ->
+                    gMap.clear()
+
+                    cm.clearItems()
+                    cm.addItems(userPOIList.map { POIClusterItem(it) })
+                    cm.cluster()
+
+                    userLocation?.let { loc ->
+                        val latLng = LatLng(loc.first, loc.second)
+                        gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoomLevel))
+                    }
+
+                    if (radiusMeters > 0 && userLocation != null) {
+                        gMap.addCircle(
+                            CircleOptions()
+                                .center(LatLng(userLocation.first, userLocation.second))
+                                .radius(radiusMeters)
+                                .strokeColor(AndroidColor.BLUE)
+                                .fillColor(AndroidColor.argb(0x22, 0x00, 0x00, 0xFF))
+                                .strokeWidth(3f)
+                        )
+                    }
+                }
             }
         }
+    )
 
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .padding(top = 40.dp, start = 4.dp, end = 4.dp)
@@ -112,3 +150,12 @@ fun MapScreen(
         }
     }
 }
+
+// Cluster Google Map
+class POIClusterItem(val poi: POI) : com.google.maps.android.clustering.ClusterItem {
+    override fun getPosition(): LatLng = LatLng(poi.lat, poi.lng)
+    override fun getTitle(): String? = poi.title
+    override fun getSnippet(): String? = null
+    override fun getZIndex(): Float = 0f
+}
+

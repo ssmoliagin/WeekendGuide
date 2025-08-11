@@ -156,7 +156,7 @@ fun POICard(
                         "en" -> poi.title_en
                         "de" -> poi.title_de
                         "ru" -> poi.title_ru
-                        else -> ""
+                        else -> poi.title
                     }.ifBlank { poi.title },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,

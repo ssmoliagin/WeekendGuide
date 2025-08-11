@@ -143,7 +143,7 @@ fun POIFullScreen(
             "en" -> poi.title_en
             "de" -> poi.title_de
             "ru" -> poi.title_ru
-            else -> ""
+            else -> poi.title
         }.ifBlank { poi.title }
 
     val localizedDescription = wikiDescription?.takeIf { it.isNotBlank() }
@@ -151,7 +151,7 @@ fun POIFullScreen(
             "en" -> poi.description_en
             "de" -> poi.description_de
             "ru" -> poi.description_ru
-            else -> ""
+            else -> poi.description
         }.ifBlank { poi.description }
             .ifBlank {
                 LocalizerUI.t("desc_type_${poi.type}", currentLanguage)

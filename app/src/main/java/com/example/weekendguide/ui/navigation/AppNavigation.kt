@@ -15,6 +15,7 @@ import com.example.weekendguide.ui.store.StoreScreen
 import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
@@ -32,7 +33,8 @@ fun AppNavigation(
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource,
-    leaderboardViewModel: LeaderboardViewModel
+    leaderboardViewModel: LeaderboardViewModel,
+    markerIconViewModel: MarkerIconViewModel
 ) {
     val navController = rememberNavController()
 
@@ -112,6 +114,7 @@ fun AppNavigation(
                 dataRepository = dataRepository,
                 userRemoteDataSource = userRemoteDataSource,
                 leaderboardViewModel = leaderboardViewModel,
+                markerIconViewModel = markerIconViewModel
             )
         }
 

@@ -54,7 +54,7 @@ class TranslateViewModel(
                 _lang.value = savedLang
             }
 
-            loadUITranslations()
+           // loadUITranslations()
 
             val currentData = prefs.userDataFlow.first()
             val updatedData = currentData.copy(language = _lang.value)

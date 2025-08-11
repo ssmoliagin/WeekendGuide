@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Accessible
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Attractions
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.filled.Castle
 import androidx.compose.material.icons.filled.DownhillSkiing
 import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.Forest
+import androidx.compose.material.icons.filled.Hiking
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Museum
@@ -63,6 +63,7 @@ import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.MainStateViewModel
+import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
@@ -92,7 +93,8 @@ fun MainScreen(
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource,
-    leaderboardViewModel: LeaderboardViewModel
+    leaderboardViewModel: LeaderboardViewModel,
+    markerIconViewModel: MarkerIconViewModel
 ) {
     var showMapScreen by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
@@ -141,7 +143,7 @@ fun MainScreen(
         "zoo" to Icons.Default.Pets,
         "water" to Icons.Default.Pool,
         "active" to Icons.Default.DownhillSkiing,
-        "hiking" to Icons.AutoMirrored.Filled.DirectionsWalk,
+        "hiking" to Icons.Default.Hiking,
         "cycling" to Icons.AutoMirrored.Filled.DirectionsBike,
         "culture" to Icons.Default.TheaterComedy,
     )
@@ -370,7 +372,16 @@ fun MainScreen(
                         } ?: baseList
                     }
                     "name" -> {
-                        baseList.sortedBy { it.title.lowercase() }
+                        baseList.sortedBy {
+                            val localizedTitle =
+                                when (currentLanguage) {
+                                    "en" -> it.title_en
+                                    "de" -> it.title_de
+                                    "ru" -> it.title_ru
+                                    else -> it.title
+                                }.ifBlank { it.title }
+                            localizedTitle.lowercase()
+                        }
                     }
                     "rating" -> {
                         baseList.sortedByDescending { poi ->
@@ -390,8 +401,8 @@ fun MainScreen(
 
             // OnDismis()
             fun resetFiltersUndScreens() {
-                selectedTypes = allTypes
-                selectedTags= allTags
+                selectedTypes = emptyList()
+                selectedTags= emptyList()
                 selectedRadius = if(currentUnits == "km") "200" else "120"
                 showOnlyVisited = false
                 showOnlyFavorites = false
@@ -524,6 +535,7 @@ fun MainScreen(
                     isVisited = { poi -> visitedPoiIds.contains(poi.id) },
                     showLocationPanel = { showLocationPanel() },
                     showFiltersButtons = { showFiltersButtons() },
+                    markerIconViewModel = markerIconViewModel
                 )
             //ListPOIScreen
             } else if (showListPOIScreen) {
