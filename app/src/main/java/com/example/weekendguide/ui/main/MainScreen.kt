@@ -251,13 +251,13 @@ fun MainScreen(
                 poiViewModel.toggleFavorite(poiId)
             }
 
-            // --- TYPES and FILTERS ---
+            // --- FILTERS ---
 
             //Types
             val allTypes by poiViewModel.allTypes.collectAsState()
 
             var selectedTypes by remember(allTypes) {
-                mutableStateOf(if (allTypes.isNotEmpty()) allTypes else emptyList())
+                mutableStateOf(emptyList<String>())
             }
 
             val onTypeToggle: (String) -> Unit = { type ->
@@ -272,7 +272,7 @@ fun MainScreen(
             val allTags by poiViewModel.allTags.collectAsState()
 
             var selectedTags by remember(allTags) {
-                mutableStateOf(if (allTags.isNotEmpty()) allTags else emptyList())
+                mutableStateOf(emptyList<String>())
             }
 
             val onTagToggle: (String) -> Unit = { tag ->
@@ -301,30 +301,27 @@ fun MainScreen(
                 userLocation,
                 selectedRadius,
                 selectedTypes,
-                selectedTags,
-                allTypes,
-                allTags
+                selectedTags
             ) {
-                if (allTypes.isEmpty() || selectedTypes.isEmpty()) return@remember emptyList()
-                if (allTags.isNotEmpty() && selectedTags.isEmpty()) return@remember emptyList()
-
+                // filter by radius
                 val distanceFiltered = userLocation?.let { (lat, lon) ->
                     poiList.filter { poi ->
                         val result = FloatArray(1)
                         Location.distanceBetween(lat, lon, poi.lat, poi.lng, result)
-                        val distanceInKm = result[0]
-                        distanceInKm <= radiusValue
+                        result[0] <= radiusValue
                     }
                 } ?: poiList
 
-                val typeFiltered = distanceFiltered.filter { poi ->
-                    selectedTypes.contains(poi.type)
+                // filter by type
+                val typeFiltered = if (selectedTypes.isNotEmpty()) {
+                    distanceFiltered.filter { poi -> poi.type in selectedTypes }
+                } else {
+                    distanceFiltered
                 }
 
+                // filter by tag
                 val tagFiltered = if (selectedTags.isNotEmpty()) {
-                    typeFiltered.filter { poi ->
-                        poi.tags.any { it in selectedTags }
-                    }
+                    typeFiltered.filter { poi -> poi.tags.any { it in selectedTags } }
                 } else {
                     typeFiltered
                 }
@@ -332,7 +329,7 @@ fun MainScreen(
                 tagFiltered
             }
 
-            // Filter POIs (onlyOneType)
+            //  Only one Type
             val onSelectSingleType: (String) -> Unit = { type ->
                 selectedTypes = listOf(type)
             }
