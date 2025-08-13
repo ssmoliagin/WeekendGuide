@@ -5,6 +5,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
@@ -14,6 +15,7 @@ import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.data.repository.WikiRepository
+import com.example.weekendguide.data.repository.WikiRepositoryImp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,13 +26,31 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
+class POIViewModelFactory(
+    private val region: List<Region>,
+    private val translateViewModel: TranslateViewModel,
+    private val dataRepository: DataRepository,
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(POIViewModel::class.java)) {
+            val wikiRepository = WikiRepositoryImp()
+            return POIViewModel(translateViewModel, dataRepository, region, userPreferences, userRemote, wikiRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
 class POIViewModel(
     private val translateViewModel: TranslateViewModel,
     private val dataRepository: DataRepository,
-    private val wikiRepository: WikiRepository,
     private val region: List<Region>,
     private val userPreferences: UserPreferences,
-    private val userRemote: UserRemoteDataSource
+    private val userRemote: UserRemoteDataSource,
+    private val wikiRepository: WikiRepository,
 ) : ViewModel() {
 
     val language = translateViewModel.language.value

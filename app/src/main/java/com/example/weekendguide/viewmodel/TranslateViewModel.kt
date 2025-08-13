@@ -1,7 +1,7 @@
 package com.example.weekendguide.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -14,27 +14,42 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-class TranslateViewModel(
-    application: Application,
-    private val repo: LocalesRepo,
+class TranslateViewModelFactory(
+    private val localesRepo: LocalesRepo,
+    private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource
-) : AndroidViewModel(application) {
+) : ViewModelProvider.Factory {
 
-    private val prefs = UserPreferences(application)
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return when {
+            modelClass.isAssignableFrom(TranslateViewModel::class.java) -> {
+                TranslateViewModel(localesRepo, userPreferences, userRemote) as T
+            }
+            else -> throw IllegalArgumentException("Unknown ViewModel class: $modelClass")
+        }
+    }
+}
+
+class TranslateViewModel(
+    private val localesRepo: LocalesRepo,
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : ViewModel() {
 
     private val _lang = MutableStateFlow("en")
     val language: StateFlow<String> = _lang.asStateFlow()
 
     init {
         viewModelScope.launch {
-            _lang.value = prefs.getLanguage()
+            _lang.value = userPreferences.getLanguage()
             loadUITranslations()
         }
     }
 
     fun refreshLang() {
         viewModelScope.launch {
-            _lang.value = prefs.getLanguage()
+            _lang.value = userPreferences.getLanguage()
             if (_lang.value.isBlank()) {
                 detectLanguage()
             }
@@ -43,12 +58,12 @@ class TranslateViewModel(
 
     fun detectLanguage() {
         viewModelScope.launch {
-            val savedLang = prefs.getLanguage()
+            val savedLang = userPreferences.getLanguage()
             if (savedLang.isBlank()) {
                 val systemLang = Locale.getDefault().language
                 val supported = listOf("de", "ru")
                 val selected = if (systemLang in supported) systemLang else "en"
-                prefs.saveLanguage(selected)
+                userPreferences.saveLanguage(selected)
                 _lang.value = selected
             } else {
                 _lang.value = savedLang
@@ -56,27 +71,27 @@ class TranslateViewModel(
 
            // loadUITranslations()
 
-            val currentData = prefs.userDataFlow.first()
+            val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(language = _lang.value)
-            prefs.saveUserData(updatedData)
+            userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
 
     fun setLanguage(newLang: String) {
         viewModelScope.launch {
-            prefs.saveLanguage(newLang)
+            userPreferences.saveLanguage(newLang)
             _lang.value = newLang
 
-            val currentData = prefs.userDataFlow.first()
+            val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(language = newLang)
-            prefs.saveUserData(updatedData)
+            userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
 
     private suspend fun loadUITranslations() {
-        val json = repo.downloadTranslationsJson()
+        val json = localesRepo.downloadTranslationsJson()
         if (json != null) {
             LocalizerUI.loadFromJson(json)
         }

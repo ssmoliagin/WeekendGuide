@@ -43,9 +43,7 @@ fun AppNavigation(
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
             SplashScreen(
-                app = app,
                 userPreferences = userPreferences,
-                userRemote = userRemoteDataSource,
                 onNavigate = { destination ->
                 when (destination) {
                     SplashViewModel.Destination.Login -> navController.navigate("login") {
@@ -112,7 +110,7 @@ fun AppNavigation(
                 pointsViewModel = pointsViewModel,
                 userPreferences = userPreferences,
                 dataRepository = dataRepository,
-                userRemoteDataSource = userRemoteDataSource,
+                userRemote = userRemoteDataSource,
                 leaderboardViewModel = leaderboardViewModel,
                 markerIconViewModel = markerIconViewModel
             )

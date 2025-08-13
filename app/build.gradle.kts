@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 
     id("com.google.gms.google-services") // 🔥 Firebase integration
-    kotlin("plugin.serialization") version "1.9.23" // 🔄 Kotlin Serialization
+    kotlin("plugin.serialization") version "1.9.23"
 }
 
 android {
@@ -16,7 +16,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "0.2.84"
+        versionName = "0.2.85"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as? String ?: ""

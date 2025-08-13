@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -16,6 +18,21 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
+
+class LocationViewModelFactory(
+    private val app: Application,
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LocationViewModel::class.java)) {
+            return LocationViewModel(app, userPreferences, userRemote) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 class LocationViewModel(
     application: Application,

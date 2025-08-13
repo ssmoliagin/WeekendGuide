@@ -63,16 +63,17 @@ import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.MainStateViewModel
+import com.example.weekendguide.viewmodel.MainStateViewModelFactory
 import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.POIViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.ProfileViewModel
+import com.example.weekendguide.viewmodel.ProfileViewModelFactory
 import com.example.weekendguide.viewmodel.StatisticsViewModel
 import com.example.weekendguide.viewmodel.StatisticsViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
-import com.example.weekendguide.viewmodel.ViewModelFactory
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.TypeFilter
@@ -84,18 +85,19 @@ import kotlin.math.roundToInt
 @Composable
 fun MainScreen(
     app: Application,
-    loginViewModel: LoginViewModel,
-    themeViewModel: ThemeViewModel,
-    translateViewModel: TranslateViewModel,
-    locationViewModel: LocationViewModel,
-    pointsViewModel: PointsViewModel,
-    onLoggedOut: () -> Unit,
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
-    userRemoteDataSource: UserRemoteDataSource,
+    userRemote: UserRemoteDataSource,
     leaderboardViewModel: LeaderboardViewModel,
-    markerIconViewModel: MarkerIconViewModel
+    locationViewModel: LocationViewModel,
+    loginViewModel: LoginViewModel,
+    markerIconViewModel: MarkerIconViewModel,
+    pointsViewModel: PointsViewModel,
+    themeViewModel: ThemeViewModel,
+    translateViewModel: TranslateViewModel,
+    onLoggedOut: () -> Unit,
 ) {
+    // --- UI State ---
     var showMapScreen by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
     var showStatisticsScreen by remember { mutableStateOf(false) }
@@ -110,6 +112,8 @@ fun MainScreen(
     var showVisited by remember { mutableStateOf(true) }
     var selectedItem by remember { mutableStateOf("main") }
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
+
+    // --- ViewModel State ---
     val currentLanguage by translateViewModel.language.collectAsState()
     val currentGP by pointsViewModel.currentGP.collectAsState()
     val totalGP by pointsViewModel.totalGP.collectAsState()
@@ -120,21 +124,21 @@ fun MainScreen(
 
     val mainStateViewModel: MainStateViewModel = viewModel(
         key = "MainStateViewModel",
-        factory = ViewModelFactory(app, userPreferences, userRemoteDataSource )
+        factory = MainStateViewModelFactory(userPreferences)
     )
-
     val regions by mainStateViewModel.regions.collectAsState()
 
     val profileViewModel: ProfileViewModel = viewModel(
         key = "ProfileViewModel",
-        factory = ViewModelFactory(app, userPreferences, userRemoteDataSource)
+        factory = ProfileViewModelFactory(userPreferences, userRemote)
     )
     val currentUnits by profileViewModel.units.collectAsState()
 
     val statisticsViewModel: StatisticsViewModel = viewModel(
-        factory = StatisticsViewModelFactory(userPreferences, userRemoteDataSource)
+        factory = StatisticsViewModelFactory(userPreferences, userRemote)
     )
 
+    // --- Icons ---
     val typeIcons = mapOf(
         "architecture" to Icons.Default.Castle,
         "nature" to Icons.Default.Forest,
@@ -160,8 +164,7 @@ fun MainScreen(
         "outdoors" to Icons.Default.Terrain
     )
 
-    // --- LOCATION ---
-
+    // --- Location Handling ---
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -173,27 +176,35 @@ fun MainScreen(
                     locationViewModel.detectLocationFromGPS()
                 }
             } else {
-                Toast.makeText(app, LocalizerUI.t("permission", currentLanguage), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    app,
+                    LocalizerUI.t("permission", currentLanguage),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     )
 
-    fun onRequestLocationChange()
-    {
+    fun onRequestLocationChange() {
         when {
-            ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+            ContextCompat.checkSelfPermission(
+                app,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED -> {
                 isLoading = true
                 coroutineScope.launch {
                     locationViewModel.detectLocationFromGPS()
                     isLoading = false
                 }
             }
+
             else -> {
                 locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
         }
     }
 
+    // --- City Search ---
     var cityQuery by remember { mutableStateOf("") }
     var predictions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
 
@@ -210,6 +221,7 @@ fun MainScreen(
             .setQuery(query)
             .setTypeFilter(TypeFilter.CITIES)
             .build()
+
         placesClient.findAutocompletePredictions(request)
             .addOnSuccessListener { response ->
                 predictions = response.autocompletePredictions
@@ -219,7 +231,7 @@ fun MainScreen(
             }
     }
 
-    // --- REFRESH VIEWMODELS ---
+    // --- Init Data ---
     LaunchedEffect(Unit) {
         locationViewModel.loadSavedLocation()
         if (currentCity.isNullOrEmpty()) onRequestLocationChange()
@@ -229,7 +241,7 @@ fun MainScreen(
         pointsViewModel.refreshGP()
     }
 
-    // --- CORE ---
+    // --- Main UI Logic ---
     regions.let { reg ->
 
         if (regions.isNotEmpty()) {
@@ -239,7 +251,7 @@ fun MainScreen(
                     translateViewModel = translateViewModel,
                     dataRepository = dataRepository,
                     userPreferences = userPreferences,
-                    userRemote = userRemoteDataSource
+                    userRemote = userRemote
                 ).create(POIViewModel::class.java)
             }
 
@@ -592,7 +604,7 @@ fun MainScreen(
                     onDismiss = {resetFiltersUndScreens()},
                     userPreferences = userPreferences,
                     dataRepository = dataRepository,
-                    userRemoteDataSource = userRemoteDataSource,
+                    userRemoteDataSource = userRemote,
                 )
             }
 

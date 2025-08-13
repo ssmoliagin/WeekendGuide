@@ -1,6 +1,5 @@
 package com.example.weekendguide.ui.store
 
-import android.app.Application
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -45,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,10 +76,10 @@ fun StoreScreen(
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource
 ) {
-    val context = LocalContext.current
-    val application = context.applicationContext as Application
-    val factory = remember { StoreViewModelFactory(application, userPreferences, userRemoteDataSource, dataRepository) }
-    val storeViewModel: StoreViewModel = viewModel(factory = factory)
+
+    val storeViewModel: StoreViewModel = viewModel(
+        factory = StoreViewModelFactory(userPreferences, userRemoteDataSource, dataRepository)
+    )
 
     val countries by storeViewModel.countries.collectAsState()
     val regionsByCountry by storeViewModel.regionsByCountry.collectAsState()

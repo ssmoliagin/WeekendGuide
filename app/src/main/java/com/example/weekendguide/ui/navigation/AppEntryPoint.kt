@@ -22,10 +22,11 @@ import com.example.weekendguide.viewmodel.LoginViewModelFactory
 import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.MarkerIconViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
+import com.example.weekendguide.viewmodel.PointsViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.example.weekendguide.viewmodel.ThemeViewModelFactory
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModelFactory
-import com.example.weekendguide.viewmodel.ViewModelFactory
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -35,9 +36,8 @@ fun AppEntryPoint() {
 
     val context = LocalContext.current.applicationContext
     val app = context as Application
-    val auth = FirebaseAuth.getInstance()
-
-    val firestore = FirebaseFirestore.getInstance()
+    val auth = remember { FirebaseAuth.getInstance() }
+    val firestore = remember { FirebaseFirestore.getInstance() }
     val userPreferences = remember { UserPreferences(context) }
     val userRemoteDataSource = remember { UserRemoteDataSource(auth, firestore, userPreferences) }
 
@@ -49,17 +49,12 @@ fun AppEntryPoint() {
             auth = auth,
             oneTapClient = Identity.getSignInClient(context),
             userPreferences = userPreferences,
-            userRemoteDataSource = userRemoteDataSource
+            userRemote = userRemoteDataSource
         )
     )
 
     val translateViewModel: TranslateViewModel = viewModel(
-        key = "TranslateViewModel",
-        factory = TranslateViewModelFactory(
-            app = app,
-            localesRepo = localesRepo,
-            userRemote = userRemoteDataSource
-        )
+        factory = TranslateViewModelFactory(localesRepo, userPreferences, userRemoteDataSource)
     )
 
     val markerIconViewModel: MarkerIconViewModel = viewModel(
@@ -67,29 +62,19 @@ fun AppEntryPoint() {
     )
 
     val themeViewModel: ThemeViewModel = viewModel(
-        key = "ThemeViewModel",
-        factory = ViewModelFactory(app, userPreferences, userRemoteDataSource)
+        factory = ThemeViewModelFactory(userPreferences, userRemoteDataSource)
     )
 
     val locationViewModel: LocationViewModel = viewModel(
-        key = "LocationViewModel",
-        factory = LocationViewModelFactory(
-            app = app,
-            userPreferences = userPreferences,
-            userRemoteDataSource = userRemoteDataSource
-        )
+        factory = LocationViewModelFactory(app, userPreferences, userRemoteDataSource)
     )
 
     val pointsViewModel: PointsViewModel = viewModel(
-        key = "PointsViewModel",
-        factory = ViewModelFactory(app, userPreferences, userRemoteDataSource)
+        factory = PointsViewModelFactory(userPreferences, userRemoteDataSource)
     )
 
     val leaderboardViewModel: LeaderboardViewModel = viewModel(
-        factory = LeaderboardViewModelFactory(
-            auth = auth,
-            firestore = firestore
-        )
+        factory = LeaderboardViewModelFactory(auth, firestore)
     )
 
     val currentTheme by themeViewModel.theme.collectAsState()

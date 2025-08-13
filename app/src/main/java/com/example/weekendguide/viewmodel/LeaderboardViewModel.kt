@@ -1,6 +1,7 @@
 package com.example.weekendguide.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -9,6 +10,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+
+class LeaderboardViewModelFactory(
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LeaderboardViewModel::class.java)) {
+            return LeaderboardViewModel(auth, firestore) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 class LeaderboardViewModel(
     private val auth: FirebaseAuth,
@@ -49,7 +64,7 @@ class LeaderboardViewModel(
                 _userRank.value = if (rank != -1) rank + 1 else null
 
             } catch (_: Exception) {
-                // Silently ignore errors (optional: add error state handling)
+
             }
         }
     }

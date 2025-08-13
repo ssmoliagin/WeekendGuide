@@ -1,8 +1,8 @@
 package com.example.weekendguide.viewmodel
 
-import android.app.Application
 import android.location.Location
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -11,16 +11,28 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-class PointsViewModel(
-    application: Application,
+class PointsViewModelFactory(
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource
-) : AndroidViewModel(application) {
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PointsViewModel::class.java)) {
+            return PointsViewModel(userPreferences, userRemote) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+class PointsViewModel(
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : ViewModel() {
 
     private val _currentGP = MutableStateFlow(0)
     private val _totalGP = MutableStateFlow(0)

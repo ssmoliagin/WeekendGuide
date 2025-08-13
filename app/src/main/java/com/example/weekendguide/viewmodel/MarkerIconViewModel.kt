@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.repository.MarkerIconRepository
 import com.example.weekendguide.data.repository.MarkerIconRepositoryImpl
@@ -13,6 +15,16 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+class MarkerIconViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MarkerIconViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MarkerIconViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 class MarkerIconViewModel(application: Application) : AndroidViewModel(application) {
 

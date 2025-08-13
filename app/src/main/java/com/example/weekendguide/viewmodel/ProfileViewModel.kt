@@ -1,7 +1,7 @@
 package com.example.weekendguide.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -13,11 +13,24 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class ProfileViewModel(
-    private val application: Application,
+class ProfileViewModelFactory(
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource
-) : AndroidViewModel(application) {
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+            return ProfileViewModel(userPreferences, userRemote) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+class ProfileViewModel(
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : ViewModel() {
 
     private val _units = MutableStateFlow("km")
     val units: StateFlow<String> = _units.asStateFlow()

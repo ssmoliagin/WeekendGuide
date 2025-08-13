@@ -1,10 +1,13 @@
 package com.example.weekendguide.ui.splash
 
-import android.app.Application
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -12,29 +15,22 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.R
 import com.example.weekendguide.data.preferences.UserPreferences
-import com.example.weekendguide.data.repository.UserRemoteDataSource
-import com.example.weekendguide.viewmodel.MainStateViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.example.weekendguide.viewmodel.ThemeViewModel
+import com.example.weekendguide.viewmodel.SplashViewModelFactory
 import com.example.weekendguide.viewmodel.TranslateViewModel
-import com.example.weekendguide.viewmodel.ViewModelFactory
 
 
 @Composable
 fun SplashScreen(
-    app: Application,
     onNavigate: (SplashViewModel.Destination) -> Unit,
     userPreferences: UserPreferences,
-    userRemote: UserRemoteDataSource,
     translateViewModel: TranslateViewModel,
 ) {
     val viewModel: SplashViewModel = viewModel(
-        key = "SplashViewModel",
-        factory = ViewModelFactory(app, userPreferences, userRemote)
+        factory = SplashViewModelFactory(userPreferences)
     )
 
     val state by viewModel.uiState.collectAsState()
-
 
     LaunchedEffect(state) {
         if (state != SplashViewModel.Destination.Loading) {

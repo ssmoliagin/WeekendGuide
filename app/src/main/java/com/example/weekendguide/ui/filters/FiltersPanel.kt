@@ -73,6 +73,11 @@ fun FiltersPanel(
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            try {
+            } catch (e: Exception) {
+                TODO("Not yet implemented")
+            }
+
             // 🔵 Radius selector
             Text("${LocalizerUI.t("radius", currentLanguage)} ($currentUnits)",
                 color = MaterialTheme.colorScheme.onBackground,

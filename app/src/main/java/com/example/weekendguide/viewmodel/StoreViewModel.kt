@@ -1,13 +1,14 @@
 package com.example.weekendguide.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
+import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,12 +18,26 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class StoreViewModel(
-    application: Application,
+class StoreViewModelFactory(
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource,
-    private val dataRepository: DataRepository,
-) : AndroidViewModel(application) {
+    private val dataRepo: DataRepositoryImpl,
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(StoreViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return StoreViewModel(userPreferences, userRemote, dataRepo) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+class StoreViewModel(
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource,
+    private val dataRepo: DataRepository,
+) : ViewModel() {
 
     private val _countries = MutableStateFlow<List<Country>>(emptyList())
     val countries: StateFlow<List<Country>> = _countries.asStateFlow()
@@ -61,10 +76,10 @@ class StoreViewModel(
         viewModelScope.launch {
             _loading.value = true
             try {
-                val countriesList = dataRepository.getCountries()
+                val countriesList = dataRepo.getCountries()
                 val deferredRegions = countriesList.map { country ->
                     async {
-                        country.countryCode to dataRepository.getRegions(country.countryCode)
+                        country.countryCode to dataRepo.getRegions(country.countryCode)
                     }
                 }
                 val regionsMap = deferredRegions.awaitAll().toMap()
@@ -94,13 +109,13 @@ class StoreViewModel(
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
 
-                dataRepository.downloadAndCachePOI(region)
-                val pois = dataRepository.getPOIs(region.region_code)
+                dataRepo.downloadAndCachePOI(region)
+                val pois = dataRepo.getPOIs(region.region_code)
                 _poiList.value = pois
 
                 loadPurchased()
             } catch (_: Exception) {
-                // Error silently ignored
+
             }
         }
     }

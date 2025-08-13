@@ -3,6 +3,7 @@ package com.example.weekendguide.viewmodel
 import android.content.Intent
 import androidx.activity.result.IntentSenderRequest
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.UserData
@@ -20,11 +21,27 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+class LoginViewModelFactory(
+    private val auth: FirebaseAuth,
+    private val oneTapClient: SignInClient,
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
+            return LoginViewModel(auth, oneTapClient, userPreferences, userRemote) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
 class LoginViewModel(
     private val auth: FirebaseAuth,
     private val oneTapClient: SignInClient,
     private val userPreferences: UserPreferences,
-    private val userRemoteDataSource: UserRemoteDataSource
+    private val userRemote: UserRemoteDataSource
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -126,7 +143,7 @@ class LoginViewModel(
 
     private fun postLoginSync() {
         viewModelScope.launch {
-            val res = userRemoteDataSource.syncOnLogin()
+            val res = userRemote.syncOnLogin()
             if (res.isSuccess) {
                 appNavigation()
             } else {
