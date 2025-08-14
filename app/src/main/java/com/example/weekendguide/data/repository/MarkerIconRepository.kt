@@ -79,7 +79,7 @@ class MarkerIconRepositoryImpl(private val context: Context) : MarkerIconReposit
 
         val colorCircle = when {
             isVisited -> Color.parseColor("#4CAF50")  // green
-            isFavorite -> Color.parseColor("#FFEB3B") // yellow
+            isFavorite -> Color.parseColor("#E91E63") // red
             else -> Color.parseColor("#2196F3")       // Google blue
         }
 

@@ -48,7 +48,7 @@ class PointsViewModel(
         _currentGP.value = userPreferences.getCurrentGP()
         _totalGP.value = userPreferences.getTotalGP()
         _spentGP.value = userPreferences.getSpentGP()
-        _premium.value = userPreferences.getPremium()
+        _premium.value = userPreferences.getSubscription()
     }
 
     fun addGP(amount: Int) = viewModelScope.launch {

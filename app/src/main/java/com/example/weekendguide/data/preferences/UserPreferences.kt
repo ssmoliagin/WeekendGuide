@@ -27,11 +27,17 @@ class UserPreferences(private val context: Context) {
         val TOTAL_GP = intPreferencesKey("total_GP")
         val CURRENT_GP = intPreferencesKey("current_GP")
         val SPENT_GP = intPreferencesKey("spent_GP")
-        val PREMIUM_MODE = booleanPreferencesKey("premium_mode")
+        val SUBSCRIPTION = booleanPreferencesKey("subscription")
+
+        val TEST_MODE = booleanPreferencesKey("test_mode")
 
         val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
         val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
         val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
+
+        val HOME_CITY = stringPreferencesKey("home_city")
+        val HOME_LAT = doublePreferencesKey("home_lat")
+        val HOME_LNG = doublePreferencesKey("home_lng")
 
         val CURRENT_CITY = stringPreferencesKey("current_city")
         val LAT = doublePreferencesKey("current_lat")
@@ -59,11 +65,16 @@ class UserPreferences(private val context: Context) {
             total_GP = prefs[Keys.TOTAL_GP] ?: 0,
             current_GP = prefs[Keys.CURRENT_GP] ?: 0,
             spent_GP = prefs[Keys.SPENT_GP] ?: 0,
-            premium_mode = prefs[Keys.PREMIUM_MODE],
+            subscription = prefs[Keys.SUBSCRIPTION],
+            test_mode = prefs[Keys.TEST_MODE],
             categoryLevels = levelsJson?.let { Json.decodeFromString(it) } ?: emptyMap(),
             collectionRegions = collectionJson?.let { Json.decodeFromString(it) } ?: emptyList(),
             purchasedRegions = prefs[Keys.PURCHASED_REGIONS]?.toList() ?: emptyList(),
             purchasedCountries = prefs[Keys.PURCHASED_COUNTRIES]?.toList() ?: emptyList(),
+            homeCity = prefs[Keys.HOME_CITY],
+            homeLat = prefs[Keys.HOME_LAT],
+            homeLng = prefs[Keys.HOME_LNG],
+
             currentCity = prefs[Keys.CURRENT_CITY],
             currentLat = prefs[Keys.LAT],
             currentLng = prefs[Keys.LNG],
@@ -84,11 +95,16 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.TOTAL_GP] = userData.total_GP
             prefs[Keys.CURRENT_GP] = userData.current_GP
             prefs[Keys.SPENT_GP] = userData.spent_GP
-            prefs[Keys.PREMIUM_MODE] = userData.premium_mode ?: false
+            prefs[Keys.SUBSCRIPTION] = userData.subscription ?: false
+            prefs[Keys.TEST_MODE] = userData.test_mode ?: false
             prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(userData.categoryLevels)
             prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(userData.collectionRegions)
             prefs[Keys.PURCHASED_REGIONS] = userData.purchasedRegions.toSet()
             prefs[Keys.PURCHASED_COUNTRIES] = userData.purchasedCountries.toSet()
+            prefs[Keys.HOME_CITY] = userData.homeCity ?: ""
+            userData.homeLat?.let { prefs[Keys.HOME_LAT] = it }
+            userData.homeLng?.let { prefs[Keys.HOME_LNG] = it }
+
             prefs[Keys.CURRENT_CITY] = userData.currentCity ?: ""
             userData.currentLat?.let { prefs[Keys.LAT] = it }
             userData.currentLng?.let { prefs[Keys.LNG] = it }
@@ -101,13 +117,24 @@ class UserPreferences(private val context: Context) {
         context.dataStore.edit { it.clear() }
     }
 
-    // Premium settings
-    suspend fun setPremium(enabled: Boolean) {
-        context.dataStore.edit { it[Keys.PREMIUM_MODE] = enabled }
+    suspend fun resetUserAchieves() {
+        context.dataStore.edit {
+            it.remove(Keys.TOTAL_GP)
+            it.remove(Keys.CURRENT_GP)
+            it.remove(Keys.SPENT_GP)
+            it.remove(Keys.CATEGORY_LEVELS)
+            it.remove(Keys.FAVORITES)
+            it.remove(Keys.VISITED)
+        }
     }
 
-    suspend fun getPremium(): Boolean {
-        return context.dataStore.data.first()[Keys.PREMIUM_MODE] != false
+    // Subscription settings
+    suspend fun setSubscription(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.SUBSCRIPTION] = enabled }
+    }
+
+    suspend fun getSubscription(): Boolean {
+        return context.dataStore.data.first()[Keys.SUBSCRIPTION] != false
     }
 
     // Notification settings
@@ -241,7 +268,15 @@ class UserPreferences(private val context: Context) {
         return context.dataStore.data.first()[Keys.PURCHASED_COUNTRIES] ?: emptySet()
     }
 
-    // Current city & location
+    // City & location
+    suspend fun saveHomeCity(city: String) {
+        context.dataStore.edit { it[Keys.HOME_CITY] = city }
+    }
+
+    suspend fun getHomeCity(): String? {
+        return context.dataStore.data.first()[Keys.HOME_CITY]
+    }
+
     suspend fun saveCurrentCity(city: String) {
         context.dataStore.edit { it[Keys.CURRENT_CITY] = city }
     }

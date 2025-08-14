@@ -18,17 +18,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -53,41 +48,42 @@ import androidx.core.net.toUri
 import coil.compose.AsyncImage
 import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.Constants.EMAIL
+import com.example.weekendguide.Constants.LEGAL_DOCS_URL
 import com.example.weekendguide.data.locales.LocalizerUI
-import com.example.weekendguide.viewmodel.LoginViewModel
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.viewmodel.ProfileViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
-enum class SettingsType {
-    THEME, LANGUAGE, UNITS
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    showNavigationBar: @Composable () -> Unit,
-    showTopAppBar: @Composable () -> Unit,
-    showStoreBanner: @Composable () -> Unit,
-    themeViewModel: ThemeViewModel,
-    loginViewModel: LoginViewModel,
+    userData: UserData,
     translateViewModel: TranslateViewModel,
     profileViewModel: ProfileViewModel,
-    onLoggedOut: () -> Unit,
-    isPremium: Boolean
+    themeViewModel: ThemeViewModel,
+    editProfile: () -> Unit,
+    showSubscriptionBanner: @Composable () -> Unit,
+    showLocationPanel: @Composable () -> Unit,
+    showNavigationBar: @Composable () -> Unit,
+    showStoreBanner: @Composable () -> Unit,
+    showTopAppBar: @Composable () -> Unit,
 ) {
-    // --- STATE FROM VIEWMODELS ---
-    val currentLanguage by translateViewModel.language.collectAsState()
-    val currentTheme by themeViewModel.theme.collectAsState()
-    val userInfo by loginViewModel.userData.collectAsState()
-    val currentUnits by profileViewModel.units.collectAsState()
-    val notificationEnabled by profileViewModel.notification.collectAsState()
 
-    // --- DERIVED USER INFO ---
-    val email = userInfo.email ?: ""
-    val displayName = userInfo.displayName ?: ""
-    val photoUrl = userInfo.photoUrl
-    val name = displayName.ifBlank { email.substringBefore("@") }
+    val context = LocalContext.current
+    var showSignOutDialog by remember { mutableStateOf(false) }
+    val toastMessage by profileViewModel.toastMessage.collectAsState()
+
+    // --- STATE FROM UserData ---
+    val currentLanguage = userData.language ?: "en"
+    val currentTheme = userData.userThema ?: ""
+    val currentUnits = userData.userMeasurement ?: ""
+    val notificationEnabled = userData.notification != false
+
+    val email = userData.email ?: ""
+    val userName = userData.displayName ?: email.substringBefore("@")
+    val photoUrl = userData.photoUrl
+    val userCity = userData.homeCity ?: ""
 
     // --- THEME SELECTION ---
     val themeValues = listOf("light", "dark", "system")
@@ -123,14 +119,23 @@ fun ProfileScreen(
     // --- SHEET STATE ---
     var sheetVisible by remember { mutableStateOf(false) }
     var sheetType by remember { mutableStateOf<SettingsType?>(null) }
-
-    // --- FUNCTIONS ---
     fun openSheet(type: SettingsType) {
         sheetType = type
         sheetVisible = true
     }
 
     // --- EFFECTS ---
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let {
+            Toast.makeText(
+                context,
+                LocalizerUI.t(it, currentLanguage),
+                Toast.LENGTH_LONG
+            ).show()
+            profileViewModel.clearToast()
+        }
+    }
+
     LaunchedEffect(currentTheme, currentLanguage) {
         val idx = themeValues.indexOf(currentTheme).takeIf { it >= 0 } ?: 0
         selectedThemeIndex = idx
@@ -159,13 +164,9 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            item {
-                Text(
-                    text = LocalizerUI.t("personal_data", currentLanguage),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(8.dp))
 
+            //personal_data
+            item {
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -175,6 +176,8 @@ fun ProfileScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(16.dp)
                     ) {
+
+                        //avatar
                         Box(
                             modifier = Modifier
                                 .size(56.dp)
@@ -191,7 +194,7 @@ fun ProfileScreen(
                                 )
                             } else {
                                 Text(
-                                    text = name.firstOrNull()?.uppercase() ?: "?",
+                                    text = userName.firstOrNull()?.uppercase() ?: "?",
                                     color = Color.White,
                                     style = MaterialTheme.typography.titleLarge
                                 )
@@ -200,38 +203,44 @@ fun ProfileScreen(
 
                         Spacer(Modifier.width(16.dp))
 
+                        //UserName
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(LocalizerUI.t("name", currentLanguage), style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurface)
-                                Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground)
-                                Spacer(Modifier.height(12.dp))
-                                Text(LocalizerUI.t("email", currentLanguage), style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurface)
-                                Text(email, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground)
-                            }
+                            Column(modifier = Modifier.weight(1f))
+                            {
+                                Text(
+                                    text = userName,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontSize = 30.sp, fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
 
-                            if (isPremium) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "Premium",
-                                    tint = MaterialTheme.colorScheme.tertiary,
-                                    modifier = Modifier.size(24.dp).padding(start = 8.dp)
+                                Spacer(Modifier.height(8.dp))
+
+                                Text(
+                                    text = LocalizerUI.t("profile_edit", currentLanguage),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable {
+                                        editProfile()
+                                        openSheet(SettingsType.PROFILE) }
                                 )
                             }
                         }
                     }
                 }
+
                 Spacer(Modifier.height(24.dp))
             }
 
+            //SubscriptionBanner
+            item {
+                showSubscriptionBanner()
+                Spacer(Modifier.height(24.dp))
+            }
+
+            //Settings
             item {
                 Text(LocalizerUI.t("settings", currentLanguage), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
@@ -263,17 +272,13 @@ fun ProfileScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
+            //StoreBanner
             item {
-                Text(
-                    text = LocalizerUI.t("my_collection", currentLanguage),
-                    style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(8.dp))
-
                 showStoreBanner()
-
                 Spacer(Modifier.height(24.dp))
             }
 
+            //About
             item {
                 val context = LocalContext.current
 
@@ -308,15 +313,6 @@ fun ProfileScreen(
 
                         Spacer(Modifier.height(12.dp))
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("\uD83D\uDC64", fontSize = 18.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Text("SSmoliagin", style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground)
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -328,111 +324,114 @@ fun ProfileScreen(
                                 },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("📧", fontSize = 30.sp)
+                            Text("📧", fontSize = 32.sp)
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = LocalizerUI.t("feedback", currentLanguage),
-                                color = MaterialTheme.colorScheme.primary)
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
 
                         Spacer(Modifier.height(16.dp))
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { /* TODO: open link */ },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(Modifier.fillMaxWidth()) {
                             Text(
-                                text = LocalizerUI.t("terms_privacy", currentLanguage),
-                                color = MaterialTheme.colorScheme.primary)
+                                text = LocalizerUI.t("terms_of_use", currentLanguage),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clickable {
+                                        val intent = Intent(Intent.ACTION_VIEW, "${LEGAL_DOCS_URL}/terms-${currentLanguage}".toUri())
+                                        context.startActivity(intent)
+                                    }
+                            )
+                        }
+
+                        Row(Modifier.fillMaxWidth()) {
+                            Text(
+                                text = LocalizerUI.t("privacy_policy", currentLanguage),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clickable {
+                                        val intent = Intent(Intent.ACTION_VIEW, "${LEGAL_DOCS_URL}/privacy-policy-${currentLanguage}".toUri())
+                                        context.startActivity(intent)
+                                    }
+                            )
                         }
                     }
                 }
                 Spacer(Modifier.height(24.dp))
             }
 
+            //SignOutAccount Button
             item {
-                AccountActionsSection(onLoggedOut, profileViewModel, currentLanguage)
-            }
-        }
+                Column {
+                    Button(
+                        onClick = { showSignOutDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = LocalizerUI.t("sign_out_account", currentLanguage),
+                            color = MaterialTheme.colorScheme.background
+                        )
+                    }
 
-        if (sheetVisible && sheetType != null) {
-            val (title, options, selected, onSelect) = when (sheetType) {
-                SettingsType.THEME -> quad(
-                    LocalizerUI.t("theme", currentLanguage), themeOptions, selectedTheme
-                ) { selected: String ->
-                    selectedTheme = selected
-                    val idx = themeOptions.indexOf(selected)
-                    themeViewModel.setTheme(themeValues[idx])
-                    sheetVisible = false
-                }
-
-                SettingsType.LANGUAGE -> quad(
-                    LocalizerUI.t("language", currentLanguage), languageOptions, selectedLanguage
-                ) { selected: String ->
-                    selectedLanguage = selected
-                    val idx = languageOptions.indexOf(selected)
-                    translateViewModel.setLanguage(languageValues[idx])
-                    sheetVisible = false
-                }
-
-                SettingsType.UNITS -> quad(
-                    LocalizerUI.t("units", currentLanguage), unitsOptions, selectedUnits
-                ) { selected: String ->
-                    selectedUnits = selected
-                    val idx = unitsOptions.indexOf(selected)
-                    profileViewModel.setUserMeasurement(unitsValues[idx])
-                    sheetVisible = false
-                }
-
-                else -> null
-            } ?: return@Scaffold
-
-            ModalBottomSheet(
-                onDismissRequest = { sheetVisible = false }
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-                    Spacer(Modifier.height(16.dp))
-                    options.forEach { option ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSelect(option)
+                    if (showSignOutDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showSignOutDialog = false },
+                            title = {
+                                Text(
+                                    LocalizerUI.t("sign_out_title", currentLanguage),
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                            },
+                            text = { Text(LocalizerUI.t("sign_out_confirm", currentLanguage)) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showSignOutDialog = false
+                                    profileViewModel.signOut()
+                                }) {
+                                    Text(LocalizerUI.t("sign_out_button", currentLanguage))
                                 }
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = option == selected,
-                                onClick = { onSelect(option) }
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(option, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onBackground)
-                        }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showSignOutDialog = false }) {
+                                    Text(LocalizerUI.t("cancel", currentLanguage))
+                                }
+                            }
+                        )
                     }
                 }
             }
         }
+
+        // Settings Modal Sheet
+        SettingsModalSheet(
+            sheetType = sheetType,
+            sheetVisible = sheetVisible,
+            onDismiss = { sheetVisible = false },
+            userName = userName,
+            userEmail = email,
+            userCity = userCity,
+            selectedTheme = selectedTheme,
+            themeOptions = themeOptions,
+            themeValues = themeValues,
+            selectedLanguage = selectedLanguage,
+            languageOptions = languageOptions,
+            languageValues = languageValues,
+            selectedUnits = selectedUnits,
+            unitsOptions = unitsOptions,
+            unitsValues = unitsValues,
+            profileViewModel = profileViewModel,
+            translateViewModel = translateViewModel,
+            themeViewModel = themeViewModel,
+            currentLanguage = currentLanguage,
+            showLocationPanel = { showLocationPanel() }
+        )
     }
 }
 
-@Composable
-private fun <T> quad(
-    title: String,
-    options: List<T>,
-    selected: T,
-    onSelect: (T) -> Unit
-): Quadruple<String, List<T>, T, (T) -> Unit> = Quadruple(title, options, selected, onSelect)
-
-data class Quadruple<A, B, C, D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
-)
 
 @Composable
 fun SettingRow(
@@ -450,93 +449,5 @@ fun SettingRow(
     ) {
         Text(iconText, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground))
         Text(value, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary))
-    }
-}
-
-
-
-@Composable
-fun AccountActionsSection(
-    onLoggedOut: () -> Unit,
-    profileViewModel: ProfileViewModel,
-    currentLanguage: String,
-) {
-    val context = LocalContext.current
-    var showSignOutDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    Column {
-        Button(
-            onClick = { showSignOutDialog = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = LocalizerUI.t("sign_out_account", currentLanguage),
-                color = MaterialTheme.colorScheme.background)
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = LocalizerUI.t("delete_account", currentLanguage),
-            color = Color.Red,
-            fontSize = 14.sp,
-            modifier = Modifier.clickable {
-                showDeleteDialog = true
-            }
-        )
-
-        if (showSignOutDialog) {
-            AlertDialog(
-                onDismissRequest = { showSignOutDialog = false },
-                title = { Text(LocalizerUI.t("sign_out_title", currentLanguage)) },
-                text = { Text(LocalizerUI.t("sign_out_confirm", currentLanguage)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showSignOutDialog = false
-                        profileViewModel.signOut {
-                            onLoggedOut()
-                        }
-                    }) {
-                        Text(LocalizerUI.t("sign_out_button", currentLanguage))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showSignOutDialog = false }) {
-                        Text(LocalizerUI.t("cancel", currentLanguage))
-                    }
-                }
-            )
-        }
-
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title = { Text(LocalizerUI.t("delete_account_title", currentLanguage)) },
-                text = { Text(LocalizerUI.t("delete_account_confirm", currentLanguage)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showDeleteDialog = false
-                        profileViewModel.deleteAccount { success ->
-                            if (success) {
-                                Toast.makeText(context, LocalizerUI.t("account_deleted", currentLanguage), Toast.LENGTH_SHORT).show()
-                                onLoggedOut()
-                            } else {
-                                Toast.makeText(context, LocalizerUI.t("account_delete_error", currentLanguage), Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }) {
-                        Text(
-                            text = LocalizerUI.t("delete_button", currentLanguage),
-                            color = Color.Red)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text(LocalizerUI.t("cancel", currentLanguage))
-                    }
-                }
-            )
-        }
     }
 }

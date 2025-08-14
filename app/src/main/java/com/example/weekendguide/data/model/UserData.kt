@@ -15,12 +15,17 @@ data class UserData(
     val total_GP: Int = 0,
     val current_GP: Int = 0,
     val spent_GP: Int = 0,
-    val premium_mode: Boolean? = false,
+    val subscription: Boolean? = false,
+    val test_mode: Boolean? = false,
 
     val categoryLevels: Map<String, Int> = emptyMap(),
     val collectionRegions: List<Region> = emptyList(),
     val purchasedRegions: List<String> = emptyList(),
     val purchasedCountries: List<String> = emptyList(),
+    val homeCity: String? = null,
+    val homeLat: Double? = null,
+    val homeLng: Double? = null,
+
     val currentCity: String? = null,
     val currentLat: Double? = null,
     val currentLng: Double? = null,

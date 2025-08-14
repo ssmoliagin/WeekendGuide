@@ -35,30 +35,36 @@ class LocationViewModelFactory(
 }
 
 class LocationViewModel(
-    application: Application,
+    private val app: Application,
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource
-) : AndroidViewModel(application) {
+) : AndroidViewModel(app) {
 
     private val _currentCity = MutableStateFlow<String?>(null)
-    val currentCity = _currentCity.asStateFlow()
 
     private val _location = MutableStateFlow<Pair<Double, Double>?>(null)
     val location = _location.asStateFlow()
 
     private val fusedLocationClient: FusedLocationProviderClient =
-        LocationServices.getFusedLocationProviderClient(application)
+        LocationServices.getFusedLocationProviderClient(app)
 
-    init {
-        loadSavedLocation()
+
+    suspend fun setHomeLocation(): String? {
+        val currentData = userPreferences.userDataFlow.first()
+
+        val updatedData = currentData.copy(
+            currentCity = currentData.homeCity,
+            currentLat = currentData.homeLat,
+            currentLng = currentData.homeLng,
+        )
+
+        userPreferences.saveUserData(updatedData)
+        userRemote.launchSyncLocalToRemote(viewModelScope)
+
+        _location.value = userPreferences.getCurrentLocation()
+        return updatedData.currentCity
     }
 
-    fun loadSavedLocation() {
-        viewModelScope.launch {
-            _currentCity.value = userPreferences.getCurrentCity()
-            _location.value = userPreferences.getCurrentLocation()
-        }
-    }
 
     @SuppressLint("MissingPermission")
     suspend fun detectLocationFromGPS(): Pair<Double, Double>? {
@@ -73,18 +79,20 @@ class LocationViewModel(
             val lng = location.longitude
 
             _location.value = lat to lng
-            userPreferences.saveCurrentLocation(lat, lng)
 
             val cityName = getCityName(lat, lng)
-            cityName?.let {
-                _currentCity.value = it
-                userPreferences.saveCurrentCity(it)
+            cityName?.let { currentCityName ->
+                _currentCity.value = currentCityName
 
                 val currentData = userPreferences.userDataFlow.first()
+
                 val updatedData = currentData.copy(
-                    currentCity = it,
+                    currentCity = currentCityName,
                     currentLat = lat,
-                    currentLng = lng
+                    currentLng = lng,
+                    homeCity = if (currentData.homeCity.isNullOrEmpty()) currentCityName else currentData.homeCity,
+                    homeLat = currentData.homeLat ?: lat,
+                    homeLng = currentData.homeLng ?: lng
                 )
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
@@ -107,7 +115,7 @@ class LocationViewModel(
         }
     }
 
-    fun setManualLocation(city: String, lat: Double, lng: Double) {
+    fun setManualLocation(city: String, lat: Double, lng: Double, editHomeCity: Boolean) {
         viewModelScope.launch {
             _location.value = lat to lng
             _currentCity.emit(city)
@@ -116,7 +124,12 @@ class LocationViewModel(
             val updatedData = currentData.copy(
                 currentCity = city,
                 currentLat = lat,
-                currentLng = lng
+                currentLng = lng,
+
+                homeCity = if (currentData.homeCity.isNullOrEmpty() || editHomeCity) city else currentData.homeCity,
+                homeLat = if (currentData.homeLat == null || editHomeCity) lat else currentData.homeLat,
+                homeLng = if (currentData.homeLng == null || editHomeCity) lng else currentData.homeLng
+
             )
             userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)

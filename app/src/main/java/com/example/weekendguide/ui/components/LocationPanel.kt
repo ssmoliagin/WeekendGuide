@@ -55,6 +55,7 @@ sealed class SuggestionItem {
 @Composable
 fun LocationPanel(
     userCurrentCity: String?,
+    userHomeCity: String?,
     onLocationSelected: (String, Pair<Double, Double>) -> Unit,
     onRequestGPS: () -> Unit,
     onShowScreenType: String?,
@@ -76,7 +77,8 @@ fun LocationPanel(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    val defaultLabel = userCurrentCity ?: LocalizerUI.t("city_or_address", currentLanguage)
+    val defaultLabel = (if (onShowScreenType == "profile") userHomeCity else userCurrentCity)
+        ?: LocalizerUI.t("city_or_address", currentLanguage)
     val defaultSuggestionText = LocalizerUI.t("near_me", currentLanguage)
 
     LaunchedEffect(query.text, isFocused) {

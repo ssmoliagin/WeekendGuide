@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainStateViewModelFactory(
@@ -26,22 +29,10 @@ class MainStateViewModel(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    private val _regions = MutableStateFlow<List<Region>>(emptyList())
-    val regions: StateFlow<List<Region>> = _regions
+    val userData: StateFlow<UserData> = userPreferences.userDataFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = UserData()
+    )
 
-    init {
-        viewModelScope.launch {
-            loadRegions()
-        }
-    }
-
-    suspend fun loadRegions() {
-        _regions.value = userPreferences.getCollectionRegions()
-    }
-
-    fun refreshRegions() {
-        viewModelScope.launch {
-            loadRegions()
-        }
-    }
 }

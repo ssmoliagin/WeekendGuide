@@ -1,10 +1,17 @@
 package com.example.weekendguide.viewmodel
 
+import android.app.Application
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class ProfileViewModelFactory(
+    private val app: Application,
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource
 ) : ViewModelProvider.Factory {
@@ -21,37 +29,29 @@ class ProfileViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
-            return ProfileViewModel(userPreferences, userRemote) as T
+            return ProfileViewModel(app, userPreferences, userRemote) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
 class ProfileViewModel(
+    private val app: Application,
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource
-) : ViewModel() {
+) : AndroidViewModel(app) {
 
     private val _units = MutableStateFlow("km")
-    val units: StateFlow<String> = _units.asStateFlow()
-
     private val _notification = MutableStateFlow(true)
-    val notification: StateFlow<Boolean> = _notification.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            _units.value = userPreferences.getMeasurement()
-            _notification.value = userPreferences.getNotification()
-        }
-    }
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage
 
-    // Set user measurement units
     fun setUserMeasurement(newMeas: String) {
         viewModelScope.launch {
             userPreferences.saveMeasurement(newMeas)
             _units.value = newMeas
 
-            // Update in Firestore as well
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(userMeasurement = newMeas)
             userPreferences.saveUserData(updatedData)
@@ -59,13 +59,11 @@ class ProfileViewModel(
         }
     }
 
-    // Enable or disable notifications
     fun setNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             userPreferences.setNotification(enabled)
             _notification.value = enabled
 
-            // Update in Firestore as well
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(notification = enabled)
             userPreferences.saveUserData(updatedData)
@@ -73,16 +71,20 @@ class ProfileViewModel(
         }
     }
 
-    // Sign out user
-    fun signOut(onFinished: () -> Unit) {
+    fun signOut() {
         viewModelScope.launch {
             userPreferences.clearAllUserData()
             FirebaseAuth.getInstance().signOut()
-            onFinished()
+
+            app.cacheDir.deleteRecursively()
+            app.filesDir.deleteRecursively()
+
+            val intent = app.packageManager.getLaunchIntentForPackage(app.packageName)
+            intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            app.startActivity(intent)
         }
     }
 
-    // Delete user account
     fun deleteAccount(onResult: (success: Boolean) -> Unit) {
         val user = FirebaseAuth.getInstance().currentUser
         val userId = user?.uid
@@ -97,10 +99,58 @@ class ProfileViewModel(
                 userRemote.deleteUserFromFirestore(userId)
                 user.delete().await()
                 userPreferences.clearAllUserData()
+
+                app.cacheDir.deleteRecursively()
+                app.filesDir.deleteRecursively()
+
+                val intent = app.packageManager.getLaunchIntentForPackage(app.packageName)
+                intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                app.startActivity(intent)
+
                 onResult(true)
             } catch (e: Exception) {
                 onResult(false)
             }
         }
+    }
+
+    fun setDisplayName(name: String) {
+        viewModelScope.launch {
+            val currentData = userPreferences.userDataFlow.first()
+            val updated = currentData.copy(displayName = name)
+            userPreferences.saveUserData(updated)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
+        }
+    }
+
+    fun updateUserEmail(currentPassword: String, newEmail: String) {
+        viewModelScope.launch {
+            try {
+                val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+                val currentEmail = user.email ?: return@launch
+
+                val credential = EmailAuthProvider.getCredential(currentEmail, currentPassword)
+
+                // Reauthenticate
+                user.reauthenticate(credential).await()
+
+                // Verify before update
+                user.verifyBeforeUpdateEmail(newEmail).await()
+
+                val currentData = userPreferences.userDataFlow.first()
+                val updated = currentData.copy(email = newEmail)
+                userPreferences.saveUserData(updated)
+                userRemote.launchSyncLocalToRemote(viewModelScope)
+
+                _toastMessage.value = "check_email_verification"
+
+            } catch (e: Exception) {
+                _toastMessage.value = "email_update_error"
+            }
+        }
+    }
+
+    fun clearToast() {
+        _toastMessage.value = null
     }
 }

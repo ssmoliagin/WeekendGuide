@@ -80,10 +80,12 @@ fun StoreScreen(
     val storeViewModel: StoreViewModel = viewModel(
         factory = StoreViewModelFactory(userPreferences, userRemoteDataSource, dataRepository)
     )
+    val userData by storeViewModel.userData.collectAsState()
+    val purchasedRegions = userData.purchasedRegions
 
     val countries by storeViewModel.countries.collectAsState()
     val regionsByCountry by storeViewModel.regionsByCountry.collectAsState()
-    val purchasedRegions by storeViewModel.purchasedRegions.collectAsState()
+    //val purchasedRegions by storeViewModel.purchasedRegions.collectAsState()
     val currentLanguage by translateViewModel.language.collectAsState()
     val currentGP by pointsViewModel.currentGP.collectAsState()
 

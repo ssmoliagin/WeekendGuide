@@ -1,4 +1,9 @@
 ﻿{
+  "save": {
+    "en": "Save",
+    "de": "Speichern",
+    "ru": "Сохранить"
+  },
   "cancel": {
     "en": "Cancel",
     "de": "Abbrechen",
@@ -100,9 +105,9 @@
     "ru": "🎯 Изучено"
   },
   "view_new_collections": {
-    "en": "➡ View new collections",
-    "de": "➡ Neue Sammlungen ansehen",
-    "ru": "➡ Посмотреть новые коллекции"
+    "en": "View new collections ➡",
+    "de": "Neue Sammlungen ansehen ➡",
+    "ru": "Посмотреть новые коллекции ➡"
   },
   "points": {
     "en": "points",
@@ -319,16 +324,38 @@
     "ru": "Проверка..."
   },
 
-  "personal_data": {
-    "en": "Personal data",
-    "de": "Persönliche Daten",
-    "ru": "Личные данные"
+  "profile_edit": {
+    "en": "Edit Profile",
+    "de": "Profil bearbeiten",
+    "ru": "Редактирование профиля"
   },
   "name": {
     "en": "Name",
     "de": "Name",
     "ru": "Имя"
   },
+  "current_password": {
+    "en": "Current Password",
+    "de": "Aktuelles Passwort",
+    "ru": "Текущий пароль"
+  },
+  "enter_current_password": {
+    "en": "Enter your current password to change the email",
+    "de": "Geben Sie Ihr aktuelles Passwort ein, um die E-Mail zu ändern",
+    "ru": "Введите текущий пароль для смены email"
+  },
+  "check_email_verification": {
+    "en": "Check your inbox and confirm the new email",
+    "de": "Überprüfen Sie Ihr Postfach und bestätigen Sie die neue E-Mail",
+    "ru": "Проверьте почту и подтвердите новый email"
+  },
+  "email_update_error": {
+    "en": "Error updating email",
+    "de": "Fehler beim Aktualisieren der E-Mail",
+    "ru": "Ошибка обновления email:"
+  },
+
+
   "settings": {
     "en": "Settings",
     "de": "Einstellungen",
@@ -349,10 +376,15 @@
     "de": "Feedback",
     "ru": "Обратная связь"
   },
-  "terms_privacy": {
-    "en": "Terms of Use and Privacy Policy",
-    "de": "Nutzungsbedingungen und Datenschutzrichtlinie",
-    "ru": "Условия использования и политика конфиденциальности"
+  "terms_of_use": {
+    "en": "•Terms of Use",
+    "de": "•Nutzungsbedingungen",
+    "ru": "•Условия использования"
+  },
+  "privacy_policy": {
+    "en": "•Privacy Policy",
+    "de": "•Datenschutzrichtlinie",
+    "ru": "•Политика конфиденциальности"
   },
   "sign_out_account": {
     "en": "Sign out of account",
@@ -458,6 +490,82 @@
     "en": "km",
     "de": "km",
     "ru": "км"
+  },
+
+  "subscribe": {
+    "en": "Subscribe",
+    "de": "Abonnieren",
+    "ru": "Подписаться"
+  },
+  "unsubscribe": {
+    "en": "Unsubscribe",
+    "de": "Abo kündigen",
+    "ru": "Отменить подписку"
+  },
+  "active_subscription": {
+    "en": "Subscription Active",
+    "de": "Abo aktiv",
+    "ru": "Действует подписка"
+  },
+  "join_now": {
+    "en": "Join Now!",
+    "de": "Jetzt beitreten!",
+    "ru": "Присоединяйтесь!"
+  },
+  "learn_benefits": {
+    "en": "See the benefits ➡",
+    "de": "Vorteile ansehen ➡",
+    "ru": "Узнать о преимуществах ➡"
+  },
+  "subscription_benefits_title": {
+    "en": "Subscription Benefits:",
+    "de": "Vorteile des Abos:",
+    "ru": "Преимущества подписки:"
+  },
+  "try_free": {
+    "en": "Try for Free",
+    "de": "Kostenlos testen",
+    "ru": "Попробовать бесплатно"
+  },
+  "confirm_unsubscribe": {
+    "en": "Are you sure you want to cancel your subscription?",
+    "de": "Möchten Sie Ihr Abo wirklich kündigen?",
+    "ru": "Вы точно хотите отменить подписку?"
+  },
+  "confirm_subscribe": {
+    "en": "First 7 days free, then €3.99/month",
+    "de": "Die ersten 7 Tage kostenlos, danach 3,99 €/Monat",
+    "ru": "Первые 7 дней бесплатно, далее 3,99 €/мес"
+  },
+  "benefit_all_regions": {
+    "en": "Access all regions and attractions without limits",
+    "de": "Zugang zu allen Regionen und Sehenswürdigkeiten ohne Einschränkungen",
+    "ru": "Доступ ко всем регионам и достопримечательностям без ограничений"
+  },
+  "benefit_unlimited_radius": {
+    "en": "Explore places at any distance",
+    "de": "Finde Orte in jeder Entfernung",
+    "ru": "Ищи интересные места на любом расстоянии"
+  },
+  "benefit_double_points": {
+    "en": "Earn double points for every visit",
+    "de": "Erhalte doppelte Punkte für jeden Besuch",
+    "ru": "Получай в 2 раза больше очков за каждое посещение"
+  },
+  "benefit_share_unlimited": {
+    "en": "Share your favorite places without limits",
+    "de": "Teile deine Lieblingsorte ohne Einschränkungen",
+    "ru": "Делись любимыми местами с друзьями без ограничений"
+  },
+  "benefit_gpx": {
+    "en": "Export routes and points as GPX files",
+    "de": "Exportiere Routen und Punkte als GPX-Dateien",
+    "ru": "Экспортируй маршруты и точки в GPX"
+  },
+  "benefit_offline": {
+    "en": "Use curated point collections offline",
+    "de": "Nutze Punkt-Sammlungen auch offline",
+    "ru": "Используй подборки точек даже без интернета"
   },
 
   "total_points": {

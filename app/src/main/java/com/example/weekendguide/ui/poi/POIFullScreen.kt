@@ -76,6 +76,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.viewmodel.LocationViewModel
 import com.example.weekendguide.viewmodel.LoginViewModel
@@ -104,7 +105,7 @@ fun POIFullScreen(
     poi: POI,
     isFavorite: Boolean,
     isVisited: Boolean,
-    isPremium: Boolean,
+    userData: UserData,
     onFavoriteClick: () -> Unit,
     userLocation: Pair<Double, Double>? = null,
     userCurrentCity: String? = null,
@@ -125,6 +126,8 @@ fun POIFullScreen(
             (result[0] / 1000).toInt()
         }
     }
+
+    val isTest = userData.test_mode != false
 
     val context = LocalContext.current
     val wikiDescription by poiViewModel.wikiDescription.collectAsState()
@@ -750,7 +753,7 @@ fun POIFullScreen(
             if (!isVisited) {
                 Button(
                     onClick = {
-                        if (isPremium) {
+                        if (isTest) {
                             poiViewModel.markPoiVisited(poi.id)
                             pointsViewModel.addGP(100)
                             Toast.makeText(context, LocalizerUI.t("forVisit", currentLanguage), Toast.LENGTH_SHORT).show()

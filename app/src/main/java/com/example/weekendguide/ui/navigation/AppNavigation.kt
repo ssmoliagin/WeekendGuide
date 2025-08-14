@@ -18,6 +18,7 @@ import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
+import com.example.weekendguide.viewmodel.SubscriptionViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
@@ -34,11 +35,10 @@ fun AppNavigation(
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource,
     leaderboardViewModel: LeaderboardViewModel,
-    markerIconViewModel: MarkerIconViewModel
+    markerIconViewModel: MarkerIconViewModel,
+    subscriptionViewModel: SubscriptionViewModel
 ) {
     val navController = rememberNavController()
-
-
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
@@ -98,11 +98,6 @@ fun AppNavigation(
         composable("main") {
             MainScreen(
                 app = app,
-                onLoggedOut = {
-                navController.navigate("splash") {
-                    popUpTo(0) { inclusive = true }
-                }
-            },
                 loginViewModel = loginViewModel,
                 themeViewModel = themeViewModel,
                 translateViewModel = translateViewModel,
@@ -112,7 +107,8 @@ fun AppNavigation(
                 dataRepository = dataRepository,
                 userRemote = userRemoteDataSource,
                 leaderboardViewModel = leaderboardViewModel,
-                markerIconViewModel = markerIconViewModel
+                markerIconViewModel = markerIconViewModel,
+                subscriptionViewModel = subscriptionViewModel
             )
         }
 

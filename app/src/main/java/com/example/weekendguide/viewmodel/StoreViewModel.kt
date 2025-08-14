@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.DataRepositoryImpl
@@ -13,9 +14,11 @@ import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class StoreViewModelFactory(
@@ -45,11 +48,17 @@ class StoreViewModel(
     private val _regionsByCountry = MutableStateFlow<Map<String, List<Region>>>(emptyMap())
     val regionsByCountry: StateFlow<Map<String, List<Region>>> = _regionsByCountry.asStateFlow()
 
+    val userData: StateFlow<UserData> = userPreferences.userDataFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = UserData()
+    )
+
     private val _purchasedRegions = MutableStateFlow<Set<String>>(emptySet())
-    val purchasedRegions: StateFlow<Set<String>> = _purchasedRegions.asStateFlow()
+    //val purchasedRegions: StateFlow<Set<String>> = _purchasedRegions.asStateFlow()
 
     private val _purchasedCountries = MutableStateFlow<Set<String>>(emptySet())
-    val purchasedCountries: StateFlow<Set<String>> = _purchasedCountries.asStateFlow()
+    //val purchasedCountries: StateFlow<Set<String>> = _purchasedCountries.asStateFlow()
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
@@ -62,14 +71,6 @@ class StoreViewModel(
 
     init {
         loadCountriesAndRegions()
-        loadPurchased()
-    }
-
-    private fun loadPurchased() {
-        viewModelScope.launch {
-            _purchasedRegions.value = userPreferences.getPurchasedRegions()
-            _purchasedCountries.value = userPreferences.getPurchasedCountries()
-        }
     }
 
     private fun loadCountriesAndRegions() {
@@ -98,22 +99,21 @@ class StoreViewModel(
     fun purchaseRegionAndLoadPOI(region: Region) {
         viewModelScope.launch {
             try {
-                userPreferences.addPurchasedRegion(region.region_code)
-                userPreferences.addPurchasedCountries(region.country_code)
-
                 val currentData = userPreferences.userDataFlow.first()
                 val updatedData = currentData.copy(
                     purchasedRegions = currentData.purchasedRegions + region.region_code,
-                    purchasedCountries = currentData.purchasedCountries + region.country_code
+                    purchasedCountries = (currentData.purchasedCountries + region.country_code).toSet().toList(), // если Set - purchasedCountries = currentData.purchasedCountries + region.country_code,
+                    collectionRegions = if (region !in currentData.collectionRegions) {
+                        currentData.collectionRegions + region
+                    } else {
+                        currentData.collectionRegions
+                    }
                 )
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
 
                 dataRepo.downloadAndCachePOI(region)
-                val pois = dataRepo.getPOIs(region.region_code)
-                _poiList.value = pois
 
-                loadPurchased()
             } catch (_: Exception) {
 
             }

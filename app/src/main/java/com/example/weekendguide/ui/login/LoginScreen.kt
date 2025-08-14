@@ -1,9 +1,12 @@
 package com.example.weekendguide.ui.login
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -13,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -22,11 +26,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.weekendguide.Constants.LEGAL_DOCS_URL
 import com.example.weekendguide.R
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.SplashViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +41,8 @@ fun LoginScreen(
     translateViewModel: TranslateViewModel,
     onNavigate: (SplashViewModel.Destination) -> Unit
 ) {
+    val context = LocalContext.current
+
     val focusManager = LocalFocusManager.current
     val isLoading by loginViewModel.isLoading.collectAsState()
     val errorMessage by loginViewModel.errorMessage.collectAsState()
@@ -218,10 +226,14 @@ fun LoginScreen(
                         text = LocalizerUI.t("terms_acceptance", currentLanguage),
                         style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            .padding(bottom = 16.dp)
+                            .clickable {
+                                val intent = Intent(Intent.ACTION_VIEW, LEGAL_DOCS_URL.toUri())
+                                context.startActivity(intent)
+                            }
                     )
                 }
             }

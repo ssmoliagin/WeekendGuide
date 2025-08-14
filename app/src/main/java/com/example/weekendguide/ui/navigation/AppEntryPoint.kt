@@ -23,6 +23,8 @@ import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.MarkerIconViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.PointsViewModelFactory
+import com.example.weekendguide.viewmodel.SubscriptionViewModel
+import com.example.weekendguide.viewmodel.SubscriptionViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModelFactory
 import com.example.weekendguide.viewmodel.TranslateViewModel
@@ -51,6 +53,10 @@ fun AppEntryPoint() {
             userPreferences = userPreferences,
             userRemote = userRemoteDataSource
         )
+    )
+
+    val subscriptionViewModel: SubscriptionViewModel = viewModel(
+        factory = SubscriptionViewModelFactory(auth, firestore, userPreferences, userRemoteDataSource)
     )
 
     val translateViewModel: TranslateViewModel = viewModel(
@@ -98,7 +104,8 @@ fun AppEntryPoint() {
             dataRepository = dataRepository,
             userRemoteDataSource = userRemoteDataSource,
             leaderboardViewModel = leaderboardViewModel,
-            markerIconViewModel = markerIconViewModel
+            markerIconViewModel = markerIconViewModel,
+            subscriptionViewModel = subscriptionViewModel
         )
     }
 }

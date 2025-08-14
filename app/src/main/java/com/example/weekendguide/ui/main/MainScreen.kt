@@ -51,6 +51,7 @@ import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.ui.components.LocationPanel
 import com.example.weekendguide.ui.components.NavigationBar
 import com.example.weekendguide.ui.components.StoreBanner
+import com.example.weekendguide.ui.components.SubscriptionBanner
 import com.example.weekendguide.ui.components.TopAppBar
 import com.example.weekendguide.ui.filters.FiltersPanel
 import com.example.weekendguide.ui.list.ListPOIScreen
@@ -72,6 +73,7 @@ import com.example.weekendguide.viewmodel.ProfileViewModel
 import com.example.weekendguide.viewmodel.ProfileViewModelFactory
 import com.example.weekendguide.viewmodel.StatisticsViewModel
 import com.example.weekendguide.viewmodel.StatisticsViewModelFactory
+import com.example.weekendguide.viewmodel.SubscriptionViewModel
 import com.example.weekendguide.viewmodel.ThemeViewModel
 import com.example.weekendguide.viewmodel.TranslateViewModel
 import com.google.android.libraries.places.api.Places
@@ -95,13 +97,14 @@ fun MainScreen(
     pointsViewModel: PointsViewModel,
     themeViewModel: ThemeViewModel,
     translateViewModel: TranslateViewModel,
-    onLoggedOut: () -> Unit,
+    subscriptionViewModel: SubscriptionViewModel
 ) {
     // --- UI State ---
     var showMapScreen by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
     var showStatisticsScreen by remember { mutableStateOf(false) }
     var showProfileScreen by remember { mutableStateOf(false) }
+    var editProfile by remember { mutableStateOf(false) }
     var showPOIInMap by remember { mutableStateOf(false) }
     var showListPOIScreen by remember { mutableStateOf(false) }
     var showPOIStoreScreen by remember { mutableStateOf(false) }
@@ -115,24 +118,33 @@ fun MainScreen(
 
     // --- ViewModel State ---
     val currentLanguage by translateViewModel.language.collectAsState()
-    val currentGP by pointsViewModel.currentGP.collectAsState()
-    val totalGP by pointsViewModel.totalGP.collectAsState()
-    val spentGP by pointsViewModel.spentGP.collectAsState()
-    val isPremium by pointsViewModel.premium.collectAsState()
+    //val currentGP by pointsViewModel.currentGP.collectAsState()
+    //val totalGP by pointsViewModel.totalGP.collectAsState()
+    //val spentGP by pointsViewModel.spentGP.collectAsState()
+    //val isPremium by pointsViewModel.premium.collectAsState()
     val userLocation by locationViewModel.location.collectAsState()
-    val currentCity by locationViewModel.currentCity.collectAsState()
+    //val currentCity by locationViewModel.currentCity.collectAsState()
 
     val mainStateViewModel: MainStateViewModel = viewModel(
         key = "MainStateViewModel",
         factory = MainStateViewModelFactory(userPreferences)
     )
-    val regions by mainStateViewModel.regions.collectAsState()
+    val userData by mainStateViewModel.userData.collectAsState()
+    val currentUnits = userData.userMeasurement ?: ""
+    val regions = userData.collectionRegions
+    val homeCity = userData.homeCity
+    val currentCity = userData.currentCity
+
+    val currentGP = userData.current_GP
+    val totalGP = userData.total_GP
+    val spentGP = userData.spent_GP
+
+    val isSubscription = userData.subscription!= false
 
     val profileViewModel: ProfileViewModel = viewModel(
         key = "ProfileViewModel",
-        factory = ProfileViewModelFactory(userPreferences, userRemote)
+        factory = ProfileViewModelFactory(app, userPreferences, userRemote)
     )
-    val currentUnits by profileViewModel.units.collectAsState()
 
     val statisticsViewModel: StatisticsViewModel = viewModel(
         factory = StatisticsViewModelFactory(userPreferences, userRemote)
@@ -204,6 +216,20 @@ fun MainScreen(
         }
     }
 
+    // --- Init Data ---
+    LaunchedEffect(Unit) {
+
+        val userCity = locationViewModel.setHomeLocation()
+        if (userCity.isNullOrEmpty()) {
+            onRequestLocationChange()
+        }
+
+        themeViewModel.loadTheme()
+        translateViewModel.refreshLang()
+        pointsViewModel.refreshGP()
+    }
+
+
     // --- City Search ---
     var cityQuery by remember { mutableStateOf("") }
     var predictions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
@@ -229,16 +255,6 @@ fun MainScreen(
             .addOnFailureListener { exception ->
                 Log.e("MainScreen", "Places API error", exception)
             }
-    }
-
-    // --- Init Data ---
-    LaunchedEffect(Unit) {
-        locationViewModel.loadSavedLocation()
-        if (currentCity.isNullOrEmpty()) onRequestLocationChange()
-
-        themeViewModel.loadTheme()
-        translateViewModel.refreshLang()
-        pointsViewModel.refreshGP()
     }
 
     // --- Main UI Logic ---
@@ -419,14 +435,16 @@ fun MainScreen(
                 showOnlyVisited = false
                 showOnlyFavorites = false
 
+
                 showListPOIScreen = false
                 showStatisticsScreen = false
                 showMapScreen = false
                 showProfileScreen = false
+                editProfile = false
                 showPOIStoreScreen = false
 
                 selectedItem = "main"
-                mainStateViewModel.refreshRegions()
+                //mainStateViewModel.refreshRegions()
             }
 
             // --- NAVIGATION ---
@@ -482,13 +500,15 @@ fun MainScreen(
                 LocationPanel(
                     onShowScreenType =
                         if (showMapScreen) "map"
+                        else if (showProfileScreen) "profile"
                         else "main",
                     onLocationSelected = { city, latLng ->
                         val (lat, lng) = latLng
-                        locationViewModel.setManualLocation(city, lat, lng)
+                        locationViewModel.setManualLocation(city, lat, lng, editProfile)
                     },
                     onRequestGPS = { onRequestLocationChange() },
                     userCurrentCity = currentCity,
+                    userHomeCity = homeCity,
                     onDismiss = {resetFiltersUndScreens()},
                     currentLanguage = currentLanguage,
                 )}
@@ -533,6 +553,12 @@ fun MainScreen(
                         resetFiltersUndScreens()
                         showPOIStoreScreen = true}
                 )
+            }
+
+            //SubscriptionBanner
+            @Composable
+            fun showSubscriptionBanner () {
+                SubscriptionBanner(currentLanguage, isSubscription, subscriptionViewModel)
             }
 
             //MapScreen
@@ -633,15 +659,16 @@ fun MainScreen(
             // ProfileScreen
             if(showProfileScreen) {
                 ProfileScreen(
+                    userData = userData,
+                    showSubscriptionBanner = { showSubscriptionBanner() },
+                    showLocationPanel = { showLocationPanel() },
                     showNavigationBar = { showNavigationBar() },
-                    showTopAppBar = { showTopAppBar () },
-                    showStoreBanner = {showStoreBanner () },
-                    themeViewModel = themeViewModel,
-                    loginViewModel = loginViewModel,
+                    showStoreBanner = { showStoreBanner() },
+                    showTopAppBar = { showTopAppBar() },
+                    editProfile = { editProfile = true },
                     translateViewModel = translateViewModel,
                     profileViewModel = profileViewModel,
-                    onLoggedOut = onLoggedOut,
-                    isPremium = isPremium
+                    themeViewModel = themeViewModel,
                 )
             }
 
@@ -704,7 +731,7 @@ fun MainScreen(
                         pointsViewModel = pointsViewModel,
                         locationViewModel = locationViewModel,
                         loginViewModel = loginViewModel,
-                        isPremium = isPremium,
+                        userData = userData,
                         currentUnits = currentUnits,
                         currentLanguage = currentLanguage,
                         tagsIcons = tagsIcons,
@@ -730,14 +757,14 @@ fun MainScreen(
                     pointsViewModel = pointsViewModel,
                     locationViewModel = locationViewModel,
                     loginViewModel = loginViewModel,
-                    isPremium = isPremium,
+                    userData = userData,
                     currentUnits = currentUnits,
                     currentLanguage = currentLanguage,
                     tagsIcons = tagsIcons,
                     typeIcons = typeIcons,
                 )
             }
-        }
+        } else LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
 
-    } ?: LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
+    }
 }
