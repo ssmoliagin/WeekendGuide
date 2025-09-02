@@ -1,11 +1,13 @@
 package com.example.weekendguide.data.repository
 
+import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -14,6 +16,7 @@ import kotlinx.coroutines.tasks.await
 class UserRemoteDataSource(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
+    private val messaging: FirebaseMessaging,
     private val userPreferences: UserPreferences,
 ) {
 
@@ -26,11 +29,18 @@ class UserRemoteDataSource(
         val userId = user.uid
 
         return try {
+
+            val token = messaging.token.await()
             val doc = usersCollection.document(userId).get().await()
+
             if (doc.exists()) {
                 val remoteUserData = doc.toObject(UserData::class.java)
                 if (remoteUserData != null) {
-                    userPreferences.saveUserData(remoteUserData)
+                    val updatedUserData = remoteUserData.copy(
+                        fcm_token = token
+                    )
+                    usersCollection.document(userId).set(updatedUserData).await()
+                    userPreferences.saveUserData(updatedUserData)
                 }
             } else {
                 val newUserData = UserData(
@@ -41,11 +51,13 @@ class UserRemoteDataSource(
                         user.displayName
                     },
                     photoUrl = user.photoUrl?.toString(),
-                    language = userPreferences.getLanguage()
+                    language = userPreferences.getLanguage(),
+                    fcm_token = token,
                 )
                 usersCollection.document(userId).set(newUserData).await()
                 userPreferences.saveUserData(newUserData)
             }
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

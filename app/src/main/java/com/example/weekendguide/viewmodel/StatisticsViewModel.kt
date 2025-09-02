@@ -25,42 +25,18 @@ class StatisticsViewModel(
     private val userRemoteDataSource: UserRemoteDataSource
 ) : ViewModel() {
 
-    private val _categoryLevels = MutableStateFlow<Map<String, Int>>(emptyMap())
-    val categoryLevels: StateFlow<Map<String, Int>> = _categoryLevels
-
-    private val _purchasedRegionsCount = MutableStateFlow(0)
-    val purchasedRegionsCount: StateFlow<Int> = _purchasedRegionsCount
-
-    private val _purchasedCountriesCount = MutableStateFlow(0)
-    val purchasedCountriesCount: StateFlow<Int> = _purchasedCountriesCount
-
-    init {
-        viewModelScope.launch {
-            userPreferences.userDataFlow.collect { userData ->
-                _purchasedRegionsCount.value = userData.purchasedRegions.size
-                _purchasedCountriesCount.value = userData.purchasedCountries.size
-                _categoryLevels.value = userData.categoryLevels
-            }
-        }
-    }
-
     fun updateCategoryLevel(category: String, level: Int) {
         viewModelScope.launch {
-            userPreferences.levelUpCategory(category, level)
+            userPreferences.updateCategoryLevel(category, level)
+            userPreferences.updateRewardAvailable(category, reward = true)
+            userRemoteDataSource.launchSyncLocalToRemote(this)
+        }
 
-            // Update local state
-            val updatedMap = _categoryLevels.value.toMutableMap().apply {
-                put(category, level)
-            }
-            _categoryLevels.value = updatedMap
-
-            // Save updated data for sync
-            val currentData = userPreferences.userDataFlow.first()
-            val updatedData = currentData.copy(categoryLevels = updatedMap)
-            userPreferences.saveUserData(updatedData)
-
-            // Sync with Firestore
-            userRemoteDataSource.launchSyncLocalToRemote(viewModelScope)
+    }
+    fun updateRewardAvailable(category: String) {
+        viewModelScope.launch {
+            userPreferences.updateRewardAvailable(category, reward = false)
+            userRemoteDataSource.launchSyncLocalToRemote(this)
         }
     }
 }

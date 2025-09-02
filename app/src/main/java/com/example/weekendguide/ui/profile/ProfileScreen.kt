@@ -85,6 +85,8 @@ fun ProfileScreen(
     val photoUrl = userData.photoUrl
     val userCity = userData.homeCity ?: ""
 
+    val currentAppVersion = userData.app_version ?: ""
+
     // --- THEME SELECTION ---
     val themeValues = listOf("light", "dark", "system")
     val themeOptions = listOf(
@@ -305,7 +307,7 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = "v.${BuildConfig.VERSION_NAME}",
+                                text = "v.$currentAppVersion",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onBackground
                             )

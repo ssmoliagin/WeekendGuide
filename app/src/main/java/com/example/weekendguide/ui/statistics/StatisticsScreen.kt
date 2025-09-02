@@ -65,12 +65,16 @@ fun StatisticsScreen(
     statisticsViewModel: StatisticsViewModel,
     leaderboardViewModel: LeaderboardViewModel,
     typeIcons: Map<String, ImageVector>,
+    leveledUpSet: Map<String, Int>,
+    purchasedRegionsCount: Int,
+    purchasedCountriesCount: Int
+
 ) {
     val currentLanguage by translateViewModel.language.collectAsState()
-    val purchasedRegionsCount by statisticsViewModel.purchasedRegionsCount.collectAsState()
-    val purchasedCountriesCount by statisticsViewModel.purchasedCountriesCount.collectAsState()
+    //val purchasedRegionsCount by statisticsViewModel.purchasedRegionsCount.collectAsState()
+    //val purchasedCountriesCount by statisticsViewModel.purchasedCountriesCount.collectAsState()
     val typeStats = userPOIList.groupingBy { it.type }.eachCount()
-    val leveledUpSet by statisticsViewModel.categoryLevels.collectAsState()
+    //val leveledUpSet by statisticsViewModel.categoryLevels.collectAsState()
     val totalPOIs = totalPOIList.size
     val visitedPOIs = userPOIList.size
     val typeGoals = listOf(5, 10, 20, 30, 50, 100, 250, 500, 750, 1000)
@@ -229,8 +233,14 @@ fun StatisticsScreen(
 
                 val savedLevel = leveledUpSet[type] ?: 0
                 val isNewLevelReached = level > savedLevel
-                var showCongrats by remember { mutableStateOf(false) }
 
+                LaunchedEffect(type) {
+                    if (isNewLevelReached) {
+                        statisticsViewModel.updateRewardAvailable(type)
+                    }
+                }
+
+                var showCongrats by remember { mutableStateOf(false) }
                 if (showCongrats) {
                     LaunchedEffect(Unit) {
                         delay(2500)

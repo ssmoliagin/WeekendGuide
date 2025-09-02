@@ -16,6 +16,7 @@ data class UserData(
     val current_GP: Int = 0,
     val spent_GP: Int = 0,
     val subscription: Boolean? = false,
+
     val test_mode: Boolean? = false,
 
     val categoryLevels: Map<String, Int> = emptyMap(),
@@ -30,5 +31,10 @@ data class UserData(
     val currentLat: Double? = null,
     val currentLng: Double? = null,
     val favorites: List<String> = emptyList(),
-    val visited: List<String> = emptyList(),
+    val visited: Map<String, Boolean> = emptyMap(),
+
+    val fcm_token: String? = null,
+    val app_version: String? = null,
+
+    val rewardAvailable: Map<String, Boolean> = emptyMap(),
 )

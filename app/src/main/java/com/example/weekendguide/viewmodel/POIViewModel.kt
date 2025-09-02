@@ -55,8 +55,6 @@ class POIViewModel(
 
     val language = translateViewModel.language.value
 
-    private val _visitedPoiIds = MutableStateFlow<Set<String>>(emptySet())
-    val visitedPoiIds: StateFlow<Set<String>> = _visitedPoiIds.asStateFlow()
 
     private val _wikiDescription = MutableStateFlow<String?>(null)
     val wikiDescription: StateFlow<String?> = _wikiDescription
@@ -93,20 +91,8 @@ class POIViewModel(
     val reviews: StateFlow<Map<String, List<Review>>> = _reviews
 
     init {
-        viewModelScope.launch {
-            launch {
-                loadAllReviews()
-                userPreferences.visitedIdsFlow.collect {
-                    _visitedPoiIds.value = it
-                }
-            }
-
-            launch {
-                translateViewModel.language
-                    .collect { loadAllPOIData() }
-            }
-        }
-
+        viewModelScope.launch { loadAllReviews() }
+        viewModelScope.launch { translateViewModel.language.collect { loadAllPOIData() } }
         observeLanguageChanges()
     }
 
@@ -261,11 +247,14 @@ class POIViewModel(
 
     fun markPoiVisited(poiId: String) {
         viewModelScope.launch {
-            userPreferences.markVisited(poiId)
-            val visited = userPreferences.visitedIdsFlow.first()
-            val currentData = userPreferences.userDataFlow.first()
-            val updatedData = currentData.copy(visited = visited.toList())
-            userPreferences.saveUserData(updatedData)
+            userPreferences.updateVisitedPOIs(poiId, review = false)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
+        }
+    }
+
+    fun confirmPoiVisited(poiId: String) {
+        viewModelScope.launch {
+            userPreferences.updateVisitedPOIs(poiId, review = true)
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }
@@ -289,6 +278,7 @@ class POIViewModel(
                 onError(e)
             }
         }
+        confirmPoiVisited(review.poiId)
     }
 
     private fun loadAllReviews() {

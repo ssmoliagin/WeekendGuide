@@ -44,15 +44,31 @@ class UserPreferences(private val context: Context) {
         val LNG = doublePreferencesKey("current_lng")
 
         val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
-        val VISITED = stringSetPreferencesKey("visited_poi_ids")
+        val VISITED = stringPreferencesKey("visited_poi_ids")
 
         val CATEGORY_LEVELS = stringPreferencesKey("category_levels")
+
+        val FCM_TOKEN = stringPreferencesKey("fcm_token")
+        val APP_VERSION = stringPreferencesKey("app_version")
+
+        val REWARD_AVAILABLE = stringPreferencesKey("rewardAvailable")
+
     }
 
     // Main user data flow
     val userDataFlow: Flow<UserData> = context.dataStore.data.map { prefs ->
         val levelsJson = prefs[Keys.CATEGORY_LEVELS]
         val collectionJson = prefs[Keys.COLLECTION_REGIONS]
+
+        val visitedJson = prefs[Keys.VISITED] ?: "{}"
+        val visitedMap: Map<String, Boolean> =
+            try { Json.decodeFromString(visitedJson) }
+            catch (e: Exception) { emptyMap() }
+
+        val rewardJson = prefs[Keys.REWARD_AVAILABLE] ?: "{}"
+        val rewardMap: Map<String, Boolean> =
+            try { Json.decodeFromString(rewardJson) }
+            catch (e: Exception) { emptyMap() }
 
         UserData(
             email = prefs[Keys.EMAIL],
@@ -79,7 +95,12 @@ class UserPreferences(private val context: Context) {
             currentLat = prefs[Keys.LAT],
             currentLng = prefs[Keys.LNG],
             favorites = prefs[Keys.FAVORITES]?.toList() ?: emptyList(),
-            visited = prefs[Keys.VISITED]?.toList() ?: emptyList(),
+            visited = visitedMap,
+
+            fcm_token = prefs[Keys.FCM_TOKEN],
+            app_version = prefs[Keys.APP_VERSION],
+
+            rewardAvailable = rewardMap
         )
     }
 
@@ -96,7 +117,9 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.CURRENT_GP] = userData.current_GP
             prefs[Keys.SPENT_GP] = userData.spent_GP
             prefs[Keys.SUBSCRIPTION] = userData.subscription ?: false
+
             prefs[Keys.TEST_MODE] = userData.test_mode ?: false
+
             prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(userData.categoryLevels)
             prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(userData.collectionRegions)
             prefs[Keys.PURCHASED_REGIONS] = userData.purchasedRegions.toSet()
@@ -109,7 +132,12 @@ class UserPreferences(private val context: Context) {
             userData.currentLat?.let { prefs[Keys.LAT] = it }
             userData.currentLng?.let { prefs[Keys.LNG] = it }
             prefs[Keys.FAVORITES] = userData.favorites.toSet()
-            prefs[Keys.VISITED] = userData.visited.toSet()
+            prefs[Keys.VISITED] = Json.encodeToString(userData.visited)
+
+            prefs[Keys.FCM_TOKEN] = userData.fcm_token ?: ""
+            prefs[Keys.APP_VERSION] = userData.app_version ?: ""
+
+            prefs[Keys.REWARD_AVAILABLE] = Json.encodeToString(userData.rewardAvailable)
         }
     }
 
@@ -212,21 +240,34 @@ class UserPreferences(private val context: Context) {
     }
 
     // Category level handling
-    suspend fun getCategoryLevels(): Map<String, Int> {
-        val json = context.dataStore.data.first()[Keys.CATEGORY_LEVELS] ?: return emptyMap()
-        return Json.decodeFromString(json)
-    }
+    suspend fun updateCategoryLevel(category: String, level: Int) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[Keys.CATEGORY_LEVELS] ?: "{}"
+            val currentMap: MutableMap<String, Int> =
+                try { Json.decodeFromString(currentJson) } catch (e: Exception) { mutableMapOf() }
 
-    suspend fun saveCategoryLevels(map: Map<String, Int>) {
-        context.dataStore.edit {
-            it[Keys.CATEGORY_LEVELS] = Json.encodeToString(map)
+            currentMap[category] = level
+            prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(currentMap)
         }
     }
 
-    suspend fun levelUpCategory(category: String, newLevel: Int) {
-        val levels = getCategoryLevels().toMutableMap()
-        levels[category] = newLevel
-        saveCategoryLevels(levels)
+    // Получение уровней категорий
+    suspend fun getCategoryLevels(): Map<String, Int> {
+        val json = context.dataStore.data.first()[Keys.CATEGORY_LEVELS] ?: "{}"
+        return try { Json.decodeFromString(json) } catch (e: Exception) { emptyMap() }
+    }
+
+    // REWARD_AVAILABLE
+    suspend fun updateRewardAvailable(type: String, reward: Boolean) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[Keys.REWARD_AVAILABLE] ?: "{}"
+            val currentMap: MutableMap<String, Boolean> =
+                try { Json.decodeFromString(currentJson) }
+                catch (e: Exception) { mutableMapOf() }
+
+            currentMap[type] = reward
+            prefs[Keys.REWARD_AVAILABLE] = Json.encodeToString(currentMap)
+        }
     }
 
     // Region collection
@@ -311,13 +352,16 @@ class UserPreferences(private val context: Context) {
     }
 
     // Visited POIs
-    val visitedIdsFlow: Flow<Set<String>> = context.dataStore.data
-        .map { it[Keys.VISITED] ?: emptySet() }
+    suspend fun updateVisitedPOIs(poiId: String, review: Boolean) {
+        context.dataStore.edit { prefs ->
+            val currentJson = prefs[Keys.VISITED] ?: "{}"
+            val currentMap: MutableMap<String, Boolean> =
+                try { Json.decodeFromString(currentJson) }
+                catch (e: Exception) { mutableMapOf() }
 
-    suspend fun markVisited(id: String) {
-        context.dataStore.edit {
-            val current = it[Keys.VISITED] ?: emptySet()
-            it[Keys.VISITED] = current + id
+            currentMap[poiId] = review
+            prefs[Keys.VISITED] = Json.encodeToString(currentMap)
         }
     }
+
 }

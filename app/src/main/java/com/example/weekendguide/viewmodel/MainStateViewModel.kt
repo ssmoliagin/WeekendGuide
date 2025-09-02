@@ -3,30 +3,33 @@ package com.example.weekendguide.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MainStateViewModelFactory(
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainStateViewModel::class.java)) {
-            return MainStateViewModel(userPreferences) as T
+            return MainStateViewModel(userPreferences, userRemote) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
 class MainStateViewModel(
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val userRemote: UserRemoteDataSource
 ) : ViewModel() {
 
     val userData: StateFlow<UserData> = userPreferences.userDataFlow.stateIn(
@@ -35,4 +38,11 @@ class MainStateViewModel(
         initialValue = UserData()
     )
 
+    fun loadUserData() = viewModelScope.launch {
+        val currentAppVersion = BuildConfig.VERSION_NAME
+        val currentData = userPreferences.userDataFlow.first()
+        val updatedData = currentData.copy(app_version = currentAppVersion)
+        userPreferences.saveUserData(updatedData)
+        userRemote.launchSyncLocalToRemote(viewModelScope)
+    }
 }

@@ -1,9 +1,11 @@
 package com.example.weekendguide.ui.main
 
 import android.Manifest
+import android.app.Activity
 import android.app.Application
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -38,6 +40,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
@@ -126,8 +130,7 @@ fun MainScreen(
     //val currentCity by locationViewModel.currentCity.collectAsState()
 
     val mainStateViewModel: MainStateViewModel = viewModel(
-        key = "MainStateViewModel",
-        factory = MainStateViewModelFactory(userPreferences)
+        factory = MainStateViewModelFactory(userPreferences, userRemote)
     )
     val userData by mainStateViewModel.userData.collectAsState()
     val currentUnits = userData.userMeasurement ?: ""
@@ -138,6 +141,12 @@ fun MainScreen(
     val currentGP = userData.current_GP
     val totalGP = userData.total_GP
     val spentGP = userData.spent_GP
+
+    val visitedPoiIds = userData.visited.keys
+
+    val categoryLevels = userData.categoryLevels
+    val purchasedRegionsCount = userData.purchasedRegions.size
+    val purchasedCountriesCount = userData.purchasedCountries.size
 
     val isSubscription = userData.subscription!= false
 
@@ -216,6 +225,18 @@ fun MainScreen(
         }
     }
 
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    // --- Launcher для уведомлений ---
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            // здесь можно что-то сделать после согласия
+        }
+    )
+
     // --- Init Data ---
     LaunchedEffect(Unit) {
 
@@ -223,6 +244,21 @@ fun MainScreen(
         if (userCity.isNullOrEmpty()) {
             onRequestLocationChange()
         }
+
+        // Запрос разрешения на уведомления
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+
+        // СДЕЛАТЬ В ОДНОЙ
+        mainStateViewModel.loadUserData()
 
         themeViewModel.loadTheme()
         translateViewModel.refreshLang()
@@ -275,7 +311,7 @@ fun MainScreen(
             val allReviews by poiViewModel.reviews.collectAsState()
             val reviewsList = allReviews.values.flatten()
 
-            val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
+            //val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
             val favoriteIds by poiViewModel.favoriteIds.collectAsState()
             val onFavoriteClick: (String) -> Unit = { poiId ->
                 poiViewModel.toggleFavorite(poiId)
@@ -652,7 +688,11 @@ fun MainScreen(
                     translateViewModel = translateViewModel,
                     statisticsViewModel = statisticsViewModel,
                     leaderboardViewModel = leaderboardViewModel,
-                    typeIcons = typeIcons
+                    typeIcons = typeIcons,
+                    leveledUpSet = categoryLevels,
+                    purchasedRegionsCount = purchasedRegionsCount,
+                    purchasedCountriesCount = purchasedCountriesCount,
+
                 )
             }
 

@@ -32,6 +32,7 @@ import com.example.weekendguide.viewmodel.TranslateViewModelFactory
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 
 @Composable
 fun AppEntryPoint() {
@@ -40,8 +41,10 @@ fun AppEntryPoint() {
     val app = context as Application
     val auth = remember { FirebaseAuth.getInstance() }
     val firestore = remember { FirebaseFirestore.getInstance() }
+    val messaging = remember { FirebaseMessaging.getInstance() }
+
     val userPreferences = remember { UserPreferences(context) }
-    val userRemoteDataSource = remember { UserRemoteDataSource(auth, firestore, userPreferences) }
+    val userRemoteDataSource = remember { UserRemoteDataSource(auth, firestore, messaging, userPreferences) }
 
     val dataRepository = remember { DataRepositoryImpl(context) }
     val localesRepo = remember { LocalesRepoImpl(context) }

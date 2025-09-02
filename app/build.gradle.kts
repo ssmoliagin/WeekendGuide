@@ -16,7 +16,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "0.2.86"
+        versionName = "0.2.87"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as? String ?: ""
@@ -82,6 +82,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
+    implementation ("com.google.firebase:firebase-messaging")
     implementation(libs.firebase.storage.ktx)
 
     // 🔐 Google Sign-In & Location
