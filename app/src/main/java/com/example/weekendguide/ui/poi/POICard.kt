@@ -33,10 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import com.example.weekendguide.R
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
@@ -93,7 +96,15 @@ fun POICard(
             Box(modifier = imageModifier) {
                 poi.imageUrl.let { imageUrl ->
                     Image(
-                        painter = rememberAsyncImagePainter(imageUrl),
+                        painter = rememberAsyncImagePainter(
+                            ImageRequest.Builder(LocalContext.current)
+                                .data(imageUrl)
+                                .placeholder(R.drawable.ic_placeholder)
+                                .error(R.drawable.ic_placeholder)
+                                .fallback(R.drawable.ic_placeholder)
+                                .crossfade(true)
+                                .build()
+                        ),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

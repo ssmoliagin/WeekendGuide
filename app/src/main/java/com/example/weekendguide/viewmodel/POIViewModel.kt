@@ -1,9 +1,17 @@
 package com.example.weekendguide.viewmodel
 
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -16,6 +24,7 @@ import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.data.repository.WikiRepository
 import com.example.weekendguide.data.repository.WikiRepositoryImp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +33,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
+
 
 class POIViewModelFactory(
     private val region: List<Region>,
@@ -295,5 +307,102 @@ class POIViewModel(
     fun checkIfUserReviewed(poiId: String, userId: String) {
         val reviewed = hasUserReviewed(poiId, userId)
         _userReviews.value = _userReviews.value + (poiId to reviewed)
+    }
+
+    //Share and Save POI
+    fun sharePOI(context: Context, poi: POI, currentLanguage: String, localizedTitle: String, localizedDescription: String) {
+        viewModelScope.launch {
+
+            val description = localizedDescription
+                .lines()
+                .joinToString("\n") { it.trimStart() }
+                .trim()
+
+            val locationUrl = "https://maps.google.com/?q=${poi.lat},${poi.lng}"
+
+            val shareText = buildString {
+                append("📍 $localizedTitle\n")
+                append(description.trim())
+                append("\n\n🤳 ${LocalizerUI.t("share_by", currentLanguage)}\n\n")
+                append("🌍 $locationUrl")
+            }
+
+            val imageUri = withContext(Dispatchers.IO) {
+                poi.imageUrl?.let { localPath ->
+                    try {
+                        val originalFile = File(localPath)
+                        if (originalFile.exists()) {
+                            val tempFile = File(context.cacheDir, "shared_${poi.id}.jpg")
+                            originalFile.copyTo(tempFile, overwrite = true)
+                            FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                tempFile
+                            )
+                        } else null
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
+
+            val intent = Intent().apply {
+                action = Intent.ACTION_SEND
+                type = if (imageUri != null) "image/*" else "text/plain"
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                imageUri?.let {
+                    putExtra(Intent.EXTRA_STREAM, it)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+            }
+
+            context.startActivity(Intent.createChooser(intent, "Share to"))
+        }
+    }
+
+    fun saveAsGpx(context: Context, poi: POI): Boolean {
+        return try {
+            val gpxContent = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <gpx version="1.1" creator="WeekendGuide" xmlns="http://www.topografix.com/GPX/1/1">
+                    <wpt lat="${poi.lat}" lon="${poi.lng}">
+                        <name>${poi.title}</name>
+                    </wpt>
+                </gpx>
+            """.trimIndent()
+
+            val fileName = "poi_${poi.id}.gpx"
+            val resolver = context.contentResolver
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/gpx+xml")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                if (uri != null) {
+                    resolver.openOutputStream(uri)?.use { outputStream ->
+                        outputStream.write(gpxContent.toByteArray())
+                    }
+                    Toast.makeText(context, "Saved to Downloads/$fileName", Toast.LENGTH_LONG).show()
+                    true
+                } else {
+                    Toast.makeText(context, "Failed to save GPX file", Toast.LENGTH_SHORT).show()
+                    false
+                }
+            } else {
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val file = File(downloadsDir, fileName)
+                file.writeText(gpxContent)
+                Toast.makeText(context, "Saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Error saving GPX file", Toast.LENGTH_SHORT).show()
+            false
+        }
     }
 }

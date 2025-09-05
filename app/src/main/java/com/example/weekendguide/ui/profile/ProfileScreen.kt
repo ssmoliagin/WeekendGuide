@@ -46,9 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
-import com.example.weekendguide.BuildConfig
-import com.example.weekendguide.Constants.EMAIL
-import com.example.weekendguide.Constants.LEGAL_DOCS_URL
+import com.example.weekendguide.Constants.CONTACT_EMAIL
+import com.example.weekendguide.Constants.APP_DOCS_URL
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.viewmodel.ProfileViewModel
@@ -320,7 +319,7 @@ fun ProfileScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = "mailto:$EMAIL".toUri()
+                                        data = "mailto:$CONTACT_EMAIL".toUri()
                                     }
                                     context.startActivity(intent)
                                 },
@@ -344,7 +343,7 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .clickable {
-                                        val intent = Intent(Intent.ACTION_VIEW, "${LEGAL_DOCS_URL}/terms-${currentLanguage}".toUri())
+                                        val intent = Intent(Intent.ACTION_VIEW, "${APP_DOCS_URL}/terms-${currentLanguage}".toUri())
                                         context.startActivity(intent)
                                     }
                             )
@@ -356,7 +355,7 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .clickable {
-                                        val intent = Intent(Intent.ACTION_VIEW, "${LEGAL_DOCS_URL}/privacy-policy-${currentLanguage}".toUri())
+                                        val intent = Intent(Intent.ACTION_VIEW, "${APP_DOCS_URL}/privacy-policy-${currentLanguage}".toUri())
                                         context.startActivity(intent)
                                     }
                             )

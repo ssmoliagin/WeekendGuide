@@ -8,12 +8,20 @@ import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.Locale
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Request
+import java.net.URL
+import java.security.MessageDigest
 
 interface DataRepository {
     suspend fun getCountries(): List<Country>
@@ -31,6 +39,8 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     private val path = Constants.FIREBASE_STORAGE_URL
     private val storage = Firebase.storage
     private val json = Json { ignoreUnknownKeys = true }
+
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     //type.json
     override suspend fun downloadTypesJson(): String? = withContext(Dispatchers.IO) {
@@ -156,12 +166,12 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
-    //poi.csv
+    // -------- CSV (POI) --------
     override suspend fun downloadAndCachePOI(region: Region) {
         withContext(Dispatchers.IO) {
             try {
                 val remotePath = "$path/data/places/${region.country_code}/poi/${region.region_code}.csv"
-                val localFile = File(context.cacheDir, "poi_${region.region_code}.csv")
+                val localFile = File(context.filesDir, "poi_${region.region_code}.csv")
                 val ref = storage.getReferenceFromUrl(remotePath)
 
                 val metadata = ref.metadata.await()
@@ -171,9 +181,31 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 if (!localFile.exists() || remoteLastModified > localLastModified) {
                     ref.getFile(localFile).await()
                     localFile.setLastModified(remoteLastModified)
-                } else {
-                    Log.d("DataRepo", "Using cached POI file for ${region.region_code}")
+                    Log.d("DataRepo", "CSV сохранён: ${localFile.absolutePath}")
                 }
+
+                // парсим CSV
+                val pois = parseCsvToPoi(localFile)
+
+                // проверяем и обновляем локальные пути
+                pois.forEach { poi ->
+                    val cachedFile = File(context.filesDir, "${poi.id}.jpg")
+                    if (cachedFile.exists()) {
+                        poi.imageUrl = cachedFile.absolutePath
+                    }
+                }
+
+                // 🚀 фоновые загрузки картинок
+                repositoryScope.launch {
+                    pois.forEach { poi ->
+                        val localImage = downloadAndCacheImage(context, poi.id, poi.imageUrl)
+                        if (localImage != null) {
+                            poi.imageUrl = localImage
+                            Log.d("ImageCache", "Картинка для ${poi.id} сохранена: ${File(localImage).length()} байт")
+                        }
+                    }
+                }
+
             } catch (e: Exception) {
                 Log.e("DataRepo", "Error loading POI for ${region.region_code}", e)
             }
@@ -181,16 +213,47 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
     }
 
     override suspend fun getPOIs(regionCode: String): List<POI> = withContext(Dispatchers.IO) {
+        val file = File(context.filesDir, "poi_${regionCode}.csv")
+        if (!file.exists()) return@withContext emptyList()
 
-        val file = File(context.cacheDir, "poi_${regionCode}.csv")
-
-        if (!file.exists()) {
-            return@withContext emptyList()
-        }
         try {
-            parseCsvToPoi(file)
+            val pois = parseCsvToPoi(file)
+            pois.forEach { poi ->
+                val cachedFile = File(context.filesDir, "${poi.id}.jpg")
+                if (cachedFile.exists()) {
+                    poi.imageUrl = cachedFile.absolutePath
+                }
+            }
+            pois
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    // -------- Скачивание картинок --------
+    private suspend fun downloadAndCacheImage(
+        context: Context,
+        poiId: String,
+        imageUrl: String?
+    ): String? = withContext(Dispatchers.IO) {
+        if (imageUrl.isNullOrBlank()) return@withContext null
+
+        try {
+            val localFile = File(context.filesDir, "$poiId.jpg")
+            if (!localFile.exists() || localFile.length() == 0L) {
+                URL(imageUrl).openStream().use { input ->
+                    localFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.d("ImageCache", "Скачано: $imageUrl (${localFile.length()} байт)")
+            } else {
+                Log.d("ImageCache", "Используется кэш: $imageUrl (${localFile.length()} байт)")
+            }
+            localFile.absolutePath
+        } catch (e: Exception) {
+            Log.e("ImageCache", "Ошибка скачивания $imageUrl")
+            null
         }
     }
 

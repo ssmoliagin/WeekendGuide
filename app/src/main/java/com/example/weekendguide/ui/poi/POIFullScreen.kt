@@ -1,12 +1,8 @@
 package com.example.weekendguide.ui.poi
 
-import android.content.ContentValues
 import android.content.Intent
 import android.location.Location
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -71,8 +67,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
+import com.example.weekendguide.R
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
@@ -89,11 +86,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -160,106 +153,6 @@ fun POIFullScreen(
                 LocalizerUI.t("desc_type_${poi.type}", currentLanguage)
             }
 
-    suspend fun sharePOI() {
-        val title = localizedTitle
-        val description = localizedDescription
-            .lines()
-            .joinToString("\n") { it.trimStart() }
-            .trim()
-        val locationUrl = "https://maps.google.com/?q=${poi.lat},${poi.lng}"
-
-        val shareText = buildString {
-            append("📍 $title\n")
-            append(description.trim())
-            append("\n\n🤳 ${LocalizerUI.t("share_by", currentLanguage)}\n\n")
-            append("🌍 $locationUrl")
-        }
-
-        val imageUri = withContext(Dispatchers.IO) {
-            poi.imageUrl?.let { imageUrl ->
-                try {
-                    val url = URL(imageUrl)
-                    val inputStream = url.openStream()
-                    val file = File(context.cacheDir, "shared_image.jpg")
-                    file.outputStream().use { inputStream.copyTo(it) }
-                    FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        file
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-            }
-        }
-
-        val intent = Intent().apply {
-            action = Intent.ACTION_SEND
-            type = if (imageUri != null) "image/*" else "text/plain"
-            putExtra(Intent.EXTRA_TEXT, shareText)
-            imageUri?.let {
-                putExtra(Intent.EXTRA_STREAM, it)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-        }
-
-        context.startActivity(Intent.createChooser(intent, "Share to"))
-    }
-
-    fun saveAsGpx(): Boolean {
-        return try {
-            val gpxContent = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <gpx version="1.1" creator="WeekendGuide" xmlns="http://www.topografix.com/GPX/1/1">
-                <wpt lat="${poi.lat}" lon="${poi.lng}">
-                    <name>${poi.title}</name>
-                </wpt>
-            </gpx>
-        """.trimIndent()
-
-            val fileName = "poi_${poi.id}.gpx"
-
-            val resolver = context.contentResolver
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10+
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                    put(MediaStore.Downloads.MIME_TYPE, "application/gpx+xml")
-                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                }
-
-                val uri = MediaStore.Downloads.EXTERNAL_CONTENT_URI.let {
-                    resolver.insert(it, contentValues)
-                }
-
-                if (uri != null) {
-                    resolver.openOutputStream(uri)?.use { outputStream ->
-                        outputStream.write(gpxContent.toByteArray())
-                    }
-                    Toast.makeText(context, "Saved to Downloads/$fileName", Toast.LENGTH_LONG).show()
-                    return true
-                } else {
-                    Toast.makeText(context, "Failed to save GPX file", Toast.LENGTH_SHORT).show()
-                    return false
-                }
-
-            } else {
-                // Android 7–9 (API 24–28)
-                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                val file = File(downloadsDir, fileName)
-                file.writeText(gpxContent)
-                Toast.makeText(context, "Saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                return true
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, "Error saving GPX file", Toast.LENGTH_SHORT).show()
-            return false
-        }
-    }
-
 
     LaunchedEffect(localizedTitle) {
         poiViewModel.loadWikipediaDescription(localizedTitle)
@@ -307,7 +200,15 @@ fun POIFullScreen(
                     ) {
                         poi.imageUrl.let { imageUrl ->
                             Image(
-                                painter = rememberAsyncImagePainter(imageUrl),
+                                painter = rememberAsyncImagePainter(
+                                    ImageRequest.Builder(LocalContext.current)
+                                        .data(imageUrl)
+                                        .placeholder(R.drawable.ic_placeholder)
+                                        .error(R.drawable.ic_placeholder)
+                                        .fallback(R.drawable.ic_placeholder)
+                                        .crossfade(true)
+                                        .build()
+                                ),
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
@@ -372,7 +273,7 @@ fun POIFullScreen(
                         IconButton(
                             onClick = {
                                 coroutineScope.launch {
-                                    sharePOI()
+                                    poiViewModel.sharePOI(context, poi, currentLanguage, localizedTitle, localizedDescription)
                                 }
                             }
                         ) {
@@ -383,7 +284,7 @@ fun POIFullScreen(
 
                         //downloadGPXButton
                         IconButton(onClick = {
-                            saveAsGpx()
+                            poiViewModel.saveAsGpx(context, poi)
                         }) {
                             Icon(Icons.Default.Download, contentDescription = "Save as GPX")
                         }

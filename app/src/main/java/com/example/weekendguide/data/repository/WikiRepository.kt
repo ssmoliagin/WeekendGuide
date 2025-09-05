@@ -1,6 +1,9 @@
 package com.example.weekendguide.data.repository
 
 import android.util.Log
+import com.example.weekendguide.BuildConfig
+import com.example.weekendguide.Constants.APP_DOCS_URL
+import com.example.weekendguide.Constants.CONTACT_EMAIL
 import com.example.weekendguide.data.model.WikipediaSummary
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -13,17 +16,24 @@ interface WikiRepository {
     suspend fun fetchWikipediaDescription(title: String, language: String): String?
 }
 
-class WikiRepositoryImp() : WikiRepository {
+class WikiRepositoryImp : WikiRepository {
 
     override suspend fun fetchWikipediaDescription(title: String, language: String): String? {
-        val encodedTitle = title.replace(" ", "%20")
+        val encodedTitle = title.replace(" ", "_")
         val url = "https://$language.wikipedia.org/api/rest_v1/page/summary/$encodedTitle"
 
         val client = OkHttpClient.Builder()
             .protocols(listOf(Protocol.HTTP_1_1))
             .build()
 
-        val request = Request.Builder().url(url).build()
+        val request = Request.Builder()
+            .url(url)
+            // ⚡️ User-Agent
+            .header(
+                "User-Agent",
+                "WeekendGuideApp/${BuildConfig.VERSION_NAME} ($APP_DOCS_URL; $CONTACT_EMAIL)"
+            )
+            .build()
 
         return withContext(Dispatchers.IO) {
             try {
@@ -35,7 +45,7 @@ class WikiRepositoryImp() : WikiRepository {
                     val articleUrl = "https://$language.wikipedia.org/wiki/$encodedTitle"
                     "$extract\n\n[Wikipedia]($articleUrl)"
                 } else {
-                    Log.e("WikiRepository", "Wikipedia API error ${response.code}: ${response.message}")
+                    Log.e("WikiRepository", "Wikipedia API error $url ${response.code}: ${response.message}")
                     null
                 }
             } catch (e: Exception) {
@@ -44,5 +54,4 @@ class WikiRepositoryImp() : WikiRepository {
             }
         }
     }
-
 }

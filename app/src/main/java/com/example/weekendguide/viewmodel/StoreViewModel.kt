@@ -98,6 +98,7 @@ class StoreViewModel(
 
     fun purchaseRegionAndLoadPOI(region: Region) {
         viewModelScope.launch {
+            _loading.value = true
             try {
                 val currentData = userPreferences.userDataFlow.first()
                 val updatedData = currentData.copy(
@@ -114,9 +115,12 @@ class StoreViewModel(
 
                 dataRepo.downloadAndCachePOI(region)
 
-            } catch (_: Exception) {
-
+            } catch (e: Exception) {
+                _error.value = "Loading error: ${e.message}"
+            } finally {
+                _loading.value = false
             }
+
         }
     }
 }

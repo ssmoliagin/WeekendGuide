@@ -2,7 +2,6 @@ package com.example.weekendguide.ui.login
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -26,7 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.weekendguide.Constants.LEGAL_DOCS_URL
+import com.example.weekendguide.Constants.APP_DOCS_URL
 import com.example.weekendguide.R
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.viewmodel.LoginViewModel
@@ -231,7 +230,7 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                             .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, LEGAL_DOCS_URL.toUri())
+                                val intent = Intent(Intent.ACTION_VIEW, APP_DOCS_URL.toUri())
                                 context.startActivity(intent)
                             }
                     )

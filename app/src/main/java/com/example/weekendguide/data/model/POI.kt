@@ -20,5 +20,5 @@ data class POI(
     val description_ru: String,
     val type: String,
     val tags: List<String>,
-    val imageUrl: String
+    var imageUrl: String,
 )
