@@ -45,4 +45,23 @@ class MainStateViewModel(
         userPreferences.saveUserData(updatedData)
         userRemote.launchSyncLocalToRemote(viewModelScope)
     }
+
+    fun checkSubscription() = viewModelScope.launch {
+        val currentData = userPreferences.userDataFlow.first()
+        val isSubscription = currentData.subscription
+        val subscriptionRegions = currentData.subscriptionRegions
+
+        if (isSubscription == false && subscriptionRegions.isNotEmpty()) {
+            val updatedRegions = currentData.collectionRegions.filterNot {
+                it.region_code in subscriptionRegions
+            }
+
+            val updatedData = currentData.copy(
+                collectionRegions = updatedRegions,
+                subscriptionRegions = emptyList()
+            )
+            userPreferences.saveUserData(updatedData)
+            userRemote.launchSyncLocalToRemote(viewModelScope)
+        }
+    }
 }

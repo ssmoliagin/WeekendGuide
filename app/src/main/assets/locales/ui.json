@@ -125,6 +125,11 @@
     "de": "Ausgewählt",
     "ru": "Выбрано"
   },
+  "radius_with_subscription_only": {
+    "en": "Available with subscription only",
+    "de": "Nur mit Abonnement verfügbar",
+    "ru": "Доступно только по подписке"
+  },
   "place_types": {
     "en": "Place Types",
     "de": "Ortsarten",
@@ -683,6 +688,11 @@
     "en": "Download points of interest?",
     "de": "Sehenswürdigkeiten herunterladen?",
     "ru": "Загрузить достопримечательности?"
+  },
+  "confirm_subscript_text": {
+    "en": "Note: Once your subscription ends, access to regions will be limited.",
+    "de": "Hinweis: Nach Ende des Abonnements ist der Zugriff auf die Regionen begrenzt.",
+    "ru": "Напоминаем: после завершения подписки доступ к регионам станет ограниченным."
   },
   "confirm_buy_text": {
     "en": "Purchase points of interest for",

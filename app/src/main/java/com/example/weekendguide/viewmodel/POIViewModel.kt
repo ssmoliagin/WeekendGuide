@@ -6,7 +6,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -33,13 +35,23 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 
 class POIViewModelFactory(
     private val region: List<Region>,
+    private val subscriptionRegions: List<String>,
+    private val isSubscription: Boolean,
     private val translateViewModel: TranslateViewModel,
     private val dataRepository: DataRepository,
     private val userPreferences: UserPreferences,
@@ -50,16 +62,18 @@ class POIViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(POIViewModel::class.java)) {
             val wikiRepository = WikiRepositoryImp()
-            return POIViewModel(translateViewModel, dataRepository, region, userPreferences, userRemote, wikiRepository) as T
+            return POIViewModel(region, subscriptionRegions, isSubscription, translateViewModel, dataRepository, userPreferences, userRemote, wikiRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 
 class POIViewModel(
+    private val region: List<Region>,
+    private val subscriptionRegions: List<String>,
+    private val isSubscription: Boolean,
     private val translateViewModel: TranslateViewModel,
     private val dataRepository: DataRepository,
-    private val region: List<Region>,
     private val userPreferences: UserPreferences,
     private val userRemote: UserRemoteDataSource,
     private val wikiRepository: WikiRepository,
@@ -118,8 +132,14 @@ class POIViewModel(
         viewModelScope.launch {
             _poisIsLoading.value = true
             try {
+                val filteredRegions = if (isSubscription) {
+                    region
+                } else {
+                    region.filter { reg -> reg.region_code !in subscriptionRegions }
+                }
+
                 val allPOIs = mutableListOf<POI>()
-                for (reg in region) {
+                for (reg in filteredRegions) {
                     dataRepository.downloadAndCachePOI(reg)
                     val pois = dataRepository.getPOIs(reg.region_code)
                     allPOIs += pois
@@ -310,8 +330,20 @@ class POIViewModel(
     }
 
     //Share and Save POI
-    fun sharePOI(context: Context, poi: POI, currentLanguage: String, localizedTitle: String, localizedDescription: String) {
+    fun sharePOI(context: Context, poi: POI, localizedTitle: String, localizedDescription: String, isSubscription: Boolean) {
         viewModelScope.launch {
+
+            if (!isSubscription) {
+                val today = getTodayUtc()
+                val lastDate = userPreferences.getLastShareDate()
+
+                if (lastDate != null && lastDate == today) {
+                    Toast.makeText(context, LocalizerUI.t("radius_with_subscription_only", language), Toast.LENGTH_SHORT).show()
+                    return@launch
+                } else {
+                    userPreferences.setLastShareDate(today)
+                }
+            }
 
             val description = localizedDescription
                 .lines()
@@ -323,7 +355,7 @@ class POIViewModel(
             val shareText = buildString {
                 append("📍 $localizedTitle\n")
                 append(description.trim())
-                append("\n\n🤳 ${LocalizerUI.t("share_by", currentLanguage)}\n\n")
+                append("\n\n🤳 ${LocalizerUI.t("share_by", language)}\n\n")
                 append("🌍 $locationUrl")
             }
 
@@ -360,16 +392,33 @@ class POIViewModel(
         }
     }
 
-    fun saveAsGpx(context: Context, poi: POI): Boolean {
-        return try {
+    suspend fun saveAsGpx(context: Context, poi: POI, isSubscription: Boolean) {
+        try {
+
+            if (!isSubscription) {
+                val today = getTodayUtc()
+                val lastDate = userPreferences.getLastSaveGpxDate()
+
+                if (lastDate != null && lastDate == today) {
+                    Toast.makeText(
+                        context,
+                        LocalizerUI.t("radius_with_subscription_only", language),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return
+                } else {
+                    userPreferences.setLastSaveGpxDate(today)
+                }
+            }
+
             val gpxContent = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <gpx version="1.1" creator="WeekendGuide" xmlns="http://www.topografix.com/GPX/1/1">
-                    <wpt lat="${poi.lat}" lon="${poi.lng}">
-                        <name>${poi.title}</name>
-                    </wpt>
-                </gpx>
-            """.trimIndent()
+            <?xml version="1.0" encoding="UTF-8"?>
+            <gpx version="1.1" creator="WeekendGuide" xmlns="http://www.topografix.com/GPX/1/1">
+                <wpt lat="${poi.lat}" lon="${poi.lng}">
+                    <name>${poi.title}</name>
+                </wpt>
+            </gpx>
+        """.trimIndent()
 
             val fileName = "poi_${poi.id}.gpx"
             val resolver = context.contentResolver
@@ -387,22 +436,25 @@ class POIViewModel(
                         outputStream.write(gpxContent.toByteArray())
                     }
                     Toast.makeText(context, "Saved to Downloads/$fileName", Toast.LENGTH_LONG).show()
-                    true
                 } else {
                     Toast.makeText(context, "Failed to save GPX file", Toast.LENGTH_SHORT).show()
-                    false
                 }
             } else {
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val file = File(downloadsDir, fileName)
                 file.writeText(gpxContent)
                 Toast.makeText(context, "Saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                true
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Error saving GPX file", Toast.LENGTH_SHORT).show()
-            false
         }
+    }
+
+    private fun getTodayUtc(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        return sdf.format(Date())
     }
 }

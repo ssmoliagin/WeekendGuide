@@ -32,8 +32,9 @@ class UserPreferences(private val context: Context) {
         val TEST_MODE = booleanPreferencesKey("test_mode")
 
         val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
-        val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
-        val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
+        val SUBSCRIPTION_REGIONS = stringSetPreferencesKey("subscription_regions")
+        //val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
+        //val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
 
         val HOME_CITY = stringPreferencesKey("home_city")
         val HOME_LAT = doublePreferencesKey("home_lat")
@@ -52,6 +53,9 @@ class UserPreferences(private val context: Context) {
         val APP_VERSION = stringPreferencesKey("app_version")
 
         val REWARD_AVAILABLE = stringPreferencesKey("rewardAvailable")
+
+        val LAST_SHARE_DATE = stringPreferencesKey("last_share_date")
+        val LAST_SAVE_GPX_DATE = stringPreferencesKey("last_save_gpx_date")
 
     }
 
@@ -85,8 +89,9 @@ class UserPreferences(private val context: Context) {
             test_mode = prefs[Keys.TEST_MODE],
             categoryLevels = levelsJson?.let { Json.decodeFromString(it) } ?: emptyMap(),
             collectionRegions = collectionJson?.let { Json.decodeFromString(it) } ?: emptyList(),
-            purchasedRegions = prefs[Keys.PURCHASED_REGIONS]?.toList() ?: emptyList(),
-            purchasedCountries = prefs[Keys.PURCHASED_COUNTRIES]?.toList() ?: emptyList(),
+            subscriptionRegions = prefs[Keys.SUBSCRIPTION_REGIONS]?.toList() ?: emptyList(),
+            //purchasedRegions = prefs[Keys.PURCHASED_REGIONS]?.toList() ?: emptyList(),
+            //purchasedCountries = prefs[Keys.PURCHASED_COUNTRIES]?.toList() ?: emptyList(),
             homeCity = prefs[Keys.HOME_CITY],
             homeLat = prefs[Keys.HOME_LAT],
             homeLng = prefs[Keys.HOME_LNG],
@@ -122,8 +127,9 @@ class UserPreferences(private val context: Context) {
 
             prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(userData.categoryLevels)
             prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(userData.collectionRegions)
-            prefs[Keys.PURCHASED_REGIONS] = userData.purchasedRegions.toSet()
-            prefs[Keys.PURCHASED_COUNTRIES] = userData.purchasedCountries.toSet()
+            prefs[Keys.SUBSCRIPTION_REGIONS] = userData.subscriptionRegions.toSet()
+            //prefs[Keys.PURCHASED_REGIONS] = userData.purchasedRegions.toSet()
+            //prefs[Keys.PURCHASED_COUNTRIES] = userData.purchasedCountries.toSet()
             prefs[Keys.HOME_CITY] = userData.homeCity ?: ""
             userData.homeLat?.let { prefs[Keys.HOME_LAT] = it }
             userData.homeLng?.let { prefs[Keys.HOME_LNG] = it }
@@ -285,7 +291,7 @@ class UserPreferences(private val context: Context) {
         val json = context.dataStore.data.first()[Keys.COLLECTION_REGIONS] ?: return emptyList()
         return Json.decodeFromString(json)
     }
-
+/*
     // Purchased regions/countries
     suspend fun addPurchasedRegion(regionCode: String) {
         context.dataStore.edit {
@@ -308,6 +314,8 @@ class UserPreferences(private val context: Context) {
     suspend fun getPurchasedCountries(): Set<String> {
         return context.dataStore.data.first()[Keys.PURCHASED_COUNTRIES] ?: emptySet()
     }
+
+ */
 
     // City & location
     suspend fun saveHomeCity(city: String) {
@@ -361,6 +369,32 @@ class UserPreferences(private val context: Context) {
 
             currentMap[poiId] = review
             prefs[Keys.VISITED] = Json.encodeToString(currentMap)
+        }
+    }
+
+    // subscriptionPOIFlow
+    val subscriptionRegionsFlow: Flow<Set<String>> = context.dataStore.data
+        .map { it[Keys.SUBSCRIPTION_REGIONS] ?: emptySet() }
+
+
+//LastShareDate
+    suspend fun getLastShareDate(): String? {
+        return context.dataStore.data.first()[Keys.LAST_SHARE_DATE]
+    }
+
+    suspend fun setLastShareDate(date: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LAST_SHARE_DATE] = date
+        }
+    }
+
+    suspend fun getLastSaveGpxDate(): String? {
+        return context.dataStore.data.first()[Keys.LAST_SAVE_GPX_DATE]
+    }
+
+    suspend fun setLastSaveGpxDate(date: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LAST_SAVE_GPX_DATE] = date
         }
     }
 

@@ -9,5 +9,5 @@ data class Region(
     val region_code: String = "",
     val name: Map<String, String> = emptyMap(),
     val description: Map<String, String> = emptyMap(),
-    val default_language: String = ""
+    val default_language: String = "",
 )

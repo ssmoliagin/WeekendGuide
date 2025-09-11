@@ -1,5 +1,7 @@
 package com.example.weekendguide.ui.filters
 
+import android.app.Application
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,8 @@ import com.example.weekendguide.data.locales.LocalizerUI
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FiltersPanel(
+    app: Application,
+    isSubscription: Boolean,
     currentLanguage: String,
     selectedRadius: String,
     onRadiusChange: (String) -> Unit,
@@ -85,9 +89,16 @@ fun FiltersPanel(
 
             Slider(
                 value = radiusSliderPosition.toFloat(),
-                onValueChange = {
-                    val selected = radiusValues[it.toInt()]
-                    onRadiusChange(selected)
+                onValueChange = { newValue ->
+                    val selected = radiusValues[newValue.toInt()]
+                    if (selected == "∞" && !isSubscription) {
+                        Toast.makeText(app,
+                            LocalizerUI.t("radius_with_subscription_only", currentLanguage),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        onRadiusChange(selected)
+                    }
                 },
                 steps = radiusValues.size - 2,
                 valueRange = 0f..(radiusValues.size - 1).toFloat()

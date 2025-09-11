@@ -122,12 +122,7 @@ fun MainScreen(
 
     // --- ViewModel State ---
     val currentLanguage by translateViewModel.language.collectAsState()
-    //val currentGP by pointsViewModel.currentGP.collectAsState()
-    //val totalGP by pointsViewModel.totalGP.collectAsState()
-    //val spentGP by pointsViewModel.spentGP.collectAsState()
-    //val isPremium by pointsViewModel.premium.collectAsState()
     val userLocation by locationViewModel.location.collectAsState()
-    //val currentCity by locationViewModel.currentCity.collectAsState()
 
     val mainStateViewModel: MainStateViewModel = viewModel(
         factory = MainStateViewModelFactory(userPreferences, userRemote)
@@ -137,24 +132,21 @@ fun MainScreen(
     val regions = userData.collectionRegions
     val homeCity = userData.homeCity
     val currentCity = userData.currentCity
-
     val currentGP = userData.current_GP
     val totalGP = userData.total_GP
     val spentGP = userData.spent_GP
-
     val visitedPoiIds = userData.visited.keys
-
     val categoryLevels = userData.categoryLevels
-    val purchasedRegionsCount = userData.purchasedRegions.size
-    val purchasedCountriesCount = userData.purchasedCountries.size
+    val subscriptionRegions = userData.subscriptionRegions
+    val purchasedRegionsCount = userData.collectionRegions.map { it.region_code }.toSet().size
+    val purchasedCountriesCount = userData.collectionRegions.map { it.country_code }.toSet().size
+    val isSubscription = userData.subscription != false
 
-    val isSubscription = userData.subscription!= false
 
     val profileViewModel: ProfileViewModel = viewModel(
         key = "ProfileViewModel",
         factory = ProfileViewModelFactory(app, userPreferences, userRemote)
     )
-
     val statisticsViewModel: StatisticsViewModel = viewModel(
         factory = StatisticsViewModelFactory(userPreferences, userRemote)
     )
@@ -237,35 +229,6 @@ fun MainScreen(
         }
     )
 
-    // --- Init Data ---
-    LaunchedEffect(Unit) {
-
-        val userCity = locationViewModel.setHomeLocation()
-        if (userCity.isNullOrEmpty()) {
-            onRequestLocationChange()
-        }
-
-        // Запрос разрешения на уведомления
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-
-
-        // СДЕЛАТЬ В ОДНОЙ
-        mainStateViewModel.loadUserData()
-
-        themeViewModel.loadTheme()
-        translateViewModel.refreshLang()
-        pointsViewModel.refreshGP()
-    }
-
-
     // --- City Search ---
     var cityQuery by remember { mutableStateOf("") }
     var predictions by remember { mutableStateOf(listOf<AutocompletePrediction>()) }
@@ -293,6 +256,35 @@ fun MainScreen(
             }
     }
 
+    // --- Init Data ---
+    LaunchedEffect(Unit) {
+
+        val userCity = locationViewModel.setHomeLocation()
+        if (userCity.isNullOrEmpty()) {
+            onRequestLocationChange()
+        }
+
+        // Запрос разрешения на уведомления
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+
+        // СДЕЛАТЬ В ОДНОЙ
+        mainStateViewModel.loadUserData()
+        mainStateViewModel.checkSubscription()
+
+        themeViewModel.loadTheme()
+        translateViewModel.refreshLang()
+        pointsViewModel.refreshGP()
+    }
+
     // --- Main UI Logic ---
     regions.let { reg ->
 
@@ -300,6 +292,8 @@ fun MainScreen(
             val poiViewModel: POIViewModel = remember(regions) {
                 POIViewModelFactory(
                     region = regions,
+                    subscriptionRegions = subscriptionRegions,
+                    isSubscription = isSubscription,
                     translateViewModel = translateViewModel,
                     dataRepository = dataRepository,
                     userPreferences = userPreferences,
@@ -350,8 +344,24 @@ fun MainScreen(
             }
 
             //Radius
-            val radiusValues = if(currentUnits == "km") listOf("25","50","100","200","∞") else listOf("15","30","60","120","∞")
-            var selectedRadius by remember { if(currentUnits == "km") mutableStateOf("200") else mutableStateOf("120") }
+            val radiusValues = if(currentUnits == "km")
+                listOf("25","50","100","200","∞")
+            else
+                listOf("15","30","60","120","∞")
+
+            var selectedRadius by remember { if(currentUnits == "km") mutableStateOf("200")
+            else mutableStateOf("120") }
+
+            val onRadiusSelected: (String) -> Unit = { value ->
+                if (value == "∞" && !isSubscription) {
+                    // Пользователь не подписан – игнорируем или показываем диалог/тултип
+                    // Например:
+                    Toast.makeText(app, "Доступно только по подписке", Toast.LENGTH_SHORT).show()
+                } else {
+                    selectedRadius = value
+                }
+            }
+
             val radiusValue = when (selectedRadius) {
                 "25", "15" -> 25_000
                 "50", "30" -> 50_000
@@ -567,6 +577,8 @@ fun MainScreen(
                     radiusValues = radiusValues,
                     currentUnits = currentUnits,
                     currentLanguage = currentLanguage,
+                    app = app,
+                    isSubscription = isSubscription
                 )
             }
 
@@ -745,6 +757,8 @@ fun MainScreen(
 
                         sortType = sortType,
                         onSortTypeChange = { sortType = it },
+                        app = app,
+                        isSubscription = isSubscription
                     )
                 }
             }

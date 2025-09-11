@@ -96,14 +96,15 @@ class StoreViewModel(
         }
     }
 
-    fun purchaseRegionAndLoadPOI(region: Region) {
+    fun purchaseRegionAndLoadPOI(region: Region, isSubscription: Boolean) {
         viewModelScope.launch {
-            _loading.value = true
             try {
+                userPreferences.addRegionInCollection(region)
+
                 val currentData = userPreferences.userDataFlow.first()
                 val updatedData = currentData.copy(
-                    purchasedRegions = currentData.purchasedRegions + region.region_code,
-                    purchasedCountries = (currentData.purchasedCountries + region.country_code).toSet().toList(), // если Set - purchasedCountries = currentData.purchasedCountries + region.country_code,
+                    subscriptionRegions = if (isSubscription) (currentData.subscriptionRegions + region.region_code).toSet().toList()
+                    else currentData.subscriptionRegions,
                     collectionRegions = if (region !in currentData.collectionRegions) {
                         currentData.collectionRegions + region
                     } else {
@@ -113,14 +114,11 @@ class StoreViewModel(
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)
 
-                dataRepo.downloadAndCachePOI(region)
+                //dataRepo.downloadAndCachePOI(region)
 
             } catch (e: Exception) {
                 _error.value = "Loading error: ${e.message}"
-            } finally {
-                _loading.value = false
             }
-
         }
     }
 }

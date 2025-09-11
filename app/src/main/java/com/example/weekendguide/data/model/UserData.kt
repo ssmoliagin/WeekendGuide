@@ -21,8 +21,9 @@ data class UserData(
 
     val categoryLevels: Map<String, Int> = emptyMap(),
     val collectionRegions: List<Region> = emptyList(),
-    val purchasedRegions: List<String> = emptyList(),
-    val purchasedCountries: List<String> = emptyList(),
+    val subscriptionRegions: List<String> = emptyList(),
+    //val purchasedRegions: List<String> = emptyList(),
+    //val purchasedCountries: List<String> = emptyList(),
     val homeCity: String? = null,
     val homeLat: Double? = null,
     val homeLng: Double? = null,

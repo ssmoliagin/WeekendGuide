@@ -101,11 +101,13 @@ class PointsViewModel(
     suspend fun checkAndAwardGPForPOI(
         poi: POI,
         locationViewModel: LocationViewModel,
+        isSubscription: Boolean,
         onResult: (Boolean) -> Unit
     ) {
         val minDuration = 2000L
         val maxTimeout = 6000L
         val startTime = System.currentTimeMillis()
+        val prize = if (isSubscription) 200 else 100
 
         try {
             val newLocation = withTimeoutOrNull(maxTimeout) {
@@ -128,7 +130,7 @@ class PointsViewModel(
             val distanceMeters = result[0]
             val success = distanceMeters < 100.0
 
-            if (success) addGP(100)
+            if (success) addGP(prize)
 
             val elapsed = System.currentTimeMillis() - startTime
             val remaining = minDuration - elapsed

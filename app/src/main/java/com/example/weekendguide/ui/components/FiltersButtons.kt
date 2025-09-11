@@ -1,6 +1,8 @@
 package com.example.weekendguide.ui.components
 
+import android.app.Application
 import android.view.SoundEffectConstants
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,6 +44,8 @@ import com.example.weekendguide.data.locales.LocalizerUI
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FiltersButtons(
+    app: Application,
+    isSubscription: Boolean,
     userCurrentCity: String?,
     onRequestGPS: () -> Unit,
     selectedRadius: String,
@@ -169,11 +173,23 @@ fun FiltersButtons(
             ) {
                 radiusValues.forEach { radius ->
                     DropdownMenuItem(
-                        text = { Text("$radius $currentUnits", color = MaterialTheme.colorScheme.primary) },
+                        text = {
+                            Text(
+                                text = if (radius == "∞") "$radius $currentUnits" else "$radius $currentUnits",
+                                color = if (radius == "∞" && !isSubscription)
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                else
+                                    MaterialTheme.colorScheme.primary
+                            )
+                        },
                         onClick = {
                             sound.playSoundEffect(SoundEffectConstants.CLICK)
-                            onRadiusChange(radius)
-                            radiusExpanded = false
+                            if (radius == "∞" && !isSubscription) {
+                                Toast.makeText(app, LocalizerUI.t("radius_with_subscription_only", currentLanguage), Toast.LENGTH_SHORT).show()
+                            } else {
+                                onRadiusChange(radius)
+                                radiusExpanded = false
+                            }
                         }
                     )
                 }

@@ -121,6 +121,7 @@ fun POIFullScreen(
     }
 
     val isTest = userData.test_mode != false
+    val isSubscription = userData.subscription != false
 
     val context = LocalContext.current
     val wikiDescription by poiViewModel.wikiDescription.collectAsState()
@@ -269,11 +270,11 @@ fun POIFullScreen(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        //shareButton
+                        // Share Button
                         IconButton(
                             onClick = {
                                 coroutineScope.launch {
-                                    poiViewModel.sharePOI(context, poi, currentLanguage, localizedTitle, localizedDescription)
+                                    poiViewModel.sharePOI(context, poi, localizedTitle, localizedDescription, isSubscription)
                                 }
                             }
                         ) {
@@ -282,10 +283,14 @@ fun POIFullScreen(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        //downloadGPXButton
-                        IconButton(onClick = {
-                            poiViewModel.saveAsGpx(context, poi)
-                        }) {
+                        // Download GPX Button
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    poiViewModel.saveAsGpx(context, poi, isSubscription)
+                                }
+                            }
+                        ) {
                             Icon(Icons.Default.Download, contentDescription = "Save as GPX")
                         }
                     }
@@ -661,7 +666,7 @@ fun POIFullScreen(
                         } else {
                             isChecking = true
                             coroutineScope.launch {
-                                pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
+                                pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel, isSubscription) { success ->
                                     if (success) {
                                         poiViewModel.markPoiVisited(poi.id)
                                         Toast.makeText(context, LocalizerUI.t("forVisit", currentLanguage), Toast.LENGTH_SHORT).show()

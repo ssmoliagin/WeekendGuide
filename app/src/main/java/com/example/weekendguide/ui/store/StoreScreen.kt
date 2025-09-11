@@ -81,9 +81,12 @@ fun StoreScreen(
         factory = StoreViewModelFactory(userPreferences, userRemoteDataSource, dataRepository)
     )
     val userData by storeViewModel.userData.collectAsState()
-    val purchasedRegions = userData.purchasedRegions
+    //val purchasedRegions = userData.purchasedRegions
+    val isSubscription = userData.subscription ?: false
+    val purchasedRegions: Set<String> = userData.collectionRegions.map { it.region_code }.toSet()
 
     val countries by storeViewModel.countries.collectAsState()
+
     val regionsByCountry by storeViewModel.regionsByCountry.collectAsState()
     //val purchasedRegions by storeViewModel.purchasedRegions.collectAsState()
     val currentLanguage by translateViewModel.language.collectAsState()
@@ -282,7 +285,7 @@ fun StoreScreen(
                                         .fillMaxWidth()
                                         .background(bgColor)
                                         .clickable(enabled = !isPurchased) {
-                                            if (isInitialSelection || currentGP >= COST) {
+                                            if (isInitialSelection || isSubscription || currentGP >= COST) {
                                                 selectedRegion = region
                                                 showDialog = true
                                             } else {
@@ -322,12 +325,16 @@ fun StoreScreen(
                     val regionName = selectedRegion?.name?.get(currentLanguage) ?: "this region"
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
-                        title = { Text(if (isInitialSelection) LocalizerUI.t("select_region_title", currentLanguage) else LocalizerUI.t("confirm_purchase_title", currentLanguage),
+                        title = {
+                            Text(if (isInitialSelection || isSubscription) LocalizerUI.t("select_region_title", currentLanguage)
+                        else LocalizerUI.t("confirm_purchase_title", currentLanguage),
                             color = MaterialTheme.colorScheme.onBackground) },
                         text = {
                             Text(
                                 if (isInitialSelection)
                                     "${regionName}: " + LocalizerUI.t("confirm_select_text", currentLanguage)
+                                else if (isSubscription)
+                                    "${regionName}: " + LocalizerUI.t("confirm_subscript_text", currentLanguage)
                                 else
                                     "${regionName}: " + LocalizerUI.t("confirm_buy_text", currentLanguage) + " $COST GP?"
                             )
@@ -337,13 +344,12 @@ fun StoreScreen(
                                 showDialog = false
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
-                                        if (!isInitialSelection) pointsViewModel.spentGP(COST)
-                                        storeViewModel.purchaseRegionAndLoadPOI(region)
-                                        userPreferences.addRegionInCollection(region)
+                                        if (!isInitialSelection || !isSubscription) pointsViewModel.spentGP(COST)
+                                        storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription)
                                         onRegionChosen()
                                     }
                                 }
-                            }) { Text(if (isInitialSelection) LocalizerUI.t("select", currentLanguage) else LocalizerUI.t("buy", currentLanguage)) }
+                            }) { Text(if (isInitialSelection || isSubscription) LocalizerUI.t("select", currentLanguage) else LocalizerUI.t("buy", currentLanguage)) }
                         },
                         dismissButton = {
                             TextButton(onClick = { showDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
@@ -352,7 +358,6 @@ fun StoreScreen(
                 }
 
                 if (showInsufficientGPDialog && selectedRegion != null) {
-                    val need = COST - currentGP
                     AlertDialog(
                         onDismissRequest = { showInsufficientGPDialog = false },
                         title = { Text(LocalizerUI.t("insufficient_gp_title", currentLanguage),
@@ -366,9 +371,7 @@ fun StoreScreen(
                                 showInsufficientGPDialog = false
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
-                                        if (!isInitialSelection) pointsViewModel.spentGP(COST)
-                                        storeViewModel.purchaseRegionAndLoadPOI(region)
-                                        userPreferences.addRegionInCollection(region)
+                                        storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription)
                                         onRegionChosen()
                                     }
                                 }
