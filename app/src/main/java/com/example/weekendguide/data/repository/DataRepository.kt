@@ -1,7 +1,6 @@
 package com.example.weekendguide.data.repository
 
 import android.content.Context
-import android.util.Log
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.POI
@@ -16,12 +15,8 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
-import java.util.Locale
-import okhttp3.OkHttpClient
-import okhttp3.Protocol
-import okhttp3.Request
 import java.net.URL
-import java.security.MessageDigest
+import java.util.Locale
 
 interface DataRepository {
     suspend fun getCountries(): List<Country>
@@ -56,11 +51,11 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             if (remoteUpdated > localUpdated) {
                 ref.getFile(file).await()
             } else {
-                Log.d("LocalesRepo", "Using cached type.json")
+                //Log.d("LocalesRepo", "Using cached type.json")
             }
             file.readText()
         } catch (e: Exception) {
-            Log.e("LocalesRepo", "Error loading type.json", e)
+            //Log.e("LocalesRepo", "Error loading type.json", e)
             null
         }
     }
@@ -74,7 +69,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 null
             }
         } catch (e: Exception) {
-            Log.e("DataRepository", "Error reading cached type.json", e)
+            //Log.e("DataRepository", "Error reading cached type.json", e)
             null
         }
     }
@@ -93,11 +88,11 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             if (remoteUpdated > localUpdated) {
                 ref.getFile(file).await()
             } else {
-                Log.d("LocalesRepo", "Using cached tags.json")
+                //Log.d("LocalesRepo", "Using cached tags.json")
             }
             file.readText()
         } catch (e: Exception) {
-            Log.e("LocalesRepo", "Error loading tags.json", e)
+            //Log.e("LocalesRepo", "Error loading tags.json", e)
             null
         }
     }
@@ -111,7 +106,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 null
             }
         } catch (e: Exception) {
-            Log.e("DataRepository", "Error reading cached tags.json", e)
+            //Log.e("DataRepository", "Error reading cached tags.json", e)
             null
         }
     }
@@ -130,12 +125,12 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 ref.getFile(file).await()
                 file.setLastModified(remoteUpdated)
             } else {
-                Log.d("DataRepo", "Using cached countries.json")
+                //Log.d("DataRepo", "Using cached countries.json")
             }
             val jsonString = file.readText()
             json.decodeFromString(jsonString)
         } catch (e: Exception) {
-            Log.e("DataRepo", "Error loading countries.json", e)
+            //Log.e("DataRepo", "Error loading countries.json", e)
             emptyList()
         }
     }
@@ -155,13 +150,13 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 ref.getFile(file).await()
                 file.setLastModified(remoteUpdated)
             } else {
-                Log.d("DataRepo", "Using cached region.json for $countryCode")
+                //Log.d("DataRepo", "Using cached region.json for $countryCode")
             }
 
             val jsonString = file.readText()
             json.decodeFromString(jsonString)
         } catch (e: Exception) {
-            Log.e("DataRepo", "Error loading region.json for $countryCode", e)
+            //Log.e("DataRepo", "Error loading region.json for $countryCode", e)
             emptyList()
         }
     }
@@ -181,13 +176,10 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                 if (!localFile.exists() || remoteLastModified > localLastModified) {
                     ref.getFile(localFile).await()
                     localFile.setLastModified(remoteLastModified)
-                    Log.d("DataRepo", "CSV сохранён: ${localFile.absolutePath}")
+                    //Log.d("DataRepo", "CSV saved: ${localFile.absolutePath}")
                 }
 
-                // парсим CSV
                 val pois = parseCsvToPoi(localFile)
-
-                // проверяем и обновляем локальные пути
                 pois.forEach { poi ->
                     val cachedFile = File(context.filesDir, "${poi.id}.jpg")
                     if (cachedFile.exists()) {
@@ -195,19 +187,18 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                     }
                 }
 
-                // 🚀 фоновые загрузки картинок
+                // 🚀 Image
                 repositoryScope.launch {
                     pois.forEach { poi ->
                         val localImage = downloadAndCacheImage(context, poi.id, poi.imageUrl)
                         if (localImage != null) {
                             poi.imageUrl = localImage
-                            Log.d("ImageCache", "Картинка для ${poi.id} сохранена: ${File(localImage).length()} байт")
                         }
                     }
                 }
 
             } catch (e: Exception) {
-                Log.e("DataRepo", "Error loading POI for ${region.region_code}", e)
+                //Log.e("DataRepo", "Error loading POI for ${region.region_code}", e)
             }
         }
     }
@@ -230,7 +221,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
         }
     }
 
-    // -------- Скачивание картинок --------
+    // -------- Download Image --------
     private suspend fun downloadAndCacheImage(
         context: Context,
         poiId: String,
@@ -246,13 +237,13 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                         input.copyTo(output)
                     }
                 }
-                Log.d("ImageCache", "Скачано: $imageUrl (${localFile.length()} байт)")
+                //Log.d("ImageCache", "download: $imageUrl (${localFile.length()})")
             } else {
-                Log.d("ImageCache", "Используется кэш: $imageUrl (${localFile.length()} байт)")
+                //Log.d("ImageCache", "use cache: $imageUrl (${localFile.length()})")
             }
             localFile.absolutePath
         } catch (e: Exception) {
-            Log.e("ImageCache", "Ошибка скачивания $imageUrl")
+            //Log.e("ImageCache", "error $imageUrl")
             null
         }
     }
@@ -282,7 +273,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                         imageUrl = tokens.getOrNull(15)?.trim().orEmpty()
                     )
                 } catch (e: Exception) {
-                    Log.w("DataRepo", "Skipping invalid POI line: $line")
+                    //Log.w("DataRepo", "Skipping invalid POI line: $line")
                     null
                 }
             }

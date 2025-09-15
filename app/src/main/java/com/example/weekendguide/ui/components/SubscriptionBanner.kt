@@ -31,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
-import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.viewmodel.SubscriptionViewModel
 
 @Composable

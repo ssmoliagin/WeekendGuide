@@ -11,31 +11,32 @@ data class UserData(
     val language: String? = null,
     val userThema: String? = "light",
     val userMeasurement: String? = "km",
-    val notification: Boolean? = true,
-    val total_GP: Int = 0,
-    val current_GP: Int = 0,
-    val spent_GP: Int = 0,
-    val subscription: Boolean? = false,
-
-    val test_mode: Boolean? = false,
-
-    val categoryLevels: Map<String, Int> = emptyMap(),
-    val collectionRegions: List<Region> = emptyList(),
-    val subscriptionRegions: List<String> = emptyList(),
-    //val purchasedRegions: List<String> = emptyList(),
-    //val purchasedCountries: List<String> = emptyList(),
     val homeCity: String? = null,
-    val homeLat: Double? = null,
-    val homeLng: Double? = null,
-
     val currentCity: String? = null,
-    val currentLat: Double? = null,
-    val currentLng: Double? = null,
-    val favorites: List<String> = emptyList(),
-    val visited: Map<String, Boolean> = emptyMap(),
-
     val fcm_token: String? = null,
     val app_version: String? = null,
 
+    // --- Booleans ---
+    val notification: Boolean? = true,
+    val subscription: Boolean? = false,
+    val test_mode: Boolean? = false,
+
+    // --- Integers ---
+    val total_GP: Int = 0,
+    val current_GP: Int = 0,
+    val spent_GP: Int = 0,
+
+    // --- Doubles ---
+    val homeLat: Double? = null,
+    val homeLng: Double? = null,
+    val currentLat: Double? = null,
+    val currentLng: Double? = null,
+
+    // --- Collections ---
+    val categoryLevels: Map<String, Int> = emptyMap(),
+    val collectionRegions: List<Region> = emptyList(),
+    val subscriptionRegions: List<String> = emptyList(),
+    val favorites: List<String> = emptyList(),
+    val visited: Map<String, Boolean> = emptyMap(),
     val rewardAvailable: Map<String, Boolean> = emptyMap(),
 )

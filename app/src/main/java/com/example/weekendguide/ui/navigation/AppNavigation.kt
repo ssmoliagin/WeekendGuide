@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -36,14 +37,16 @@ fun AppNavigation(
     userRemoteDataSource: UserRemoteDataSource,
     leaderboardViewModel: LeaderboardViewModel,
     markerIconViewModel: MarkerIconViewModel,
-    subscriptionViewModel: SubscriptionViewModel
+    subscriptionViewModel: SubscriptionViewModel,
+    splashViewModel: SplashViewModel,
+    userData: UserData
 ) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "splash") {
         composable("splash") {
             SplashScreen(
-                userPreferences = userPreferences,
+                splashViewModel = splashViewModel,
                 onNavigate = { destination ->
                 when (destination) {
                     SplashViewModel.Destination.Login -> navController.navigate("login") {
@@ -64,8 +67,8 @@ fun AppNavigation(
 
         composable("login") {
             LoginScreen(
+                userData = userData,
                 loginViewModel = loginViewModel,
-                translateViewModel = translateViewModel,
                 onNavigate = { destination ->
                 when (destination) {
                     SplashViewModel.Destination.Store -> navController.navigate("store") {
@@ -81,13 +84,14 @@ fun AppNavigation(
 
         composable("store") {
             StoreScreen(
+                userData = userData,
                 isInitialSelection = true,
                 onRegionChosen = {
                     navController.navigate("main") {
                         popUpTo("store") { inclusive = true }
                     }
                 },
-                translateViewModel = translateViewModel,
+                onDismiss = {/*null*/},
                 pointsViewModel = pointsViewModel,
                 userPreferences = userPreferences,
                 dataRepository = dataRepository,
@@ -98,7 +102,6 @@ fun AppNavigation(
         composable("main") {
             MainScreen(
                 app = app,
-                loginViewModel = loginViewModel,
                 themeViewModel = themeViewModel,
                 translateViewModel = translateViewModel,
                 locationViewModel = locationViewModel,
@@ -108,8 +111,9 @@ fun AppNavigation(
                 userRemote = userRemoteDataSource,
                 leaderboardViewModel = leaderboardViewModel,
                 markerIconViewModel = markerIconViewModel,
-                subscriptionViewModel = subscriptionViewModel
-            )
+                subscriptionViewModel = subscriptionViewModel,
+                userData = userData,
+                )
         }
 
     }

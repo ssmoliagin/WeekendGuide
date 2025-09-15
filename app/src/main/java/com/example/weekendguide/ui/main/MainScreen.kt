@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.Constants
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -66,7 +67,6 @@ import com.example.weekendguide.ui.statistics.StatisticsScreen
 import com.example.weekendguide.ui.store.StoreScreen
 import com.example.weekendguide.viewmodel.LeaderboardViewModel
 import com.example.weekendguide.viewmodel.LocationViewModel
-import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.MainStateViewModel
 import com.example.weekendguide.viewmodel.MainStateViewModelFactory
 import com.example.weekendguide.viewmodel.MarkerIconViewModel
@@ -91,19 +91,21 @@ import kotlin.math.roundToInt
 @Composable
 fun MainScreen(
     app: Application,
+    userData: UserData,
     userPreferences: UserPreferences,
-    dataRepository: DataRepositoryImpl,
     userRemote: UserRemoteDataSource,
-    leaderboardViewModel: LeaderboardViewModel,
-    locationViewModel: LocationViewModel,
-    loginViewModel: LoginViewModel,
-    markerIconViewModel: MarkerIconViewModel,
-    pointsViewModel: PointsViewModel,
+    dataRepository: DataRepositoryImpl,
     themeViewModel: ThemeViewModel,
+    pointsViewModel: PointsViewModel,
+    locationViewModel: LocationViewModel,
     translateViewModel: TranslateViewModel,
-    subscriptionViewModel: SubscriptionViewModel
-) {
+    markerIconViewModel: MarkerIconViewModel,
+    leaderboardViewModel: LeaderboardViewModel,
+    subscriptionViewModel: SubscriptionViewModel,
+    ) {
+
     // --- UI State ---
+    var isLoading by remember { mutableStateOf(false) }
     var showMapScreen by remember { mutableStateOf(false) }
     var showFiltersPanel by remember { mutableStateOf(false) }
     var showStatisticsScreen by remember { mutableStateOf(false) }
@@ -120,14 +122,18 @@ fun MainScreen(
     var selectedItem by remember { mutableStateOf("main") }
     var selectedPOI by remember { mutableStateOf<POI?>(null) }
 
-    // --- ViewModel State ---
-    val currentLanguage by translateViewModel.language.collectAsState()
-    val userLocation by locationViewModel.location.collectAsState()
-
+    // --- ViewModels ---
     val mainStateViewModel: MainStateViewModel = viewModel(
-        factory = MainStateViewModelFactory(userPreferences, userRemote)
-    )
-    val userData by mainStateViewModel.userData.collectAsState()
+        factory = MainStateViewModelFactory(userPreferences, userRemote))
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModelFactory(app, userPreferences, userRemote))
+    val statisticsViewModel: StatisticsViewModel = viewModel(
+        factory = StatisticsViewModelFactory(userPreferences, userRemote))
+
+    // --- UserData State ---
+    val currentLanguage = userData.language ?: "en"
+    val userLocation = userData.currentLat?.let { lat ->
+        userData.currentLng?.let { lng -> Pair(lat, lng) } }
     val currentUnits = userData.userMeasurement ?: ""
     val regions = userData.collectionRegions
     val homeCity = userData.homeCity
@@ -136,20 +142,12 @@ fun MainScreen(
     val totalGP = userData.total_GP
     val spentGP = userData.spent_GP
     val visitedPoiIds = userData.visited.keys
+    val favoriteIds = userData.favorites
     val categoryLevels = userData.categoryLevels
     val subscriptionRegions = userData.subscriptionRegions
     val purchasedRegionsCount = userData.collectionRegions.map { it.region_code }.toSet().size
     val purchasedCountriesCount = userData.collectionRegions.map { it.country_code }.toSet().size
     val isSubscription = userData.subscription != false
-
-
-    val profileViewModel: ProfileViewModel = viewModel(
-        key = "ProfileViewModel",
-        factory = ProfileViewModelFactory(app, userPreferences, userRemote)
-    )
-    val statisticsViewModel: StatisticsViewModel = viewModel(
-        factory = StatisticsViewModelFactory(userPreferences, userRemote)
-    )
 
     // --- Icons ---
     val typeIcons = mapOf(
@@ -178,8 +176,9 @@ fun MainScreen(
     )
 
     // --- Location Handling ---
-    var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -217,17 +216,9 @@ fun MainScreen(
         }
     }
 
-
-    val context = LocalContext.current
-    val activity = context as? Activity
-
-    // --- Launcher для уведомлений ---
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            // здесь можно что-то сделать после согласия
-        }
-    )
+        onResult = { isGranted ->  /*TO DO*/ } )
 
     // --- City Search ---
     var cityQuery by remember { mutableStateOf("") }
@@ -256,15 +247,17 @@ fun MainScreen(
             }
     }
 
-    // --- Init Data ---
+    // --- Refresh User Data ---
     LaunchedEffect(Unit) {
 
-        val userCity = locationViewModel.setHomeLocation()
-        if (userCity.isNullOrEmpty()) {
+        mainStateViewModel.refreshUserData()
+
+        // Location Permission
+        if (homeCity.isNullOrEmpty()) {
             onRequestLocationChange()
         }
 
-        // Запрос разрешения на уведомления
+        // Notification Permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(
                     context,
@@ -274,15 +267,6 @@ fun MainScreen(
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-
-
-        // СДЕЛАТЬ В ОДНОЙ
-        mainStateViewModel.loadUserData()
-        mainStateViewModel.checkSubscription()
-
-        themeViewModel.loadTheme()
-        translateViewModel.refreshLang()
-        pointsViewModel.refreshGP()
     }
 
     // --- Main UI Logic ---
@@ -297,7 +281,7 @@ fun MainScreen(
                     translateViewModel = translateViewModel,
                     dataRepository = dataRepository,
                     userPreferences = userPreferences,
-                    userRemote = userRemote
+                    userRemote = userRemote,
                 ).create(POIViewModel::class.java)
             }
 
@@ -305,8 +289,6 @@ fun MainScreen(
             val allReviews by poiViewModel.reviews.collectAsState()
             val reviewsList = allReviews.values.flatten()
 
-            //val visitedPoiIds by poiViewModel.visitedPoiIds.collectAsState()
-            val favoriteIds by poiViewModel.favoriteIds.collectAsState()
             val onFavoriteClick: (String) -> Unit = { poiId ->
                 poiViewModel.toggleFavorite(poiId)
             }
@@ -351,16 +333,6 @@ fun MainScreen(
 
             var selectedRadius by remember { if(currentUnits == "km") mutableStateOf("200")
             else mutableStateOf("120") }
-
-            val onRadiusSelected: (String) -> Unit = { value ->
-                if (value == "∞" && !isSubscription) {
-                    // Пользователь не подписан – игнорируем или показываем диалог/тултип
-                    // Например:
-                    Toast.makeText(app, "Доступно только по подписке", Toast.LENGTH_SHORT).show()
-                } else {
-                    selectedRadius = value
-                }
-            }
 
             val radiusValue = when (selectedRadius) {
                 "25", "15" -> 25_000
@@ -475,22 +447,18 @@ fun MainScreen(
 
             // OnDismis()
             fun resetFiltersUndScreens() {
+                selectedItem = "main"
                 selectedTypes = emptyList()
                 selectedTags= emptyList()
                 selectedRadius = if(currentUnits == "km") "200" else "120"
                 showOnlyVisited = false
                 showOnlyFavorites = false
-
-
                 showListPOIScreen = false
                 showStatisticsScreen = false
                 showMapScreen = false
                 showProfileScreen = false
                 editProfile = false
                 showPOIStoreScreen = false
-
-                selectedItem = "main"
-                //mainStateViewModel.refreshRegions()
             }
 
             // --- NAVIGATION ---
@@ -669,8 +637,8 @@ fun MainScreen(
             // StoreScreen
             if (showPOIStoreScreen) {
                 StoreScreen(
+                    userData = userData,
                     isInitialSelection = false,
-                    translateViewModel = translateViewModel,
                     pointsViewModel = pointsViewModel,
                     onRegionChosen = {
                         {resetFiltersUndScreens()}
@@ -696,16 +664,15 @@ fun MainScreen(
                         showStatisticsScreen = false
                         showListPOIScreen = true
                                        },
-                    pointsViewModel = pointsViewModel,
-                    translateViewModel = translateViewModel,
                     statisticsViewModel = statisticsViewModel,
                     leaderboardViewModel = leaderboardViewModel,
                     typeIcons = typeIcons,
                     leveledUpSet = categoryLevels,
                     purchasedRegionsCount = purchasedRegionsCount,
                     purchasedCountriesCount = purchasedCountriesCount,
+                    userData = userData,
 
-                )
+                    )
             }
 
             // ProfileScreen
@@ -784,7 +751,6 @@ fun MainScreen(
                         poiViewModel = poiViewModel,
                         pointsViewModel = pointsViewModel,
                         locationViewModel = locationViewModel,
-                        loginViewModel = loginViewModel,
                         userData = userData,
                         currentUnits = currentUnits,
                         currentLanguage = currentLanguage,
@@ -810,7 +776,6 @@ fun MainScreen(
                     poiViewModel = poiViewModel,
                     pointsViewModel = pointsViewModel,
                     locationViewModel = locationViewModel,
-                    loginViewModel = loginViewModel,
                     userData = userData,
                     currentUnits = currentUnits,
                     currentLanguage = currentLanguage,
@@ -819,6 +784,5 @@ fun MainScreen(
                 )
             }
         } else LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
-
     }
 }

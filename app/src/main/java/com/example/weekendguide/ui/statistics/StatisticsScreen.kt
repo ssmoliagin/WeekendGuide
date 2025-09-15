@@ -43,10 +43,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.viewmodel.LeaderboardViewModel
-import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.StatisticsViewModel
-import com.example.weekendguide.viewmodel.TranslateViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,21 +59,19 @@ fun StatisticsScreen(
     onOpenListScreen: () -> Unit,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
-    pointsViewModel: PointsViewModel,
-    translateViewModel: TranslateViewModel,
     statisticsViewModel: StatisticsViewModel,
     leaderboardViewModel: LeaderboardViewModel,
     typeIcons: Map<String, ImageVector>,
     leveledUpSet: Map<String, Int>,
     purchasedRegionsCount: Int,
-    purchasedCountriesCount: Int
+    purchasedCountriesCount: Int,
+    userData: UserData,
 
 ) {
-    val currentLanguage by translateViewModel.language.collectAsState()
-    //val purchasedRegionsCount by statisticsViewModel.purchasedRegionsCount.collectAsState()
-    //val purchasedCountriesCount by statisticsViewModel.purchasedCountriesCount.collectAsState()
+    // --- UserData State ---
+    val currentLanguage = userData.language?:"en"
+
     val typeStats = userPOIList.groupingBy { it.type }.eachCount()
-    //val leveledUpSet by statisticsViewModel.categoryLevels.collectAsState()
     val totalPOIs = totalPOIList.size
     val visitedPOIs = userPOIList.size
     val typeGoals = listOf(5, 10, 20, 30, 50, 100, 250, 500, 750, 1000)
@@ -152,7 +149,7 @@ fun StatisticsScreen(
                             Text(LocalizerUI.t("top_users", currentLanguage),
                                 style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(modifier = Modifier.height(8.dp))
-                            leaderboard.take(10).forEachIndexed { index, (name, gp) ->
+                            leaderboard.take(5).forEachIndexed { index, (name, gp) ->
                                 Row(
                                     Modifier
                                         .fillMaxWidth()
@@ -311,7 +308,7 @@ fun StatisticsScreen(
                                 onClick = {
                                     showCongrats = true
                                     statisticsViewModel.updateCategoryLevel(type, level)
-                                    pointsViewModel.addGP(1000)
+                                    //pointsViewModel.addGP(1000)
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()

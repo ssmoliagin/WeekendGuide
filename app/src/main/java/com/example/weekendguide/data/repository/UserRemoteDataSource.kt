@@ -1,6 +1,5 @@
 package com.example.weekendguide.data.repository
 
-import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
@@ -36,6 +35,8 @@ class UserRemoteDataSource(
             if (doc.exists()) {
                 val remoteUserData = doc.toObject(UserData::class.java)
                 if (remoteUserData != null) {
+                    userPreferences.saveUserData(remoteUserData)
+
                     val updatedUserData = remoteUserData.copy(
                         fcm_token = token
                     )

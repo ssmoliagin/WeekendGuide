@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        google() // 🔥 это должен быть просто google(), без фильтров!
+        google()
         mavenCentral()
         gradlePluginPortal()
     }

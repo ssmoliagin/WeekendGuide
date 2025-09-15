@@ -39,14 +39,11 @@ class MessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // 👉 Здесь можно вызвать UserRemoteDataSource.syncToken(token)
-        // чтобы обновить Firestore
     }
 
     private fun showNotification(title: String?, body: String?) {
         val channelId = "reminders_channel"
 
-        // Intent по клику откроет MainActivity
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -62,7 +59,7 @@ class MessagingService : FirebaseMessagingService() {
             }
         )
 
-        // Создание канала уведомлений (API 26+)
+        // (API 26+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -87,7 +84,7 @@ class MessagingService : FirebaseMessagingService() {
 
         val notificationManager = NotificationManagerCompat.from(this)
 
-        // Android 13+ → проверяем разрешение
+        // Android 13+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         ) {

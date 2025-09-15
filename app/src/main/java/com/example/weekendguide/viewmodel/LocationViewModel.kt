@@ -12,8 +12,6 @@ import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -40,31 +38,8 @@ class LocationViewModel(
     private val userRemote: UserRemoteDataSource
 ) : AndroidViewModel(app) {
 
-    private val _currentCity = MutableStateFlow<String?>(null)
-
-    private val _location = MutableStateFlow<Pair<Double, Double>?>(null)
-    val location = _location.asStateFlow()
-
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(app)
-
-
-    suspend fun setHomeLocation(): String? {
-        val currentData = userPreferences.userDataFlow.first()
-
-        val updatedData = currentData.copy(
-            currentCity = currentData.homeCity,
-            currentLat = currentData.homeLat,
-            currentLng = currentData.homeLng,
-        )
-
-        userPreferences.saveUserData(updatedData)
-        userRemote.launchSyncLocalToRemote(viewModelScope)
-
-        _location.value = userPreferences.getCurrentLocation()
-        return updatedData.currentCity
-    }
-
 
     @SuppressLint("MissingPermission")
     suspend fun detectLocationFromGPS(): Pair<Double, Double>? {
@@ -78,11 +53,8 @@ class LocationViewModel(
             val lat = location.latitude
             val lng = location.longitude
 
-            _location.value = lat to lng
-
             val cityName = getCityName(lat, lng)
             cityName?.let { currentCityName ->
-                _currentCity.value = currentCityName
 
                 val currentData = userPreferences.userDataFlow.first()
 
@@ -100,7 +72,6 @@ class LocationViewModel(
 
             return lat to lng
         }
-
         return null
     }
 
@@ -117,9 +88,6 @@ class LocationViewModel(
 
     fun setManualLocation(city: String, lat: Double, lng: Double, editHomeCity: Boolean) {
         viewModelScope.launch {
-            _location.value = lat to lng
-            _currentCity.emit(city)
-
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(
                 currentCity = city,
@@ -129,7 +97,6 @@ class LocationViewModel(
                 homeCity = if (currentData.homeCity.isNullOrEmpty() || editHomeCity) city else currentData.homeCity,
                 homeLat = if (currentData.homeLat == null || editHomeCity) lat else currentData.homeLat,
                 homeLng = if (currentData.homeLng == null || editHomeCity) lng else currentData.homeLng
-
             )
             userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)

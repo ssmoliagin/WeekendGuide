@@ -5,8 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -30,6 +28,17 @@ class StatisticsViewModel(
             userPreferences.updateCategoryLevel(category, level)
             userPreferences.updateRewardAvailable(category, reward = true)
             userRemoteDataSource.launchSyncLocalToRemote(this)
+
+            //addGP
+            val prize = 1000
+            val currentData = userPreferences.userDataFlow.first()
+            val updatedData = currentData.copy(
+                current_GP = currentData.current_GP + prize,
+                total_GP = currentData.total_GP + prize
+            )
+
+            userPreferences.saveUserData(updatedData)
+            userRemoteDataSource.launchSyncLocalToRemote(viewModelScope)
         }
 
     }

@@ -12,25 +12,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.R
-import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.viewmodel.SplashViewModel
-import com.example.weekendguide.viewmodel.SplashViewModelFactory
 import com.example.weekendguide.viewmodel.TranslateViewModel
 
 
 @Composable
 fun SplashScreen(
+    splashViewModel: SplashViewModel,
     onNavigate: (SplashViewModel.Destination) -> Unit,
-    userPreferences: UserPreferences,
     translateViewModel: TranslateViewModel,
 ) {
-    val viewModel: SplashViewModel = viewModel(
-        factory = SplashViewModelFactory(userPreferences)
-    )
 
-    val state by viewModel.uiState.collectAsState()
+    val state by splashViewModel.uiState.collectAsState()
 
     LaunchedEffect(state) {
         if (state != SplashViewModel.Destination.Loading) {

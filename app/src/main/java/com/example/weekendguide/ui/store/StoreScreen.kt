@@ -53,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.Country
 import com.example.weekendguide.data.model.Region
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
@@ -60,53 +61,49 @@ import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.StoreViewModel
 import com.example.weekendguide.viewmodel.StoreViewModelFactory
-import com.example.weekendguide.viewmodel.TranslateViewModel
 import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun StoreScreen(
+    userData: UserData,
     isInitialSelection: Boolean,
     onRegionChosen: () -> Unit,
-    translateViewModel: TranslateViewModel,
-    pointsViewModel: PointsViewModel,
     onDismiss: () -> Unit = {},
+    pointsViewModel: PointsViewModel,
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource
 ) {
 
-    val storeViewModel: StoreViewModel = viewModel(
-        factory = StoreViewModelFactory(userPreferences, userRemoteDataSource, dataRepository)
-    )
-    val userData by storeViewModel.userData.collectAsState()
-    //val purchasedRegions = userData.purchasedRegions
+    // --- UserData State ---
+    val currentLanguage = userData.language?:"en"
+    val currentGP = userData.current_GP
     val isSubscription = userData.subscription ?: false
     val purchasedRegions: Set<String> = userData.collectionRegions.map { it.region_code }.toSet()
 
+    // --- ViewModel State ---
+    val storeViewModel: StoreViewModel = viewModel(
+        factory = StoreViewModelFactory(userPreferences, userRemoteDataSource, dataRepository)
+    )
+
     val countries by storeViewModel.countries.collectAsState()
-
     val regionsByCountry by storeViewModel.regionsByCountry.collectAsState()
-    //val purchasedRegions by storeViewModel.purchasedRegions.collectAsState()
-    val currentLanguage by translateViewModel.language.collectAsState()
-    val currentGP by pointsViewModel.currentGP.collectAsState()
+    val isLoading by storeViewModel.loading.collectAsState()
 
+    // --- UI State ---
     var selectedCountryCode by remember { mutableStateOf<String?>(null) }
     var selectedRegion by remember { mutableStateOf<Region?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var showInsufficientGPDialog by remember { mutableStateOf(false) }
-
     val coroutineScope = rememberCoroutineScope()
-    val sound = LocalView.current
-    val COST = 10_000
-
-    val isLoading by storeViewModel.loading.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
+    val sound = LocalView.current
+    val regionCost = 10_000
 
+    // --- UI  ---
     if (isLoading) LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
     else {
         Scaffold(
@@ -123,7 +120,7 @@ fun StoreScreen(
                         IconButton(onClick = {
                             sound.playSoundEffect(SoundEffectConstants.CLICK)
                             if (selectedCountryCode == null) {
-                                scope.launch { listState.animateScrollToItem(0) }
+                                coroutineScope.launch { listState.animateScrollToItem(0) }
                                 onDismiss()
                             } else selectedCountryCode = null
                         }) {
@@ -251,7 +248,7 @@ fun StoreScreen(
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(2.dp).clickable {
                                         val index = indexedList.indexOfFirst { it.first == letter.toString() }
-                                        if (index != -1) scope.launch { listState.animateScrollToItem(index) }
+                                        if (index != -1) coroutineScope.launch { listState.animateScrollToItem(index) }
                                     }
                                 )
                             }
@@ -285,7 +282,7 @@ fun StoreScreen(
                                         .fillMaxWidth()
                                         .background(bgColor)
                                         .clickable(enabled = !isPurchased) {
-                                            if (isInitialSelection || isSubscription || currentGP >= COST) {
+                                            if (isInitialSelection || isSubscription || currentGP >= regionCost) {
                                                 selectedRegion = region
                                                 showDialog = true
                                             } else {
@@ -323,6 +320,8 @@ fun StoreScreen(
 
                 if (showDialog && selectedRegion != null) {
                     val regionName = selectedRegion?.name?.get(currentLanguage) ?: "this region"
+                    val cost = if (isInitialSelection || isSubscription) 0 else regionCost
+
                     AlertDialog(
                         onDismissRequest = { showDialog = false },
                         title = {
@@ -336,7 +335,7 @@ fun StoreScreen(
                                 else if (isSubscription)
                                     "${regionName}: " + LocalizerUI.t("confirm_subscript_text", currentLanguage)
                                 else
-                                    "${regionName}: " + LocalizerUI.t("confirm_buy_text", currentLanguage) + " $COST GP?"
+                                    "${regionName}: " + LocalizerUI.t("confirm_buy_text", currentLanguage) + " $cost GP?"
                             )
                         },
                         confirmButton = {
@@ -344,8 +343,7 @@ fun StoreScreen(
                                 showDialog = false
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
-                                        if (!isInitialSelection || !isSubscription) pointsViewModel.spentGP(COST)
-                                        storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription)
+                                        storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription, cost)
                                         onRegionChosen()
                                     }
                                 }
@@ -371,7 +369,7 @@ fun StoreScreen(
                                 showInsufficientGPDialog = false
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
-                                        storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription)
+                                        storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription, 0)
                                         onRegionChosen()
                                     }
                                 }

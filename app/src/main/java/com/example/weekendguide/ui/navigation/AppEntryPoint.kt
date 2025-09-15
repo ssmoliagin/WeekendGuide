@@ -23,6 +23,8 @@ import com.example.weekendguide.viewmodel.MarkerIconViewModel
 import com.example.weekendguide.viewmodel.MarkerIconViewModelFactory
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.PointsViewModelFactory
+import com.example.weekendguide.viewmodel.SplashViewModel
+import com.example.weekendguide.viewmodel.SplashViewModelFactory
 import com.example.weekendguide.viewmodel.SubscriptionViewModel
 import com.example.weekendguide.viewmodel.SubscriptionViewModelFactory
 import com.example.weekendguide.viewmodel.ThemeViewModel
@@ -86,7 +88,14 @@ fun AppEntryPoint() {
         factory = LeaderboardViewModelFactory(auth, firestore)
     )
 
-    val currentTheme by themeViewModel.theme.collectAsState()
+    val splashViewModel: SplashViewModel = viewModel(
+        factory = SplashViewModelFactory(userPreferences)
+    )
+
+    val userData by splashViewModel.userData.collectAsState()
+
+    //val currentTheme by themeViewModel.theme.collectAsState()
+    val currentTheme = userData.userThema
 
     val isDarkTheme = when (currentTheme) {
         "light" -> false
@@ -108,7 +117,9 @@ fun AppEntryPoint() {
             userRemoteDataSource = userRemoteDataSource,
             leaderboardViewModel = leaderboardViewModel,
             markerIconViewModel = markerIconViewModel,
-            subscriptionViewModel = subscriptionViewModel
+            subscriptionViewModel = subscriptionViewModel,
+            splashViewModel = splashViewModel,
+            userData = userData,
         )
     }
 }

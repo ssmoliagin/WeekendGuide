@@ -6,9 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -28,21 +26,14 @@ import com.example.weekendguide.data.repository.WikiRepository
 import com.example.weekendguide.data.repository.WikiRepositoryImp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -81,40 +72,36 @@ class POIViewModel(
 
     val language = translateViewModel.language.value
 
-
+    // Wiki State
     private val _wikiDescription = MutableStateFlow<String?>(null)
     val wikiDescription: StateFlow<String?> = _wikiDescription
+
     private var lastWikiTitle: String? = null
 
     private val _wikiAnnotatedDescription = MutableStateFlow<AnnotatedString?>(null)
     val wikiAnnotatedDescription: StateFlow<AnnotatedString?> = _wikiAnnotatedDescription
 
+    // POI State
     private val _poiList = MutableStateFlow<List<POI>>(emptyList())
     val poiList: StateFlow<List<POI>> = _poiList
-
-    private val _poisIsLoading = MutableStateFlow(false)
-    val poisIsLoading: StateFlow<Boolean> = _poisIsLoading
-
-    val favoriteIds: StateFlow<Set<String>> = userPreferences.favoriteIdsFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
-
-    private val _typesIsLoading = MutableStateFlow(false)
-    val typesIsLoading: StateFlow<Boolean> = _typesIsLoading
 
     private val _allTypes = MutableStateFlow<List<String>>(emptyList())
     val allTypes: StateFlow<List<String>> = _allTypes
 
-    private val _tagsIsLoading = MutableStateFlow(false)
-    val tagsIsLoading: StateFlow<Boolean> = _tagsIsLoading
-
     private val _allTags = MutableStateFlow<List<String>>(emptyList())
     val allTags: StateFlow<List<String>> = _allTags
 
+    //  UI State
+    private val _poisIsLoading = MutableStateFlow(false)
+    val poisIsLoading: StateFlow<Boolean> = _poisIsLoading
+
+    // Reviews State
     private val _userReviews = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val userReviews: StateFlow<Map<String, Boolean>> = _userReviews
 
     private val _reviews = MutableStateFlow<Map<String, List<Review>>>(emptyMap())
     val reviews: StateFlow<Map<String, List<Review>>> = _reviews
+
 
     init {
         viewModelScope.launch { loadAllReviews() }
@@ -153,7 +140,7 @@ class POIViewModel(
 
     fun loadTypePOITranslations() {
         viewModelScope.launch {
-            _typesIsLoading.value = true
+
             try {
                 val cached = dataRepository.getTypes()
                 if (cached != null) {
@@ -169,14 +156,14 @@ class POIViewModel(
                     _allTypes.value = parsed.keys().asSequence().toList()
                 }
             } finally {
-                _typesIsLoading.value = false
+
             }
         }
     }
 
     fun loadTagsPOITranslations() {
         viewModelScope.launch {
-            _tagsIsLoading.value = true
+
             try {
                 val cached = dataRepository.getTags()
                 if (cached != null) {
@@ -192,7 +179,7 @@ class POIViewModel(
                     _allTags.value = parsed.keys().asSequence().toList()
                 }
             } finally {
-                _tagsIsLoading.value = false
+
             }
         }
     }
@@ -280,6 +267,9 @@ class POIViewModel(
     fun markPoiVisited(poiId: String) {
         viewModelScope.launch {
             userPreferences.updateVisitedPOIs(poiId, review = false)
+
+
+
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }
     }

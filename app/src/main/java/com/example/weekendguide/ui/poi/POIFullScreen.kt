@@ -76,7 +76,6 @@ import com.example.weekendguide.data.model.Review
 import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.viewmodel.LocationViewModel
-import com.example.weekendguide.viewmodel.LoginViewModel
 import com.example.weekendguide.viewmodel.POIViewModel
 import com.example.weekendguide.viewmodel.PointsViewModel
 import com.google.android.gms.maps.model.CameraPosition
@@ -106,7 +105,6 @@ fun POIFullScreen(
     poiViewModel: POIViewModel,
     pointsViewModel: PointsViewModel,
     locationViewModel: LocationViewModel,
-    loginViewModel: LoginViewModel,
     currentLanguage: String,
     currentUnits: String,
     tagsIcons: Map<String, ImageVector>,
@@ -122,6 +120,7 @@ fun POIFullScreen(
 
     val isTest = userData.test_mode != false
     val isSubscription = userData.subscription != false
+    val prize = if (isSubscription) 200 else 100
 
     val context = LocalContext.current
     val wikiDescription by poiViewModel.wikiDescription.collectAsState()
@@ -129,10 +128,9 @@ fun POIFullScreen(
     val coroutineScope = rememberCoroutineScope()
     var isChecking by remember { mutableStateOf(false) }
 
-    val userInfo by loginViewModel.userData.collectAsState()
-    val email = userInfo.email ?: ""
-    val displayName = userInfo.displayName ?: ""
-    val photoUrl = userInfo.photoUrl
+    val email = userData.email ?: ""
+    val displayName = userData.displayName ?: ""
+    val photoUrl = userData.photoUrl
     val name = displayName.ifBlank { email.substringBefore("@") }
 
     val localizedTitle =
@@ -508,7 +506,6 @@ fun POIFullScreen(
 
                                                 Spacer(modifier = Modifier.width(12.dp))
 
-                                                // Имя, дата и звезды в одной колонке
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
@@ -659,24 +656,19 @@ fun POIFullScreen(
             if (!isVisited) {
                 Button(
                     onClick = {
-                        if (isTest) {
-                            poiViewModel.markPoiVisited(poi.id)
-                            pointsViewModel.addGP(100)
-                            Toast.makeText(context, LocalizerUI.t("forVisit", currentLanguage), Toast.LENGTH_SHORT).show()
-                        } else {
                             isChecking = true
                             coroutineScope.launch {
-                                pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel, isSubscription) { success ->
-                                    if (success) {
+                                pointsViewModel.checkAndAwardGPForPOI(poi, locationViewModel) { success ->
+                                    if (success || isTest) {
                                         poiViewModel.markPoiVisited(poi.id)
-                                        Toast.makeText(context, LocalizerUI.t("forVisit", currentLanguage), Toast.LENGTH_SHORT).show()
+                                        pointsViewModel.addGP(prize)
+                                        Toast.makeText(context, "$prize  ${LocalizerUI.t("forVisit", currentLanguage)}", Toast.LENGTH_SHORT).show()
                                     } else {
                                         Toast.makeText(context, LocalizerUI.t("tooFar", currentLanguage), Toast.LENGTH_SHORT).show()
                                     }
                                     isChecking = false
                                 }
                             }
-                        }
                     },
                     enabled = !isChecking,
                     modifier = Modifier

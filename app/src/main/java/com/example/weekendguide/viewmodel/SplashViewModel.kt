@@ -3,11 +3,14 @@ package com.example.weekendguide.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SplashViewModelFactory(private val userPreferences: UserPreferences): ViewModelProvider.Factory {
@@ -23,6 +26,12 @@ class SplashViewModelFactory(private val userPreferences: UserPreferences): View
 class SplashViewModel(
     private val userPreferences: UserPreferences,
 ) : ViewModel() {
+
+    val userData: StateFlow<UserData> = userPreferences.userDataFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = UserData()
+    )
 
     private val _uiState = MutableStateFlow<Destination>(Destination.Loading)
     val uiState: StateFlow<Destination> = _uiState

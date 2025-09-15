@@ -15,55 +15,50 @@ private val Context.dataStore by preferencesDataStore(name = "user_preferences")
 
 class UserPreferences(private val context: Context) {
 
-    // Preference Keys
     private object Keys {
+        // --- Strings ---
         val EMAIL = stringPreferencesKey("user_email")
         val DISPLAY_NAME = stringPreferencesKey("user_display_name")
         val PHOTO_URL = stringPreferencesKey("user_photo_url")
         val LANGUAGE = stringPreferencesKey("language_code")
         val THEME = stringPreferencesKey("app_theme")
         val MEASURED = stringPreferencesKey("user_measurement")
-        val NOTIFICATIONS = booleanPreferencesKey("notifications")
-        val TOTAL_GP = intPreferencesKey("total_GP")
-        val CURRENT_GP = intPreferencesKey("current_GP")
-        val SPENT_GP = intPreferencesKey("spent_GP")
-        val SUBSCRIPTION = booleanPreferencesKey("subscription")
-
-        val TEST_MODE = booleanPreferencesKey("test_mode")
-
-        val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
-        val SUBSCRIPTION_REGIONS = stringSetPreferencesKey("subscription_regions")
-        //val PURCHASED_REGIONS = stringSetPreferencesKey("purchased_regions")
-        //val PURCHASED_COUNTRIES = stringSetPreferencesKey("purchased_countries")
-
         val HOME_CITY = stringPreferencesKey("home_city")
-        val HOME_LAT = doublePreferencesKey("home_lat")
-        val HOME_LNG = doublePreferencesKey("home_lng")
-
         val CURRENT_CITY = stringPreferencesKey("current_city")
-        val LAT = doublePreferencesKey("current_lat")
-        val LNG = doublePreferencesKey("current_lng")
-
-        val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
-        val VISITED = stringPreferencesKey("visited_poi_ids")
-
-        val CATEGORY_LEVELS = stringPreferencesKey("category_levels")
-
         val FCM_TOKEN = stringPreferencesKey("fcm_token")
         val APP_VERSION = stringPreferencesKey("app_version")
 
+        // --- Booleans ---
+        val NOTIFICATIONS = booleanPreferencesKey("notifications")
+        val SUBSCRIPTION = booleanPreferencesKey("subscription")
+        val TEST_MODE = booleanPreferencesKey("test_mode")
+
+        // --- Integers ---
+        val TOTAL_GP = intPreferencesKey("total_GP")
+        val CURRENT_GP = intPreferencesKey("current_GP")
+        val SPENT_GP = intPreferencesKey("spent_GP")
+
+        // --- Doubles ---
+        val HOME_LAT = doublePreferencesKey("home_lat")
+        val HOME_LNG = doublePreferencesKey("home_lng")
+        val LAT = doublePreferencesKey("current_lat")
+        val LNG = doublePreferencesKey("current_lng")
+
+        // --- Collections / JSON ---
+        val CATEGORY_LEVELS = stringPreferencesKey("category_levels")
+        val COLLECTION_REGIONS = stringPreferencesKey("collection_region")
+        val SUBSCRIPTION_REGIONS = stringSetPreferencesKey("subscription_regions")
+        val FAVORITES = stringSetPreferencesKey("favorite_poi_ids")
+        val VISITED = stringPreferencesKey("visited_poi_ids")
         val REWARD_AVAILABLE = stringPreferencesKey("rewardAvailable")
 
+        // --- System / last actions ---
         val LAST_SHARE_DATE = stringPreferencesKey("last_share_date")
         val LAST_SAVE_GPX_DATE = stringPreferencesKey("last_save_gpx_date")
-
     }
 
-    // Main user data flow
+    // --- UserData ---
     val userDataFlow: Flow<UserData> = context.dataStore.data.map { prefs ->
-        val levelsJson = prefs[Keys.CATEGORY_LEVELS]
-        val collectionJson = prefs[Keys.COLLECTION_REGIONS]
-
         val visitedJson = prefs[Keys.VISITED] ?: "{}"
         val visitedMap: Map<String, Boolean> =
             try { Json.decodeFromString(visitedJson) }
@@ -75,74 +70,80 @@ class UserPreferences(private val context: Context) {
             catch (e: Exception) { emptyMap() }
 
         UserData(
+            // --- Strings ---
             email = prefs[Keys.EMAIL],
             displayName = prefs[Keys.DISPLAY_NAME],
             photoUrl = prefs[Keys.PHOTO_URL],
             language = prefs[Keys.LANGUAGE],
             userThema = prefs[Keys.THEME],
             userMeasurement = prefs[Keys.MEASURED],
-            notification = prefs[Keys.NOTIFICATIONS],
-            total_GP = prefs[Keys.TOTAL_GP] ?: 0,
-            current_GP = prefs[Keys.CURRENT_GP] ?: 0,
-            spent_GP = prefs[Keys.SPENT_GP] ?: 0,
-            subscription = prefs[Keys.SUBSCRIPTION],
-            test_mode = prefs[Keys.TEST_MODE],
-            categoryLevels = levelsJson?.let { Json.decodeFromString(it) } ?: emptyMap(),
-            collectionRegions = collectionJson?.let { Json.decodeFromString(it) } ?: emptyList(),
-            subscriptionRegions = prefs[Keys.SUBSCRIPTION_REGIONS]?.toList() ?: emptyList(),
-            //purchasedRegions = prefs[Keys.PURCHASED_REGIONS]?.toList() ?: emptyList(),
-            //purchasedCountries = prefs[Keys.PURCHASED_COUNTRIES]?.toList() ?: emptyList(),
             homeCity = prefs[Keys.HOME_CITY],
-            homeLat = prefs[Keys.HOME_LAT],
-            homeLng = prefs[Keys.HOME_LNG],
-
             currentCity = prefs[Keys.CURRENT_CITY],
-            currentLat = prefs[Keys.LAT],
-            currentLng = prefs[Keys.LNG],
-            favorites = prefs[Keys.FAVORITES]?.toList() ?: emptyList(),
-            visited = visitedMap,
-
             fcm_token = prefs[Keys.FCM_TOKEN],
             app_version = prefs[Keys.APP_VERSION],
 
+            // --- Booleans ---
+            notification = prefs[Keys.NOTIFICATIONS],
+            subscription = prefs[Keys.SUBSCRIPTION],
+            test_mode = prefs[Keys.TEST_MODE],
+
+            // --- Integers ---
+            total_GP = prefs[Keys.TOTAL_GP] ?: 0,
+            current_GP = prefs[Keys.CURRENT_GP] ?: 0,
+            spent_GP = prefs[Keys.SPENT_GP] ?: 0,
+
+            // --- Doubles ---
+            homeLat = prefs[Keys.HOME_LAT],
+            homeLng = prefs[Keys.HOME_LNG],
+            currentLat = prefs[Keys.LAT],
+            currentLng = prefs[Keys.LNG],
+
+            // --- Collections ---
+            categoryLevels = prefs[Keys.CATEGORY_LEVELS]?.let { Json.decodeFromString(it) } ?: emptyMap(),
+            collectionRegions = prefs[Keys.COLLECTION_REGIONS]?.let { Json.decodeFromString(it) } ?: emptyList(),
+            subscriptionRegions = prefs[Keys.SUBSCRIPTION_REGIONS]?.toList() ?: emptyList(),
+            favorites = prefs[Keys.FAVORITES]?.toList() ?: emptyList(),
+            visited = visitedMap,
             rewardAvailable = rewardMap
         )
     }
 
     suspend fun saveUserData(userData: UserData) {
         context.dataStore.edit { prefs ->
+            // --- Strings ---
             prefs[Keys.EMAIL] = userData.email ?: ""
             prefs[Keys.DISPLAY_NAME] = userData.displayName ?: ""
             prefs[Keys.PHOTO_URL] = userData.photoUrl ?: ""
             prefs[Keys.LANGUAGE] = userData.language ?: ""
             prefs[Keys.THEME] = userData.userThema ?: "light"
             prefs[Keys.MEASURED] = userData.userMeasurement ?: "km"
-            prefs[Keys.NOTIFICATIONS] = userData.notification ?: true
-            prefs[Keys.TOTAL_GP] = userData.total_GP
-            prefs[Keys.CURRENT_GP] = userData.current_GP
-            prefs[Keys.SPENT_GP] = userData.spent_GP
-            prefs[Keys.SUBSCRIPTION] = userData.subscription ?: false
-
-            prefs[Keys.TEST_MODE] = userData.test_mode ?: false
-
-            prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(userData.categoryLevels)
-            prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(userData.collectionRegions)
-            prefs[Keys.SUBSCRIPTION_REGIONS] = userData.subscriptionRegions.toSet()
-            //prefs[Keys.PURCHASED_REGIONS] = userData.purchasedRegions.toSet()
-            //prefs[Keys.PURCHASED_COUNTRIES] = userData.purchasedCountries.toSet()
             prefs[Keys.HOME_CITY] = userData.homeCity ?: ""
-            userData.homeLat?.let { prefs[Keys.HOME_LAT] = it }
-            userData.homeLng?.let { prefs[Keys.HOME_LNG] = it }
-
             prefs[Keys.CURRENT_CITY] = userData.currentCity ?: ""
-            userData.currentLat?.let { prefs[Keys.LAT] = it }
-            userData.currentLng?.let { prefs[Keys.LNG] = it }
-            prefs[Keys.FAVORITES] = userData.favorites.toSet()
-            prefs[Keys.VISITED] = Json.encodeToString(userData.visited)
-
             prefs[Keys.FCM_TOKEN] = userData.fcm_token ?: ""
             prefs[Keys.APP_VERSION] = userData.app_version ?: ""
 
+            // --- Booleans ---
+            prefs[Keys.NOTIFICATIONS] = userData.notification ?: true
+            prefs[Keys.SUBSCRIPTION] = userData.subscription ?: false
+            prefs[Keys.TEST_MODE] = userData.test_mode ?: false
+
+            // --- Integers ---
+            prefs[Keys.TOTAL_GP] = userData.total_GP
+            prefs[Keys.CURRENT_GP] = userData.current_GP
+            prefs[Keys.SPENT_GP] = userData.spent_GP
+
+            // --- Doubles ---
+            userData.homeLat?.let { prefs[Keys.HOME_LAT] = it }
+            userData.homeLng?.let { prefs[Keys.HOME_LNG] = it }
+            userData.currentLat?.let { prefs[Keys.LAT] = it }
+            userData.currentLng?.let { prefs[Keys.LNG] = it }
+
+            // --- Collections ---
+            prefs[Keys.CATEGORY_LEVELS] = Json.encodeToString(userData.categoryLevels)
+            prefs[Keys.COLLECTION_REGIONS] = Json.encodeToString(userData.collectionRegions)
+            prefs[Keys.SUBSCRIPTION_REGIONS] = userData.subscriptionRegions.toSet()
+            prefs[Keys.FAVORITES] = userData.favorites.toSet()
+            prefs[Keys.VISITED] = Json.encodeToString(userData.visited)
             prefs[Keys.REWARD_AVAILABLE] = Json.encodeToString(userData.rewardAvailable)
         }
     }
@@ -291,31 +292,6 @@ class UserPreferences(private val context: Context) {
         val json = context.dataStore.data.first()[Keys.COLLECTION_REGIONS] ?: return emptyList()
         return Json.decodeFromString(json)
     }
-/*
-    // Purchased regions/countries
-    suspend fun addPurchasedRegion(regionCode: String) {
-        context.dataStore.edit {
-            val current = it[Keys.PURCHASED_REGIONS] ?: emptySet()
-            it[Keys.PURCHASED_REGIONS] = current + regionCode
-        }
-    }
-
-    suspend fun addPurchasedCountries(countryCode: String) {
-        context.dataStore.edit {
-            val current = it[Keys.PURCHASED_COUNTRIES] ?: emptySet()
-            it[Keys.PURCHASED_COUNTRIES] = current + countryCode
-        }
-    }
-
-    suspend fun getPurchasedRegions(): Set<String> {
-        return context.dataStore.data.first()[Keys.PURCHASED_REGIONS] ?: emptySet()
-    }
-
-    suspend fun getPurchasedCountries(): Set<String> {
-        return context.dataStore.data.first()[Keys.PURCHASED_COUNTRIES] ?: emptySet()
-    }
-
- */
 
     // City & location
     suspend fun saveHomeCity(city: String) {
@@ -376,8 +352,7 @@ class UserPreferences(private val context: Context) {
     val subscriptionRegionsFlow: Flow<Set<String>> = context.dataStore.data
         .map { it[Keys.SUBSCRIPTION_REGIONS] ?: emptySet() }
 
-
-//LastShareDate
+    //LastShareDate
     suspend fun getLastShareDate(): String? {
         return context.dataStore.data.first()[Keys.LAST_SHARE_DATE]
     }
@@ -397,5 +372,4 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.LAST_SAVE_GPX_DATE] = date
         }
     }
-
 }

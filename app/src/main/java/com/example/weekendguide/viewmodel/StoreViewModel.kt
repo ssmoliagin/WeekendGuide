@@ -4,9 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weekendguide.data.model.Country
-import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Region
-import com.example.weekendguide.data.model.UserData
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepository
 import com.example.weekendguide.data.repository.DataRepositoryImpl
@@ -14,11 +12,9 @@ import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class StoreViewModelFactory(
@@ -48,26 +44,11 @@ class StoreViewModel(
     private val _regionsByCountry = MutableStateFlow<Map<String, List<Region>>>(emptyMap())
     val regionsByCountry: StateFlow<Map<String, List<Region>>> = _regionsByCountry.asStateFlow()
 
-    val userData: StateFlow<UserData> = userPreferences.userDataFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = UserData()
-    )
-
-    private val _purchasedRegions = MutableStateFlow<Set<String>>(emptySet())
-    //val purchasedRegions: StateFlow<Set<String>> = _purchasedRegions.asStateFlow()
-
-    private val _purchasedCountries = MutableStateFlow<Set<String>>(emptySet())
-    //val purchasedCountries: StateFlow<Set<String>> = _purchasedCountries.asStateFlow()
-
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
-
-    private val _poiList = MutableStateFlow<List<POI>>(emptyList())
-    val poiList: StateFlow<List<POI>> = _poiList.asStateFlow()
 
     init {
         loadCountriesAndRegions()
@@ -96,7 +77,7 @@ class StoreViewModel(
         }
     }
 
-    fun purchaseRegionAndLoadPOI(region: Region, isSubscription: Boolean) {
+    fun purchaseRegionAndLoadPOI(region: Region, isSubscription: Boolean, cost: Int) {
         viewModelScope.launch {
             try {
                 userPreferences.addRegionInCollection(region)
@@ -109,7 +90,9 @@ class StoreViewModel(
                         currentData.collectionRegions + region
                     } else {
                         currentData.collectionRegions
-                    }
+                    },
+                    current_GP = currentData.current_GP - cost,
+                    spent_GP = currentData.spent_GP + cost,
                 )
                 userPreferences.saveUserData(updatedData)
                 userRemote.launchSyncLocalToRemote(viewModelScope)

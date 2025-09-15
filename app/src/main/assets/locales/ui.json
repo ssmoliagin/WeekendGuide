@@ -309,9 +309,9 @@
     "ru": "Вы можете оставить отзыв после посещения."
   },
   "forVisit": {
-    "en": "100 GP for visit!",
-    "de": "100 GP für den Besuch!",
-    "ru": "100 GP за посещение!"
+    "en": "points for visit!",
+    "de": "points für den Besuch!",
+    "ru": "очков за посещение!"
   },
   "tooFar": {
     "en": "You are too far from the place",

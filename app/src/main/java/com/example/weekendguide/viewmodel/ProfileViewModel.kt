@@ -1,21 +1,17 @@
 package com.example.weekendguide.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -77,7 +73,7 @@ class ProfileViewModel(
             FirebaseAuth.getInstance().signOut()
 
             app.cacheDir.deleteRecursively()
-            app.filesDir.deleteRecursively()
+            //app.filesDir.deleteRecursively()
 
             val intent = app.packageManager.getLaunchIntentForPackage(app.packageName)
             intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)

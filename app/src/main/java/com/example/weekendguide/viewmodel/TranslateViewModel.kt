@@ -47,15 +47,6 @@ class TranslateViewModel(
         }
     }
 
-    fun refreshLang() {
-        viewModelScope.launch {
-            _lang.value = userPreferences.getLanguage()
-            if (_lang.value.isBlank()) {
-                detectLanguage()
-            }
-        }
-    }
-
     fun detectLanguage() {
         viewModelScope.launch {
             val savedLang = userPreferences.getLanguage()
@@ -68,8 +59,6 @@ class TranslateViewModel(
             } else {
                 _lang.value = savedLang
             }
-
-           // loadUITranslations()
 
             val currentData = userPreferences.userDataFlow.first()
             val updatedData = currentData.copy(language = _lang.value)
