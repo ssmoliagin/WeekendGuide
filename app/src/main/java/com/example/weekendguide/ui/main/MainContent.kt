@@ -21,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -29,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import com.example.weekendguide.data.locales.LocalizerUI
 import com.example.weekendguide.data.model.POI
 import com.example.weekendguide.data.model.Review
+import com.example.weekendguide.ui.components.LoadingOverlay
 import com.example.weekendguide.ui.poi.POICard
+import com.example.weekendguide.viewmodel.POIViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,87 +56,37 @@ fun MainContent(
     allReviews: List<Review> = emptyList(),
     currentUnits: String,
     currentLanguage: String,
+    poiViewModel: POIViewModel
 ) {
     val listState = rememberLazyListState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val isLoading by poiViewModel.poisIsLoading.collectAsState()
 
-    Scaffold(
-        topBar = { showTopAppBar() },
-        bottomBar = { showNavigationBar() }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .padding(horizontal = 4.dp)
-        ) {
-            showLocationPanel()
-            Spacer(modifier = Modifier.height(4.dp))
-            showFiltersButtons()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                modifier = Modifier.weight(1f)
+    if (isLoading) LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
+    else {
+        Scaffold(
+            topBar = { showTopAppBar() },
+            bottomBar = { showNavigationBar() }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp)
             ) {
-                item {
-                    val displayedPOIs = userPOIList.shuffled().take(10)
-                    val count = userPOIList.size
+                showLocationPanel()
+                Spacer(modifier = Modifier.height(4.dp))
+                showFiltersButtons()
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${count} ${LocalizerUI.t("places_near", currentLanguage)} ${userCurrentCity ?: LocalizerUI.t("you", currentLanguage)}",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = LocalizerUI.t("show_all", currentLanguage),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.clickable { onOpenListScreen() }
-                        )
-                    }
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
-                    ) {
-                        items(displayedPOIs) { poi ->
-                            Box(modifier = Modifier.width(screenWidth - 32.dp)) {
-                                POICard(
-                                    poi = poi,
-                                    isFavorite = isFavorite(poi),
-                                    isVisited = isVisited(poi),
-                                    onFavoriteClick = { onFavoriteClick(poi.id) },
-                                    userLocation = userLocation,
-                                    userCurrentCity = userCurrentCity,
-                                    cardType = "list",
-                                    onClick = onPOIClick,
-                                    onSelectPOI = onSelectPOI,
-                                    reviews = allReviews.filter { it.poiId == poi.id },
-                                    currentUnits = currentUnits,
-                                    currentLanguage = currentLanguage,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                val types = userPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
-                types.forEach { type ->
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
                     item {
-                        val allTypedPOIs = userPOIList.filter { it.type == type }
-                        val displayedPOIs = allTypedPOIs.shuffled().take(6)
-                        val count = allTypedPOIs.size
+                        val displayedPOIs = userPOIList.shuffled().take(10)
+                        val count = userPOIList.size
 
                         Row(
                             modifier = Modifier
@@ -142,43 +96,106 @@ fun MainContent(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
-                                style = MaterialTheme.typography.titleMedium
+                                text = "${count} ${
+                                    LocalizerUI.t(
+                                        "places_near",
+                                        currentLanguage
+                                    )
+                                } ${userCurrentCity ?: LocalizerUI.t("you", currentLanguage)}",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = LocalizerUI.t("show_all", currentLanguage),
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.clickable {
-                                    onSelectSingleType(type)
-                                    onOpenListScreen()
-                                }
+                                modifier = Modifier.clickable { onOpenListScreen() }
                             )
                         }
 
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
                             items(displayedPOIs) { poi ->
-                                POICard(
-                                    poi = poi,
-                                    isFavorite = isFavorite(poi),
-                                    isVisited = isVisited(poi),
-                                    onFavoriteClick = { onFavoriteClick(poi.id) },
-                                    userLocation = userLocation,
-                                    userCurrentCity = userCurrentCity,
-                                    cardType = "mini",
-                                    onClick = onPOIClick,
-                                    onSelectPOI = onSelectPOI,
-                                    reviews = allReviews.filter { it.poiId == poi.id },
-                                    currentUnits = currentUnits,
-                                    currentLanguage = currentLanguage,
-                                )
+                                Box(modifier = Modifier.width(screenWidth - 32.dp)) {
+                                    POICard(
+                                        poi = poi,
+                                        isFavorite = isFavorite(poi),
+                                        isVisited = isVisited(poi),
+                                        onFavoriteClick = { onFavoriteClick(poi.id) },
+                                        userLocation = userLocation,
+                                        userCurrentCity = userCurrentCity,
+                                        cardType = "list",
+                                        onClick = onPOIClick,
+                                        onSelectPOI = onSelectPOI,
+                                        reviews = allReviews.filter { it.poiId == poi.id },
+                                        currentUnits = currentUnits,
+                                        currentLanguage = currentLanguage,
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                item {
-                    showStoreBanner()
+                    val types = userPOIList.map { it.type }.toSet().filter { it.isNotBlank() }
+                    types.forEach { type ->
+                        item {
+                            val allTypedPOIs = userPOIList.filter { it.type == type }
+                            val displayedPOIs = allTypedPOIs.shuffled().take(6)
+                            val count = allTypedPOIs.size
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "${
+                                        LocalizerUI.t(type, currentLanguage)
+                                            .replaceFirstChar { it.uppercaseChar() }
+                                    } - $count",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = LocalizerUI.t("show_all", currentLanguage),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.clickable {
+                                        onSelectSingleType(type)
+                                        onOpenListScreen()
+                                    }
+                                )
+                            }
+
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                items(displayedPOIs) { poi ->
+                                    POICard(
+                                        poi = poi,
+                                        isFavorite = isFavorite(poi),
+                                        isVisited = isVisited(poi),
+                                        onFavoriteClick = { onFavoriteClick(poi.id) },
+                                        userLocation = userLocation,
+                                        userCurrentCity = userCurrentCity,
+                                        cardType = "mini",
+                                        onClick = onPOIClick,
+                                        onSelectPOI = onSelectPOI,
+                                        reviews = allReviews.filter { it.poiId == poi.id },
+                                        currentUnits = currentUnits,
+                                        currentLanguage = currentLanguage,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        showStoreBanner()
+                    }
                 }
             }
         }

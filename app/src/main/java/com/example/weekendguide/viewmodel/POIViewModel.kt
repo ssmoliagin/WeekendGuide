@@ -70,8 +70,6 @@ class POIViewModel(
     private val wikiRepository: WikiRepository,
 ) : ViewModel() {
 
-    val language = translateViewModel.language.value
-
     // Wiki State
     private val _wikiDescription = MutableStateFlow<String?>(null)
     val wikiDescription: StateFlow<String?> = _wikiDescription
@@ -328,7 +326,7 @@ class POIViewModel(
                 val lastDate = userPreferences.getLastShareDate()
 
                 if (lastDate != null && lastDate == today) {
-                    Toast.makeText(context, LocalizerUI.t("radius_with_subscription_only", language), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, LocalizerUI.t("radius_with_subscription_only", translateViewModel.language.value), Toast.LENGTH_SHORT).show()
                     return@launch
                 } else {
                     userPreferences.setLastShareDate(today)
@@ -345,7 +343,7 @@ class POIViewModel(
             val shareText = buildString {
                 append("📍 $localizedTitle\n")
                 append(description.trim())
-                append("\n\n🤳 ${LocalizerUI.t("share_by", language)}\n\n")
+                append("\n\n🤳 ${LocalizerUI.t("share_by", translateViewModel.language.value)}\n\n")
                 append("🌍 $locationUrl")
             }
 
@@ -392,7 +390,7 @@ class POIViewModel(
                 if (lastDate != null && lastDate == today) {
                     Toast.makeText(
                         context,
-                        LocalizerUI.t("radius_with_subscription_only", language),
+                        LocalizerUI.t("radius_with_subscription_only", translateViewModel.language.value),
                         Toast.LENGTH_SHORT
                     ).show()
                     return

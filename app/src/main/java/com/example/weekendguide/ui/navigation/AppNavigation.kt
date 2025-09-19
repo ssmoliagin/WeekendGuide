@@ -92,7 +92,6 @@ fun AppNavigation(
                     }
                 },
                 onDismiss = {/*null*/},
-                pointsViewModel = pointsViewModel,
                 userPreferences = userPreferences,
                 dataRepository = dataRepository,
                 userRemoteDataSource = userRemoteDataSource,

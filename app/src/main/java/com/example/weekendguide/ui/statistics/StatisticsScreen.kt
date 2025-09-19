@@ -55,7 +55,7 @@ fun StatisticsScreen(
     totalPOIList: List<POI>,
     allTypes: List<String>,
     totalGP: Int,
-    spentGP: Int,
+    currentGP: Int,
     onOpenListScreen: () -> Unit,
     showNavigationBar: @Composable () -> Unit,
     showTopAppBar: @Composable () -> Unit,
@@ -108,15 +108,15 @@ fun StatisticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("earned", currentLanguage),
+                            Text(LocalizerUI.t("currentPoints", currentLanguage),
                                 Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
-                            Text("$totalGP GP", fontWeight = FontWeight.Bold,
+                            Text("$currentGP", fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
-                            Text(LocalizerUI.t("spent", currentLanguage),
+                            Text(LocalizerUI.t("totalPoints", currentLanguage),
                                 Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
-                            Text("$spentGP GP", fontWeight = FontWeight.Bold,
+                            Text("$totalGP", fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground)
                         }
                         Row(Modifier.padding(vertical = 4.dp)) {
@@ -220,7 +220,8 @@ fun StatisticsScreen(
                 )
             }
 
-            items(allTypes) { type ->
+            val _allTypes = allTypes.filter { it != "interesting" }
+            items(_allTypes) { type ->
                 val count = typeStats[type] ?: 0
                 val level = typeGoals.indexOfFirst { count < it }.let { if (it == -1) typeGoals.size else it }
                 val currentGoal = typeGoals.getOrNull(level) ?: typeGoals.last()

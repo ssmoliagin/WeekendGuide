@@ -42,7 +42,8 @@ class WikiRepositoryImp : WikiRepository {
                     val json = response.body?.string()
                     val summary = Gson().fromJson(json, WikipediaSummary::class.java)
                     val extract = summary.extract ?: return@withContext null
-                    val articleUrl = "https://$language.wikipedia.org/wiki/$encodedTitle"
+                    val safeTitleForUrl = title.replace("(", "%28").replace(")", "%29").replace(" ", "_")
+                    val articleUrl = "https://$language.wikipedia.org/wiki/$safeTitleForUrl"
                     "$extract\n\n[Wikipedia]($articleUrl)"
                 } else {
                     Log.e("WikiRepository", "Wikipedia API error $url ${response.code}: ${response.message}")

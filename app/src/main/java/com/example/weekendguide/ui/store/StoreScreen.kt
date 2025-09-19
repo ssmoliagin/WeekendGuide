@@ -58,7 +58,6 @@ import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.DataRepositoryImpl
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import com.example.weekendguide.ui.components.LoadingOverlay
-import com.example.weekendguide.viewmodel.PointsViewModel
 import com.example.weekendguide.viewmodel.StoreViewModel
 import com.example.weekendguide.viewmodel.StoreViewModelFactory
 import kotlinx.coroutines.launch
@@ -71,7 +70,6 @@ fun StoreScreen(
     isInitialSelection: Boolean,
     onRegionChosen: () -> Unit,
     onDismiss: () -> Unit = {},
-    pointsViewModel: PointsViewModel,
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
     userRemoteDataSource: UserRemoteDataSource

@@ -578,15 +578,15 @@
     "de": "🏆 Gesamtpunkte",
     "ru": "🏆 Всего очков"
   },
-  "earned": {
-    "en": "🟢 Earned:",
-    "de": "🟢 Erhalten:",
-    "ru": "🟢 Получено:"
+  "currentPoints": {
+    "en": "\uD83E\uDE99 Current points:",
+    "de": "\uD83E\uDE99 Aktuelle Punkte:",
+    "ru": "\uD83E\uDE99 Текущие очки:"
   },
-  "spent": {
-    "en": "🔴 Spent:",
-    "de": "🔴 Ausgegeben:",
-    "ru": "🔴 Потрачено:"
+  "totalPoints": {
+    "en": "\uD83C\uDFC6 Total points:",
+    "de": "\uD83C\uDFC6 Gesamtpunkte:",
+    "ru": "\uD83C\uDFC6 Всего очков набрано:"
   },
   "your_rank": {
     "en": "🏅 Your rank:",
@@ -604,9 +604,9 @@
     "ru": "Показать таблицу лидеров"
   },
   "top_users": {
-    "en": "📊 Top Users",
-    "de": "📊 Top-Nutzer",
-    "ru": "📊 Лучшие пользователи"
+    "en": "📊 Top Explorers",
+    "de": "📊 Beste Entdecker",
+    "ru": "📊 Лучшие исследователи"
   },
   "general_statistics": {
     "en": "🧭 General Statistics",
@@ -741,10 +741,25 @@
     "ru": "Совет от WeekendGuide — помощника для выходных"
   },
 
-  "desc_type_architecture": {
-    "en": "A place of unique architecture and history — it attracts travelers from around the world.",
-    "de": "Ein Ort mit einzigartiger Architektur und Geschichte – ein Anziehungspunkt für Reisende aus aller Welt.",
-    "ru": "Место с уникальной архитектурой и историей — привлекает путешественников со всего мира."
+  "desc_type_castles": {
+    "en": "A majestic castle with a rich history and impressive architecture.",
+    "de": "Ein majestätisches Burg mit reicher Geschichte und beeindruckender Architektur.",
+    "ru": "Величественный дворец с богатой историей и впечатляющей архитектурой."
+  },
+  "desc_type_parks": {
+    "en": "A beautifully designed garden or park — an oasis of peace and inspiration.",
+    "de": "Ein wunderschön gestalteter Garten oder Park – eine Oase der Ruhe und Inspiration.",
+    "ru": "Красиво оформленный сад или парк — оазис спокойствия и вдохновения."
+  },
+  "desc_type_city": {
+    "en": "A charming old town full of narrow streets, history, and local culture.",
+    "de": "Eine bezaubernde Altstadt voller Gassen, Geschichte und lokaler Kultur.",
+    "ru": "Очаровательный исторический центр с узкими улочками, историей и местной культурой."
+  },
+  "desc_type_interesting": {
+    "en": "An interesting place that surprises with its uniqueness and atmosphere.",
+    "de": "Ein interessanter Ort, der mit seiner Einzigartigkeit und Atmosphäre überrascht.",
+    "ru": "Интересное место, которое удивляет своей уникальностью и атмосферой."
   },
   "desc_type_active": {
     "en": "A popular location for outdoor sports and adventurous activities.",

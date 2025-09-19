@@ -3,7 +3,6 @@ package com.example.weekendguide.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.weekendguide.BuildConfig
 import com.example.weekendguide.data.preferences.UserPreferences
 import com.example.weekendguide.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.first
@@ -28,17 +27,15 @@ class MainStateViewModel(
     private val userRemote: UserRemoteDataSource
 ) : ViewModel() {
 
-
     fun refreshUserData() = viewModelScope.launch {
-        val currentAppVersion = BuildConfig.VERSION_NAME
         val currentData = userPreferences.userDataFlow.first()
+
         val isSubscription = currentData.subscription
         val subscriptionRegions = currentData.subscriptionRegions
         val updatedRegions = currentData.collectionRegions.filterNot {
                 it.region_code in subscriptionRegions }
 
         val updatedData = currentData.copy(
-            app_version = currentAppVersion,
             currentCity = currentData.homeCity,
             currentLat = currentData.homeLat,
             currentLng = currentData.homeLng,

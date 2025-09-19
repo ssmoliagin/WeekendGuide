@@ -134,7 +134,10 @@ class MarkerIconRepositoryImpl(private val context: Context) : MarkerIconReposit
 
     private fun getDrawableResId(type: String): Int? {
         return when (type) {
-            "architecture" -> R.drawable.ic_architecture
+            "castles" -> R.drawable.ic_castles
+            "city" -> R.drawable.ic_city
+            "parks" -> R.drawable.ic_parks
+            "interesting" -> R.drawable.ic_interesting
             "nature" -> R.drawable.ic_nature
             "museum" -> R.drawable.ic_museum
             "fun" -> R.drawable.ic_fun

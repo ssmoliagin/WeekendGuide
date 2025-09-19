@@ -48,7 +48,7 @@ fun TopAppBar(
                 modifier = Modifier.padding(end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("$currentGP 🏆", color = Color.White)
+                Text("$currentGP \uD83E\uDE99", color = Color.White)
             }
         },
         navigationIcon = {

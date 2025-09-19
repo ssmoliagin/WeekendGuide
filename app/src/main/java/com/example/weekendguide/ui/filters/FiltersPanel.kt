@@ -179,6 +179,7 @@ fun FiltersPanel(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allTags.forEach { tag ->
+                    if (tag.isBlank()) return@forEach
                     val icon = tagsIcons[tag] ?: Icons.AutoMirrored.Filled.Label
                     FilterChip(
                         selected = selectedTags.contains(tag),

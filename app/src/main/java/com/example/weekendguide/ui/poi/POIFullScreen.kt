@@ -325,6 +325,7 @@ fun POIFullScreen(
                         )
 
                         poi.tags.distinct().forEach { tag ->
+                            if (tag.isBlank()) return@forEach
                             val tagIcon = tagsIcons[tag] ?: Icons.AutoMirrored.Filled.Label
                             FilterChip(
                                 selected = false,

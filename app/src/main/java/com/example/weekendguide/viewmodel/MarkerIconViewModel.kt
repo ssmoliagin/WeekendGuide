@@ -33,7 +33,7 @@ class MarkerIconViewModel(application: Application) : AndroidViewModel(applicati
     private val iconsCache = mutableMapOf<String, BitmapDescriptor>()
     private val bitmapKeys = mutableSetOf<String>()
     private val typesToPreload = setOf(
-        "architecture", "nature", "museum", "fun", "zoo",
+        "castles", "parks", "city", "interesting", "nature", "museum", "fun", "zoo",
         "water", "active", "hiking", "cycling", "culture"
     )
 

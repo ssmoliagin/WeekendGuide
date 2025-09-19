@@ -22,10 +22,14 @@ import androidx.compose.material.icons.filled.FamilyRestroom
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.Hiking
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.Money
 import androidx.compose.material.icons.filled.Museum
+import androidx.compose.material.icons.filled.NaturePeople
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Pool
+import androidx.compose.material.icons.filled.TempleBuddhist
 import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.filled.WbSunny
@@ -140,7 +144,6 @@ fun MainScreen(
     val currentCity = userData.currentCity
     val currentGP = userData.current_GP
     val totalGP = userData.total_GP
-    val spentGP = userData.spent_GP
     val visitedPoiIds = userData.visited.keys
     val favoriteIds = userData.favorites
     val categoryLevels = userData.categoryLevels
@@ -151,7 +154,10 @@ fun MainScreen(
 
     // --- Icons ---
     val typeIcons = mapOf(
-        "architecture" to Icons.Default.Castle,
+        "castles" to Icons.Default.Castle,
+        "parks" to Icons.Default.NaturePeople,
+        "city" to Icons.Default.LocationCity,
+        "interesting" to Icons.Default.PhotoCamera,
         "nature" to Icons.Default.Forest,
         "museum" to Icons.Default.Museum,
         "fun" to Icons.Default.Attractions,
@@ -178,7 +184,7 @@ fun MainScreen(
     // --- Location Handling ---
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val activity = context as? Activity
+    //val activity = context as? Activity
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -631,6 +637,7 @@ fun MainScreen(
                     allReviews = reviewsList,
                     currentUnits = currentUnits,
                     currentLanguage = currentLanguage,
+                    poiViewModel = poiViewModel,
                 )
             }
 
@@ -639,7 +646,6 @@ fun MainScreen(
                 StoreScreen(
                     userData = userData,
                     isInitialSelection = false,
-                    pointsViewModel = pointsViewModel,
                     onRegionChosen = {
                         {resetFiltersUndScreens()}
                     },
@@ -657,7 +663,7 @@ fun MainScreen(
                     totalPOIList = poiList,
                     allTypes = allTypes,
                     totalGP = totalGP,
-                    spentGP = spentGP,
+                    currentGP = currentGP,
                     showNavigationBar = { showNavigationBar() },
                     showTopAppBar = { showTopAppBar () },
                     onOpenListScreen = {
