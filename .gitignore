@@ -17,6 +17,7 @@ Constants.kt
 /build
 captures/
 app/build/
+app/release/
 .externalNativeBuild
 .cxx
 .kotlin/errors/
