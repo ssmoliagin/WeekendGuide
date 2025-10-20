@@ -1,5 +1,6 @@
 package com.weekendguide.app.ui.profile
 
+import android.app.Activity
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -46,13 +47,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
+import com.android.billingclient.api.BillingClient
 import com.weekendguide.app.Constants.CONTACT_EMAIL
 import com.weekendguide.app.Constants.APP_DOCS_URL
 import com.weekendguide.app.data.locales.LocalizerUI
 import com.weekendguide.app.data.model.UserData
+import com.weekendguide.app.service.BillingManager
+import com.weekendguide.app.viewmodel.PointsViewModel
 import com.weekendguide.app.viewmodel.ProfileViewModel
 import com.weekendguide.app.viewmodel.ThemeViewModel
 import com.weekendguide.app.viewmodel.TranslateViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +67,9 @@ fun ProfileScreen(
     translateViewModel: TranslateViewModel,
     profileViewModel: ProfileViewModel,
     themeViewModel: ThemeViewModel,
+    pointsViewModel: PointsViewModel,
     editProfile: () -> Unit,
+    billingManager: BillingManager,
     showSubscriptionBanner: @Composable () -> Unit,
     showLocationPanel: @Composable () -> Unit,
     showNavigationBar: @Composable () -> Unit,
@@ -70,7 +78,9 @@ fun ProfileScreen(
 ) {
 
     val context = LocalContext.current
+    val activity = findActivity()
     var showSignOutDialog by remember { mutableStateOf(false) }
+    var showSupportProjectDialog by remember { mutableStateOf(false) }
     val toastMessage by profileViewModel.toastMessage.collectAsState()
 
     // --- STATE FROM UserData ---
@@ -126,6 +136,17 @@ fun ProfileScreen(
     }
 
     // --- EFFECTS ---
+
+    LaunchedEffect(Unit) {
+        billingManager.purchaseSuccess.collectLatest { success ->
+            if (success && billingManager.lastPurchaseType.value == BillingClient.ProductType.INAPP) {
+                delay(100)
+                showSupportProjectDialog = true
+                billingManager.resetPurchaseFlag()
+            }
+        }
+    }
+
     LaunchedEffect(toastMessage) {
         toastMessage?.let {
             Toast.makeText(
@@ -360,8 +381,63 @@ fun ProfileScreen(
                                     }
                             )
                         }
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    activity?.let {
+                                        billingManager.purchaseOneTimeProduct(it, "unlock_support_project")
+                                    }
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("\uD83D\uDC16", fontSize = 32.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = LocalizerUI.t("support_project", currentLanguage),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
+
+                if (showSupportProjectDialog) {
+                    var rewardGiven by remember { mutableStateOf(false) }
+                    AlertDialog(
+                        onDismissRequest = {
+                            showSupportProjectDialog = false
+                            if (!rewardGiven) {
+                                rewardGiven = true
+                                pointsViewModel.addGP(100)
+                            }},
+                        title = {
+                            Text(LocalizerUI.t("support_project", currentLanguage),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        text = {
+                            Text(LocalizerUI.t("support_thanks", currentLanguage)
+                            )
+                        },
+
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showSupportProjectDialog = false
+                                if (!rewardGiven) {
+                                    rewardGiven = true
+                                    pointsViewModel.addGP(100)
+                                }
+                            })
+                            { Text("\uD83D\uDE4F") }
+                        },
+                    )
+                }
+
                 Spacer(Modifier.height(24.dp))
             }
 
@@ -451,4 +527,14 @@ fun SettingRow(
         Text(iconText, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground))
         Text(value, style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary))
     }
+}
+
+@Composable
+fun findActivity(): Activity? {
+    var context = LocalContext.current
+    while (context is android.content.ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return null
 }

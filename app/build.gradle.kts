@@ -15,8 +15,8 @@ android {
         applicationId = "com.weekendguide.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.0.12"
+        versionCode = 17
+        versionName = "1.0.17"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("GOOGLE_MAPS_API_KEY") as? String ?: ""
@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.billing.ktx)
 
     // 🧪 Compose Preview / Debug
     debugImplementation(libs.androidx.ui.tooling)
@@ -114,4 +115,7 @@ dependencies {
 
     // 🖼 Image loading
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // Monetization
+    implementation("com.android.billingclient:billing:8.0.0")
 }

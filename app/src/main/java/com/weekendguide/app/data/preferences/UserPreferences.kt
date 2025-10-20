@@ -27,6 +27,7 @@ class UserPreferences(private val context: Context) {
         val CURRENT_CITY = stringPreferencesKey("current_city")
         val FCM_TOKEN = stringPreferencesKey("fcm_token")
         val APP_VERSION = stringPreferencesKey("app_version")
+        val SUB_TOKEN = stringPreferencesKey("sub_token")
 
         // --- Booleans ---
         val NOTIFICATIONS = booleanPreferencesKey("notifications")
@@ -81,6 +82,7 @@ class UserPreferences(private val context: Context) {
             currentCity = prefs[Keys.CURRENT_CITY],
             fcm_token = prefs[Keys.FCM_TOKEN],
             app_version = prefs[Keys.APP_VERSION],
+            subToken = prefs[Keys.SUB_TOKEN],
 
             // --- Booleans ---
             notification = prefs[Keys.NOTIFICATIONS],
@@ -121,6 +123,7 @@ class UserPreferences(private val context: Context) {
             prefs[Keys.CURRENT_CITY] = userData.currentCity ?: ""
             prefs[Keys.FCM_TOKEN] = userData.fcm_token ?: ""
             prefs[Keys.APP_VERSION] = userData.app_version ?: ""
+            prefs[Keys.SUB_TOKEN] = userData.subToken ?: ""
 
             // --- Booleans ---
             prefs[Keys.NOTIFICATIONS] = userData.notification ?: true

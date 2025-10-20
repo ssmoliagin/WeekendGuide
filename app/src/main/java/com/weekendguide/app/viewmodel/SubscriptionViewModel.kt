@@ -43,13 +43,15 @@ class SubscriptionViewModel(
         _subscriptionBenefitsVisible.value = !_subscriptionBenefitsVisible.value
     }
 
-    fun setSubscriptionEnabled(enabled: Boolean) {
+    fun setSubscriptionEnabled(enabled: Boolean, subToken: String?) {
         viewModelScope.launch {
-
             userPreferences.setSubscription(enabled)
 
             val currentData = userPreferences.userDataFlow.first()
-            val updatedData = currentData.copy(subscription = enabled)
+            val updatedData = currentData.copy(
+                subscription = enabled,
+                subToken = subToken
+            )
             userPreferences.saveUserData(updatedData)
             userRemote.launchSyncLocalToRemote(viewModelScope)
         }

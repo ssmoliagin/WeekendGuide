@@ -1,5 +1,6 @@
 package com.weekendguide.app.ui.store
 
+import android.app.Activity
 import android.view.SoundEffectConstants
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -35,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,9 +60,11 @@ import com.weekendguide.app.data.model.UserData
 import com.weekendguide.app.data.preferences.UserPreferences
 import com.weekendguide.app.data.repository.DataRepositoryImpl
 import com.weekendguide.app.data.repository.UserRemoteDataSource
+import com.weekendguide.app.service.BillingManager
 import com.weekendguide.app.ui.components.LoadingOverlay
 import com.weekendguide.app.viewmodel.StoreViewModel
 import com.weekendguide.app.viewmodel.StoreViewModelFactory
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
@@ -72,7 +77,8 @@ fun StoreScreen(
     onDismiss: () -> Unit = {},
     userPreferences: UserPreferences,
     dataRepository: DataRepositoryImpl,
-    userRemoteDataSource: UserRemoteDataSource
+    userRemoteDataSource: UserRemoteDataSource,
+    billingManager: BillingManager
 ) {
 
     // --- UserData State ---
@@ -95,11 +101,24 @@ fun StoreScreen(
     var selectedRegion by remember { mutableStateOf<Region?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var showInsufficientGPDialog by remember { mutableStateOf(false) }
+    var showBillingDialog by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val sound = LocalView.current
     val regionCost = 10_000
+
+    val purchaseSuccess by billingManager.purchaseSuccess.collectAsState()
+    val activity = findActivity()
+
+    LaunchedEffect(purchaseSuccess) {
+        if (purchaseSuccess && selectedRegion != null)
+        {
+            delay(100)
+            showBillingDialog = true
+            billingManager.resetPurchaseFlag()
+        }
+    }
 
     // --- UI  ---
     if (isLoading) LoadingOverlay(title = LocalizerUI.t("loading", currentLanguage))
@@ -365,13 +384,54 @@ fun StoreScreen(
                         confirmButton = {
                             TextButton(onClick = {
                                 showInsufficientGPDialog = false
+                                activity?.let {
+                                    billingManager.purchaseOneTimeProduct(it, "unlock_region")
+                                }
+                            })
+                            { Text(LocalizerUI.t("buy_with_money", currentLanguage)) }
+                        },
+                    )
+                }
+
+                if (showBillingDialog) {
+                    var rewardGiven by remember { mutableStateOf(false) }
+                    AlertDialog(
+                        onDismissRequest = {
+                            showBillingDialog = false
+                            if (!rewardGiven) {
+                                rewardGiven = true
                                 coroutineScope.launch {
                                     selectedRegion?.let { region ->
                                         storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription, 0)
                                         onRegionChosen()
                                     }
                                 }
-                            }) { Text(LocalizerUI.t("buy_with_money", currentLanguage)) }
+                            }},
+
+                        title = {
+                            Text(LocalizerUI.t("purchased", currentLanguage),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        text = {
+                            Text(LocalizerUI.t("purchase_success", currentLanguage)
+                            )
+                        },
+
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showBillingDialog = false
+                                if (!rewardGiven) {
+                                    rewardGiven = true
+                                    coroutineScope.launch {
+                                        selectedRegion?.let { region ->
+                                            storeViewModel.purchaseRegionAndLoadPOI(region, isSubscription, 0)
+                                            onRegionChosen()
+                                        }
+                                    }
+                                }
+                            })
+                            { Text("Ok") }
                         },
                     )
                 }
@@ -379,6 +439,8 @@ fun StoreScreen(
         }
     }
 }
+
+
 
 fun countryCodeToFlagEmoji(code: String): String {
     return if (code.length == 2) {
@@ -388,5 +450,15 @@ fun countryCodeToFlagEmoji(code: String): String {
     } else {
         "🏳️"
     }
+}
+
+@Composable
+fun findActivity(): Activity? {
+    var context = LocalContext.current
+    while (context is android.content.ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return null
 }
 

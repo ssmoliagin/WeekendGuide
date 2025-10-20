@@ -1,5 +1,7 @@
 package com.weekendguide.app.ui.components
 
+import android.app.Activity
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,19 +31,41 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import com.android.billingclient.api.BillingClient
+import com.weekendguide.app.Constants.PLAY_GOOGLE_SUBSCRIPTIONS
 import com.weekendguide.app.data.locales.LocalizerUI
+import com.weekendguide.app.service.BillingManager
 import com.weekendguide.app.viewmodel.SubscriptionViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun SubscriptionBanner(
     currentLanguage: String,
     isSubscription: Boolean,
+    billingManager: BillingManager,
     subscriptionViewModel: SubscriptionViewModel
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val subscriptionBenefitsVisible by subscriptionViewModel.subscriptionBenefitsVisible.collectAsState()
+    var showBillingDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val activity = findActivity()
+    val purchaseSuccess by billingManager.purchaseSuccess.collectAsState()
+    val lastToken by billingManager.lastPurchaseToken.collectAsState()
+    val purchaseType by billingManager.lastPurchaseType.collectAsState()
+
+    LaunchedEffect(purchaseSuccess) {
+        if (purchaseSuccess && purchaseType == BillingClient.ProductType.SUBS) {
+            delay(100)
+            showBillingDialog = true
+            billingManager.resetPurchaseFlag()
+        }
+    }
 
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -114,7 +139,7 @@ fun SubscriptionBanner(
                     BenefitItem("⭐", LocalizerUI.t("benefit_double_points", currentLanguage))
                     BenefitItem("🤝", LocalizerUI.t("benefit_share_unlimited", currentLanguage))
                     BenefitItem("📂", LocalizerUI.t("benefit_gpx", currentLanguage))
-                    BenefitItem("📴", LocalizerUI.t("benefit_offline", currentLanguage))
+                    //BenefitItem("📴", LocalizerUI.t("benefit_offline", currentLanguage))
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -133,37 +158,95 @@ fun SubscriptionBanner(
         }
     }
 
-
-
-    if (showDialog) {
+    if (showBillingDialog) {
+        var rewardGiven by remember { mutableStateOf(false) }
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = {
+                showBillingDialog = false
+                if (!rewardGiven) {
+                    rewardGiven = true
+                    subscriptionViewModel.setSubscriptionEnabled(true, lastToken)
+                }},
+
             title = {
-                Text(
-                    if (isSubscription) LocalizerUI.t("unsubscribe", currentLanguage)
-                    else LocalizerUI.t("subscribe", currentLanguage),
-                color = MaterialTheme.colorScheme.onBackground
+                Text(LocalizerUI.t("subscribe", currentLanguage),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
-                    },
+            },
             text = {
-                Text(
-                    if (isSubscription) LocalizerUI.t("confirm_unsubscribe", currentLanguage)
-                    else LocalizerUI.t("confirm_subscribe", currentLanguage)
+                Text(LocalizerUI.t("subscription_success", currentLanguage)
                 )
-                   },
+            },
 
             confirmButton = {
                 TextButton(onClick = {
-                    showDialog = false
-                    subscriptionViewModel.setSubscriptionEnabled(!isSubscription)
-                })
-                { Text(if (isSubscription) LocalizerUI.t("unsubscribe", currentLanguage)
-                else LocalizerUI.t("subscribe", currentLanguage)) }
+                    showBillingDialog = false
+                    if (!rewardGiven) {
+                        rewardGiven = true
+                        subscriptionViewModel.setSubscriptionEnabled(true, lastToken)
+                    }},
+                    )
+                { Text("Ok") }
             },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
-            }
         )
+    }
+
+    if (showDialog) {
+        if (!isSubscription) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = {
+                    Text(LocalizerUI.t("subscribe", currentLanguage),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
+                text = {
+                    Text(LocalizerUI.t("confirm_subscribe", currentLanguage)
+                    )
+                },
+
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDialog = false
+                        activity?.let {
+                            billingManager.purchaseSubscription(it, "weekendguide_subscription")
+                        }
+                    })
+                    { Text(LocalizerUI.t("subscribe", currentLanguage)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
+                }
+            )
+        } else {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = {
+                    Text(LocalizerUI.t("unsubscribe", currentLanguage),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                },
+                text = {
+                    Text(LocalizerUI.t("confirm_unsubscribe", currentLanguage))
+                },
+
+                confirmButton = {
+
+                    TextButton(onClick = {
+                        showDialog = false
+
+                        val intent = Intent(Intent.ACTION_VIEW, PLAY_GOOGLE_SUBSCRIPTIONS.toUri())
+                        context.startActivity(intent)
+
+                    })
+                    { Text(LocalizerUI.t("unsubscribe", currentLanguage)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) { Text(LocalizerUI.t("cancel", currentLanguage)) }
+                }
+            )
+        }
+
     }
 
 }
@@ -185,4 +268,14 @@ fun BenefitItem(emoji: String, text: String) {
             color = MaterialTheme.colorScheme.onBackground
         )
     }
+}
+
+@Composable
+fun findActivity(): Activity? {
+    var context = LocalContext.current
+    while (context is android.content.ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+    return null
 }

@@ -720,9 +720,9 @@
     "ru": "Вам не хватает очков для покупки региона. Продолжайте зарабатывать очки или..."
   },
   "buy_with_money": {
-    "en": "☕ Treat me to a coffee",
-    "de": "☕ Spendier mir einen Kaffee",
-    "ru": "☕ Угости меня кофе"
+    "en": "☕ Treat me to a coffee (2,99€)",
+    "de": "☕ Spendier mir einen Kaffee (2,99€)",
+    "ru": "☕ Угости меня кофе (2,99€)"
   },
   "purchased": {
     "en": "Purchased",
@@ -733,6 +733,27 @@
     "en": "Select",
     "de": "Auswählen",
     "ru": "Выбрать"
+  },
+  "purchase_success": {
+    "en": "🎉 Purchase successful!",
+    "de": "🎉 Kauf erfolgreich!",
+    "ru": "🎉 Покупка успешно выполнена!"
+  },
+  "subscription_success": {
+    "en": "✨ Subscription activated successfully!",
+    "de": "✨ Abonnement erfolgreich aktiviert!",
+    "ru": "✨ Подписка успешно оформлена!"
+  },
+
+  "support_project": {
+    "en": "Support the project",
+    "de": "Unterstütze das Projekt",
+    "ru": "Поддержать проект"
+  },
+  "support_thanks": {
+    "en": "🎉 Thank you! You've just helped the project grow.\uD83D\uDE4F \n \uD83C\uDF81 As a token of gratitude, you've received 100 \uD83E\uDE99",
+    "de": "🎉 Danke! Du hast gerade zur Entwicklung des Projekts beigetragen.\uD83D\uDE4F \n \uD83C\uDF81 Als Dankeschön erhältst du 100 \uD83E\uDE99",
+    "ru": "🎉 Спасибо! Ты только что помог развитию проекта.\uD83D\uDE4F \n \uD83C\uDF81 В благодарность за помощь тебе начислено 100 \uD83E\uDE99"
   },
 
   "share_by": {

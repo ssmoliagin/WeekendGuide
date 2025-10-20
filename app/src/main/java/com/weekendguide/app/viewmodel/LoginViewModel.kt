@@ -12,23 +12,27 @@ import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.weekendguide.app.service.BillingManager
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class LoginViewModelFactory(
     private val auth: FirebaseAuth,
     private val oneTapClient: SignInClient,
     private val userPreferences: UserPreferences,
-    private val userRemote: UserRemoteDataSource
+    private val userRemote: UserRemoteDataSource,
+    private val subscriptionViewModel: SubscriptionViewModel,
+    private val billingManager: BillingManager,
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            return LoginViewModel(auth, oneTapClient, userPreferences, userRemote) as T
+            return LoginViewModel(auth, oneTapClient, userPreferences, userRemote, subscriptionViewModel, billingManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -38,7 +42,9 @@ class LoginViewModel(
     private val auth: FirebaseAuth,
     private val oneTapClient: SignInClient,
     private val userPreferences: UserPreferences,
-    private val userRemote: UserRemoteDataSource
+    private val userRemote: UserRemoteDataSource,
+    private val subscriptionViewModel: SubscriptionViewModel,
+    private val billingManager: BillingManager,
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -136,6 +142,15 @@ class LoginViewModel(
         viewModelScope.launch {
             val res = userRemote.syncOnLogin()
             if (res.isSuccess) {
+
+                // Проверка подписки
+                val savedToken = userPreferences.userDataFlow.first().subToken
+                if (!savedToken.isNullOrEmpty()) {
+                    billingManager.validateSavedSubscriptionToken(savedToken) { isActive ->
+                        subscriptionViewModel.setSubscriptionEnabled(isActive, if (isActive) savedToken else null)
+                    }
+                }
+
                 appNavigation()
             } else {
                 _errorMessage.value = res.exceptionOrNull()?.localizedMessage ?: "Sync error"

@@ -35,6 +35,7 @@ import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
+import com.weekendguide.app.service.BillingManager
 
 @Composable
 fun AppEntryPoint() {
@@ -45,23 +46,27 @@ fun AppEntryPoint() {
     val firestore = remember { FirebaseFirestore.getInstance() }
     val messaging = remember { FirebaseMessaging.getInstance() }
 
+
     val userPreferences = remember { UserPreferences(context) }
     val userRemoteDataSource = remember { UserRemoteDataSource(auth, firestore, messaging, userPreferences) }
+    val billingManager = remember { BillingManager(context) }
 
     val dataRepository = remember { DataRepositoryImpl(context) }
     val localesRepo = remember { LocalesRepoImpl(context) }
+
+    val subscriptionViewModel: SubscriptionViewModel = viewModel(
+        factory = SubscriptionViewModelFactory(auth, firestore, userPreferences, userRemoteDataSource)
+    )
 
     val loginViewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(
             auth = auth,
             oneTapClient = Identity.getSignInClient(context),
             userPreferences = userPreferences,
-            userRemote = userRemoteDataSource
+            userRemote = userRemoteDataSource,
+            billingManager = billingManager,
+            subscriptionViewModel = subscriptionViewModel
         )
-    )
-
-    val subscriptionViewModel: SubscriptionViewModel = viewModel(
-        factory = SubscriptionViewModelFactory(auth, firestore, userPreferences, userRemoteDataSource)
     )
 
     val translateViewModel: TranslateViewModel = viewModel(
@@ -89,12 +94,11 @@ fun AppEntryPoint() {
     )
 
     val splashViewModel: SplashViewModel = viewModel(
-        factory = SplashViewModelFactory(userPreferences)
+        factory = SplashViewModelFactory(userPreferences, subscriptionViewModel, billingManager)
     )
 
     val userData by splashViewModel.userData.collectAsState()
 
-    //val currentTheme by themeViewModel.theme.collectAsState()
     val currentTheme = userData.userThema
 
     val isDarkTheme = when (currentTheme) {
@@ -120,6 +124,7 @@ fun AppEntryPoint() {
             subscriptionViewModel = subscriptionViewModel,
             splashViewModel = splashViewModel,
             userData = userData,
+            billingManager = billingManager
         )
     }
 }

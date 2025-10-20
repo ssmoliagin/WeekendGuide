@@ -86,6 +86,7 @@ import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.TypeFilter
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest
+import com.weekendguide.app.service.BillingManager
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -104,6 +105,7 @@ fun MainScreen(
     markerIconViewModel: MarkerIconViewModel,
     leaderboardViewModel: LeaderboardViewModel,
     subscriptionViewModel: SubscriptionViewModel,
+    billingManager: BillingManager
     ) {
 
     // --- UI State ---
@@ -578,7 +580,7 @@ fun MainScreen(
             //SubscriptionBanner
             @Composable
             fun showSubscriptionBanner () {
-                SubscriptionBanner(currentLanguage, isSubscription, subscriptionViewModel)
+                SubscriptionBanner(currentLanguage, isSubscription, billingManager, subscriptionViewModel)
             }
 
             //MapScreen
@@ -651,6 +653,7 @@ fun MainScreen(
                     userPreferences = userPreferences,
                     dataRepository = dataRepository,
                     userRemoteDataSource = userRemote,
+                    billingManager = billingManager
                 )
             }
 
@@ -691,7 +694,9 @@ fun MainScreen(
                     editProfile = { editProfile = true },
                     translateViewModel = translateViewModel,
                     profileViewModel = profileViewModel,
+                    pointsViewModel = pointsViewModel,
                     themeViewModel = themeViewModel,
+                    billingManager = billingManager
                 )
             }
 

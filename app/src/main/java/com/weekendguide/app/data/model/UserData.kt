@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 @OptIn(kotlinx.serialization.InternalSerializationApi::class)
 @Serializable
 data class UserData(
+
+    // --- Strings ---
     val email: String? = null,
     val displayName: String? = null,
     val photoUrl: String? = null,
@@ -15,6 +17,7 @@ data class UserData(
     val currentCity: String? = null,
     val fcm_token: String? = null,
     val app_version: String? = null,
+    val subToken: String? = null,
 
     // --- Booleans ---
     val notification: Boolean? = true,

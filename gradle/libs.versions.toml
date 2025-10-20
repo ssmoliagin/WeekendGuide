@@ -9,6 +9,7 @@ lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2025.06.01"
 firebaseStorageKtx = "21.0.2"
+billingKtx = "8.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -24,6 +25,7 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorageKtx" }
+billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billingKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

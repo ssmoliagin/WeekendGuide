@@ -9,6 +9,7 @@ import com.weekendguide.app.data.model.UserData
 import com.weekendguide.app.data.preferences.UserPreferences
 import com.weekendguide.app.data.repository.DataRepositoryImpl
 import com.weekendguide.app.data.repository.UserRemoteDataSource
+import com.weekendguide.app.service.BillingManager
 import com.weekendguide.app.ui.login.LoginScreen
 import com.weekendguide.app.ui.main.MainScreen
 import com.weekendguide.app.ui.splash.SplashScreen
@@ -38,8 +39,9 @@ fun AppNavigation(
     leaderboardViewModel: LeaderboardViewModel,
     markerIconViewModel: MarkerIconViewModel,
     subscriptionViewModel: SubscriptionViewModel,
+    billingManager: BillingManager,
     splashViewModel: SplashViewModel,
-    userData: UserData
+    userData: UserData,
 ) {
     val navController = rememberNavController()
 
@@ -95,6 +97,7 @@ fun AppNavigation(
                 userPreferences = userPreferences,
                 dataRepository = dataRepository,
                 userRemoteDataSource = userRemoteDataSource,
+                billingManager = billingManager
             )
         }
 
@@ -112,6 +115,7 @@ fun AppNavigation(
                 markerIconViewModel = markerIconViewModel,
                 subscriptionViewModel = subscriptionViewModel,
                 userData = userData,
+                billingManager = billingManager
                 )
         }
 
