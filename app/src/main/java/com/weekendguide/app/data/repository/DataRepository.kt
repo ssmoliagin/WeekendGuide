@@ -7,6 +7,7 @@ import com.weekendguide.app.data.model.POI
 import com.weekendguide.app.data.model.Region
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
+import com.weekendguide.app.Constants.FIREBASE_IMAGE_URL
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,7 +32,7 @@ interface DataRepository {
 
 class DataRepositoryImpl(private val context: Context) : DataRepository {
 
-    private val path = Constants.FIREBASE_STORAGE_URL
+    private val path = Constants.FIREBASE_STORAGE
     private val storage = Firebase.storage
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -254,7 +255,7 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
             .mapNotNull { line ->
                 val tokens = line.split(",")
                 try {
-                    POI(
+                    val poi = POI(
                         id_country = tokens[0].trim(),
                         id_region = tokens[1].trim(),
                         id = tokens[2].trim(),
@@ -270,10 +271,17 @@ class DataRepositoryImpl(private val context: Context) : DataRepository {
                         description_ru = tokens[12].trim(),
                         type = tokens[13].trim(),
                         tags = tokens[14].split(" ").map { it.trim() },
-                        imageUrl = tokens.getOrNull(15)?.trim().orEmpty()
+                        imageUrl = ""
                     )
+
+                    // 🚀 imageUrl in Firebase Storage
+                    val encodedPath =
+                        "data%2Fplaces%2F${poi.id_country}%2Fimg%2F${poi.id_region}%2F${poi.id}.jpg"
+                    poi.imageUrl =
+                        "$FIREBASE_IMAGE_URL/o/$encodedPath?alt=media"
+
+                    poi
                 } catch (e: Exception) {
-                    //Log.w("DataRepo", "Skipping invalid POI line: $line")
                     null
                 }
             }
