@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.weekendguide.app.data.locales.LocalizerUI
 import com.weekendguide.app.data.model.POI
@@ -275,13 +276,9 @@ fun StatisticsScreen(
                             Text(
                                 text = "${LocalizerUI.t(type, currentLanguage).replaceFirstChar { it.uppercaseChar() }} - $count",
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 color = if (isNewLevelReached) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                text = "${LocalizerUI.t("level", currentLanguage)} ${level + 1}",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -298,7 +295,7 @@ fun StatisticsScreen(
                         )
 
                         Text(
-                            text = "$nextGoal ${LocalizerUI.t("to_next_level", currentLanguage)}",
+                            text = "$nextGoal ${LocalizerUI.t("to_next_level", currentLanguage)} ${level + 2}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(top = 8.dp),
                             color = MaterialTheme.colorScheme.onSurface

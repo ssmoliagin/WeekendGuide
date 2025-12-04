@@ -638,6 +638,7 @@ fun MainScreen(
                     currentUnits = currentUnits,
                     currentLanguage = currentLanguage,
                     poiViewModel = poiViewModel,
+                    typeIcons = typeIcons,
                 )
             }
 

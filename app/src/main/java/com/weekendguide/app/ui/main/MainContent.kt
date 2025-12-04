@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -25,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,8 +61,10 @@ fun MainContent(
     allReviews: List<Review> = emptyList(),
     currentUnits: String,
     currentLanguage: String,
-    poiViewModel: POIViewModel
-) {
+    poiViewModel: POIViewModel,
+    typeIcons: Map<String, ImageVector>,
+
+    ) {
     val listState = rememberLazyListState()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val isLoading by poiViewModel.poisIsLoading.collectAsState()
@@ -146,6 +153,7 @@ fun MainContent(
                             val allTypedPOIs = userPOIList.filter { it.type == type }
                             val displayedPOIs = allTypedPOIs.shuffled().take(6)
                             val count = allTypedPOIs.size
+                            val icon = typeIcons[type] ?: Icons.Default.Star
 
                             Row(
                                 modifier = Modifier
@@ -154,21 +162,36 @@ fun MainContent(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = type
+                                    )
+                                    Text(
+                                        text = LocalizerUI.t(type, currentLanguage),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier
+                                            .padding(start = 8.dp)
+                                            .weight(1f)
+                                    )
+                                }
+
                                 Text(
-                                    text = "${
-                                        LocalizerUI.t(type, currentLanguage)
-                                            .replaceFirstChar { it.uppercaseChar() }
-                                    } - $count",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = LocalizerUI.t("show_all", currentLanguage),
+                                    text = "${LocalizerUI.t("show_all", currentLanguage)} ($count)",
                                     color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.clickable {
-                                        onSelectSingleType(type)
-                                        onOpenListScreen()
-                                    }
+                                    maxLines = 1,
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .clickable {
+                                            onSelectSingleType(type)
+                                            onOpenListScreen()
+                                        }
                                 )
                             }
 

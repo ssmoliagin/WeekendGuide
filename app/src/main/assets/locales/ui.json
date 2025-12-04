@@ -639,9 +639,9 @@
     "ru": "Уровень"
   },
   "to_next_level": {
-    "en": "to next level",
-    "de": "bis zum nächsten Level",
-    "ru": "до следующего уровня"
+    "en": "to level",
+    "de": "bis zum Level",
+    "ru": "до уровня"
   },
   "level_up": {
     "en": "Level Up!",
