@@ -143,7 +143,6 @@ class LoginViewModel(
             val res = userRemote.syncOnLogin()
             if (res.isSuccess) {
 
-                // Проверка подписки
                 val savedToken = userPreferences.userDataFlow.first().subToken
                 if (!savedToken.isNullOrEmpty()) {
                     billingManager.validateSavedSubscriptionToken(savedToken) { isActive ->

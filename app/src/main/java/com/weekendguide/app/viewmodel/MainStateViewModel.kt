@@ -3,6 +3,7 @@ package com.weekendguide.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.weekendguide.app.BuildConfig
 import com.weekendguide.app.data.preferences.UserPreferences
 import com.weekendguide.app.data.repository.UserRemoteDataSource
 import kotlinx.coroutines.flow.first
@@ -36,6 +37,7 @@ class MainStateViewModel(
                 it.region_code in subscriptionRegions }
 
         val updatedData = currentData.copy(
+            app_version = BuildConfig.VERSION_NAME,
             currentCity = currentData.homeCity,
             currentLat = currentData.homeLat,
             currentLng = currentData.homeLng,

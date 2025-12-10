@@ -306,7 +306,6 @@ fun StatisticsScreen(
                                 onClick = {
                                     showCongrats = true
                                     statisticsViewModel.updateCategoryLevel(type, level)
-                                    //pointsViewModel.addGP(1000)
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
